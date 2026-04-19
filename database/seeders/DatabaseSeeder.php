@@ -12,7 +12,7 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        User::factory()->create([
+        User::create([
             'name'              => 'Admin',
             'email'             => 'admin@brgy-caranas.gov.ph',
             'password'          => bcrypt('Admin@1234'),
@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        User::factory()->create([
+        User::create([
             'name'              => 'Maria Clerk',
             'email'             => 'clerk@brgy-caranas.gov.ph',
             'password'          => bcrypt('Clerk@1234'),
