@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Integrated Barangay Management System — DFD & System Flowchart</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --blotter:     #e74c3c;
+      --profiling:   #3498db;
+      --docproc:     #27ae60;
+      --announce:    #f39c12;
+      --analytics:   #9b59b6;
+      --db:          #2c3e50;
+      --official:    #1abc9c;
+      --staff:       #e67e22;
+      --resident:    #2980b9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #2c3e50;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a2a4a 0%, #2c3e50 60%, #34495e 100%);
+      color: #fff;
+      padding: 36px 40px 28px;
+      border-bottom: 4px solid #1abc9c;
+    }
+    header h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: .5px; }
+    header p  { margin-top: 6px; font-size: .95rem; opacity: .8; }
+
+    nav {
+      display: flex;
+      gap: 8px;
+      padding: 18px 40px;
+      background: #fff;
+      border-bottom: 1px solid #dde2ea;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      flex-wrap: wrap;
+    }
+    nav a {
+      text-decoration: none;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: .85rem;
+      font-weight: 600;
+      background: #f0f2f5;
+      color: #2c3e50;
+      transition: background .2s, color .2s;
+    }
+    nav a:hover { background: #1abc9c; color: #fff; }
+
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px 40px;
+      background: #fff;
+      border-bottom: 1px solid #dde2ea;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+      font-weight: 600;
+    }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    main { padding: 40px; max-width: 1600px; margin: 0 auto; }
+
+    section {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      margin-bottom: 48px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 22px 30px 18px;
+      border-bottom: 1px solid #eef0f4;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .section-badge {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1.2rem; font-weight: 700; }
+    .section-header p  { font-size: .85rem; color: #7f8c8d; margin-top: 2px; }
+
+    .diagram-wrap {
+      padding: 30px;
+      overflow-x: auto;
+    }
+
+    /* ── SVG-based Level 0 & Level 1 ── */
+    svg.dfd { display: block; margin: 0 auto; }
+
+    /* rounded rect */
+    .process   { fill: #1a2a4a; rx: 10; }
+    .datastore { fill: var(--db); }
+
+    /* ── Mermaid override ── */
+    .mermaid { min-height: 200px; }
+
+    .note-box {
+      margin: 0 30px 30px;
+      background: #f8f9fb;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      font-size: .85rem;
+      color: #555;
+      line-height: 1.6;
+    }
+    .note-box strong { color: #2c3e50; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: .8rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Integrated Barangay Management System</h1>
+  <p>Data Flow Diagrams (Level 0 &amp; Level 1) &nbsp;·&nbsp; System Flowchart &nbsp;·&nbsp; Client-Server Architecture &nbsp;·&nbsp; Agile Development</p>
+</header>
+
+<nav>
+  <a href="#level0">Level 0 DFD</a>
+  <a href="#level1">Level 1 DFD</a>
+  <a href="#flowchart">System Flowchart</a>
+  <a href="#arch">Architecture Overview</a>
+</nav>
+
+<div class="legend-bar">
+  <span class="legend-item"><span class="legend-dot" style="background:var(--blotter)"></span>Blotter</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--profiling)"></span>Profiling</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--docproc)"></span>Document Processing</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--announce)"></span>Announcements</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--analytics)"></span>Analytics Dashboard</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--db)"></span>Centralized Database</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--official)"></span>Barangay Official</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--staff)"></span>Barangay Staff</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--resident)"></span>Resident</span>
+</div>
+
+<main>
+
+  <!-- ═══════════════════════════════════════════════════
+       LEVEL 0 DFD  (Context Diagram)
+  ═══════════════════════════════════════════════════ -->
+  <section id="level0">
+    <div class="section-header">
+      <div class="section-badge" style="background:#1a2a4a">L0</div>
+      <div>
+        <h2>Level 0 DFD — Context Diagram</h2>
+        <p>High-level view: the system as a single process interacting with its three external entities</p>
+      </div>
+    </div>
+    <div class="diagram-wrap">
+      <svg class="dfd" viewBox="0 0 1000 560" width="100%" style="max-width:960px">
+        <defs>
+          <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0,10 3.5,0 7" fill="#555"/>
+          </marker>
+          <marker id="arr-official" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0,10 3.5,0 7" fill="#1abc9c"/>
+          </marker>
+          <marker id="arr-staff" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0,10 3.5,0 7" fill="#e67e22"/>
+          </marker>
+          <marker id="arr-resident" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0,10 3.5,0 7" fill="#2980b9"/>
+          </marker>
+          <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="3" stdDeviation="4" flood-color="#0003"/>
+          </filter>
+        </defs>
+
+        <!-- ── Central Process ── -->
+        <rect x="340" y="185" width="320" height="160" rx="16" fill="#1a2a4a" filter="url(#shadow)"/>
+        <text x="500" y="252" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">Integrated Barangay</text>
+        <text x="500" y="274" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">Management System</text>
+        <text x="500" y="304" text-anchor="middle" fill="#1abc9c" font-size="12">[Client-Server · 5 Modules]</text>
+
+        <!-- ── Barangay Official (top-left) ── -->
+        <rect x="30" y="30" width="200" height="76" rx="10" fill="#1abc9c" filter="url(#shadow)"/>
+        <text x="130" y="64" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Barangay Official</text>
+        <text x="130" y="84" text-anchor="middle" fill="#fff" font-size="10">(Admin)</text>
+
+        <!-- Official → System: Approvals & Config -->
+        <line x1="225" y1="90" x2="342" y2="230" stroke="#1abc9c" stroke-width="2" marker-end="url(#arr-official)"/>
+        <text x="250" y="142" fill="#1abc9c" font-size="10" font-weight="600" transform="rotate(-28,250,142)">Approvals / Config / Queries</text>
+
+        <!-- System → Official: Reports & Analytics -->
+        <line x1="340" y1="218" x2="226" y2="92" stroke="#1abc9c" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-official)"/>
+        <text x="260" y="165" fill="#1abc9c" font-size="10" font-weight="600" transform="rotate(-28,260,165)">Reports / Analytics / Alerts</text>
+
+        <!-- ── Barangay Staff (bottom-left) ── -->
+        <rect x="30" y="430" width="200" height="76" rx="10" fill="#e67e22" filter="url(#shadow)"/>
+        <text x="130" y="464" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Barangay Staff</text>
+        <text x="130" y="484" text-anchor="middle" fill="#fff" font-size="10">(Operator)</text>
+
+        <!-- Staff → System -->
+        <line x1="226" y1="442" x2="342" y2="330" stroke="#e67e22" stroke-width="2" marker-end="url(#arr-staff)"/>
+        <text x="218" y="395" fill="#e67e22" font-size="10" font-weight="600" transform="rotate(32,218,395)">Data Entry / Document Processing</text>
+
+        <!-- System → Staff -->
+        <line x1="340" y1="340" x2="225" y2="454" stroke="#e67e22" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-staff)"/>
+        <text x="250" y="420" fill="#e67e22" font-size="10" font-weight="600" transform="rotate(32,250,420)">Confirmation / Records</text>
+
+        <!-- ── Resident (right) ── -->
+        <rect x="770" y="225" width="200" height="76" rx="10" fill="#2980b9" filter="url(#shadow)"/>
+        <text x="870" y="259" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Resident</text>
+        <text x="870" y="279" text-anchor="middle" fill="#fff" font-size="10">(Client)</text>
+
+        <!-- Resident → System -->
+        <line x1="772" y1="252" x2="660" y2="252" stroke="#2980b9" stroke-width="2" marker-end="url(#arr-resident)"/>
+        <text x="675" y="244" fill="#2980b9" font-size="10" font-weight="600">Document Requests / Info</text>
+
+        <!-- System → Resident -->
+        <line x1="660" y1="268" x2="772" y2="268" stroke="#2980b9" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-resident)"/>
+        <text x="675" y="287" fill="#2980b9" font-size="10" font-weight="600">Documents / Announcements</text>
+
+        <!-- Legend -->
+        <rect x="30" y="520" width="940" height="30" rx="6" fill="#f8f9fb"/>
+        <line x1="50"  y1="535" x2="90"  y2="535" stroke="#555" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="98" y="539" font-size="10" fill="#555">Data Flow (Input)</text>
+        <line x1="200" y1="535" x2="240" y2="535" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+        <text x="248" y="539" font-size="10" fill="#555">Data Flow (Output)</text>
+        <rect x="360" y="526" width="18" height="18" rx="4" fill="#1a2a4a"/>
+        <text x="384" y="539" font-size="10" fill="#555">System Process</text>
+        <rect x="480" y="526" width="18" height="18" rx="4" fill="#1abc9c"/>
+        <text x="504" y="539" font-size="10" fill="#555">Barangay Official</text>
+        <rect x="630" y="526" width="18" height="18" rx="4" fill="#e67e22"/>
+        <text x="654" y="539" font-size="10" fill="#555">Barangay Staff</text>
+        <rect x="770" y="526" width="18" height="18" rx="4" fill="#2980b9"/>
+        <text x="794" y="539" font-size="10" fill="#555">Resident</text>
+      </svg>
+    </div>
+    <div class="note-box">
+      <strong>Context Diagram notes:</strong> The system is treated as a single black-box process. All three external entities—Barangay Official (admin), Barangay Staff (operator), and Resident (client)—exchange data with the system boundary. Solid arrows represent incoming data flows (inputs); dashed arrows represent outgoing data flows (outputs).
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       LEVEL 1 DFD
+  ═══════════════════════════════════════════════════ -->
+  <section id="level1">
+    <div class="section-header">
+      <div class="section-badge" style="background:#2c3e50">L1</div>
+      <div>
+        <h2>Level 1 DFD — Module Decomposition</h2>
+        <p>Data flows between the 5 functional modules and the centralized database</p>
+      </div>
+    </div>
+    <div class="diagram-wrap">
+      <svg class="dfd" viewBox="0 0 1100 760" width="100%" style="max-width:1060px">
+        <defs>
+          <marker id="a0" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#555"/></marker>
+          <marker id="a1" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="var(--blotter)"/></marker>
+          <marker id="a2" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="var(--profiling)"/></marker>
+          <marker id="a3" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="var(--docproc)"/></marker>
+          <marker id="a4" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="var(--announce)"/></marker>
+          <marker id="a5" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="var(--analytics)"/></marker>
+          <marker id="a-off" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#1abc9c"/></marker>
+          <marker id="a-sta" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#e67e22"/></marker>
+          <marker id="a-res" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#2980b9"/></marker>
+          <filter id="sh2" x="-10%" y="-10%" width="130%" height="130%">
+            <feDropShadow dx="1" dy="2" stdDeviation="3" flood-color="#0002"/>
+          </filter>
+        </defs>
+
+        <!-- ════ External Entities ════ -->
+        <!-- Official -->
+        <rect x="10" y="10" width="160" height="56" rx="9" fill="#1abc9c" filter="url(#sh2)"/>
+        <text x="90" y="38" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Barangay Official</text>
+        <text x="90" y="55" text-anchor="middle" fill="#fff" font-size="9">(Admin)</text>
+
+        <!-- Staff -->
+        <rect x="10" y="360" width="160" height="56" rx="9" fill="#e67e22" filter="url(#sh2)"/>
+        <text x="90" y="388" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Barangay Staff</text>
+        <text x="90" y="405" text-anchor="middle" fill="#fff" font-size="9">(Operator)</text>
+
+        <!-- Resident -->
+        <rect x="10" y="680" width="160" height="56" rx="9" fill="#2980b9" filter="url(#sh2)"/>
+        <text x="90" y="708" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Resident</text>
+        <text x="90" y="725" text-anchor="middle" fill="#fff" font-size="9">(Client)</text>
+
+        <!-- ════ Module Boxes ════ -->
+        <!-- P1: Blotter  (top row left) -->
+        <rect x="230" y="10" width="160" height="66" rx="10" fill="var(--blotter)" filter="url(#sh2)"/>
+        <text x="310" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">P1 · Blotter</text>
+        <text x="310" y="55" text-anchor="middle" fill="#fff" font-size="9">Incident Reports</text>
+        <text x="310" y="68" text-anchor="middle" fill="#fff" font-size="9">Management</text>
+
+        <!-- P2: Profiling  (top row right) -->
+        <rect x="470" y="10" width="160" height="66" rx="10" fill="var(--profiling)" filter="url(#sh2)"/>
+        <text x="550" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">P2 · Profiling</text>
+        <text x="550" y="55" text-anchor="middle" fill="#fff" font-size="9">Resident &amp; Household</text>
+        <text x="550" y="68" text-anchor="middle" fill="#fff" font-size="9">Data Storage</text>
+
+        <!-- P3: Document Processing  (mid row left) -->
+        <rect x="230" y="340" width="160" height="66" rx="10" fill="var(--docproc)" filter="url(#sh2)"/>
+        <text x="310" y="362" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">P3 · Document</text>
+        <text x="310" y="378" text-anchor="middle" fill="#fff" font-size="9">Processing</text>
+        <text x="310" y="394" text-anchor="middle" fill="#fff" font-size="9">Requests &amp; Issuance</text>
+
+        <!-- P4: Announcements  (mid row right) -->
+        <rect x="470" y="340" width="160" height="66" rx="10" fill="var(--announce)" filter="url(#sh2)"/>
+        <text x="550" y="362" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">P4 · Announcements</text>
+        <text x="550" y="378" text-anchor="middle" fill="#fff" font-size="9">Community</text>
+        <text x="550" y="394" text-anchor="middle" fill="#fff" font-size="9">Notices &amp; Posts</text>
+
+        <!-- P5: Analytics  (bottom center) -->
+        <rect x="350" y="660" width="180" height="66" rx="10" fill="var(--analytics)" filter="url(#sh2)"/>
+        <text x="440" y="685" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">P5 · Analytics</text>
+        <text x="440" y="701" text-anchor="middle" fill="#fff" font-size="9">Dashboard</text>
+        <text x="440" y="714" text-anchor="middle" fill="#fff" font-size="9">Charts &amp; Reports</text>
+
+        <!-- ════ Centralized Database ════ -->
+        <!-- DB as two parallel lines (Yourdon notation) -->
+        <line x1="680" y1="350" x2="1070" y2="350" stroke="var(--db)" stroke-width="2.5"/>
+        <line x1="680" y1="400" x2="1070" y2="400" stroke="var(--db)" stroke-width="2.5"/>
+        <rect x="680" y="350" width="390" height="50" fill="#ecf0f1"/>
+        <text x="875" y="371" text-anchor="middle" fill="var(--db)" font-size="13" font-weight="700">D1 · Centralized Database</text>
+        <text x="875" y="390" text-anchor="middle" fill="#7f8c8d" font-size="10">Residents · Households · Blotter · Documents · Announcements · Logs</text>
+
+        <!-- ════ Entity → Module flows ════ -->
+
+        <!-- Official → P1 (approve blotter) -->
+        <line x1="170" y1="32" x2="230" y2="32" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#a-off)"/>
+        <text x="178" y="26" fill="#1abc9c" font-size="9" font-weight="600">Approve Blotter</text>
+
+        <!-- Official → P2 (view residents) -->
+        <line x1="170" y1="42" x2="468" y2="34" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#a-off)"/>
+        <text x="270" y="26" fill="#1abc9c" font-size="9" font-weight="600">View Profiles</text>
+
+        <!-- Official → P5 (request reports) -->
+        <line x1="90" y1="66" x2="90" y2="693" stroke="#1abc9c" stroke-width="1.8" stroke-dasharray="5,3"/>
+        <line x1="90" y1="693" x2="350" y2="693" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#a-off)"/>
+        <text x="96" y="700" fill="#1abc9c" font-size="9" font-weight="600">Request Analytics</text>
+
+        <!-- Staff → P1 (encode blotter) -->
+        <line x1="170" y1="375" x2="230" y2="360" stroke="#e67e22" stroke-width="1.8" marker-end="url(#a-sta)"/>
+        <text x="174" y="356" fill="#e67e22" font-size="9" font-weight="600">Encode Incident</text>
+
+        <!-- Staff → P2 (encode resident) -->
+        <line x1="170" y1="385" x2="468" y2="364" stroke="#e67e22" stroke-width="1.8" marker-end="url(#a-sta)"/>
+        <text x="290" y="356" fill="#e67e22" font-size="9" font-weight="600">Encode Resident/HH Data</text>
+
+        <!-- Staff → P3 (process documents) -->
+        <line x1="170" y1="395" x2="230" y2="385" stroke="#e67e22" stroke-width="1.8" marker-end="url(#a-sta)"/>
+        <text x="172" y="406" fill="#e67e22" font-size="9" font-weight="600">Process Doc Request</text>
+
+        <!-- Staff → P4 (post announcement) -->
+        <line x1="170" y1="408" x2="468" y2="395" stroke="#e67e22" stroke-width="1.8" marker-end="url(#a-sta)"/>
+        <text x="290" y="420" fill="#e67e22" font-size="9" font-weight="600">Post Announcement</text>
+
+        <!-- Resident → P3 (request document) -->
+        <line x1="170" y1="692" x2="230" y2="392" stroke="#2980b9" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a-res)"/>
+        <text x="96" y="570" fill="#2980b9" font-size="9" font-weight="600" transform="rotate(80,96,570)">Request Document</text>
+
+        <!-- P3 → Resident (issued document) -->
+        <line x1="230" y1="406" x2="170" y2="700" stroke="#2980b9" stroke-width="1.8" marker-end="url(#a-res)"/>
+        <text x="144" y="600" fill="#2980b9" font-size="9" font-weight="600" transform="rotate(80,144,600)">Issued Document</text>
+
+        <!-- Resident → P4 (view announcements) -->
+        <line x1="170" y1="706" x2="468" y2="400" stroke="#2980b9" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a-res)"/>
+        <text x="280" y="590" fill="#2980b9" font-size="9" font-weight="600" transform="rotate(65,280,590)">View Announcements</text>
+
+        <!-- ════ Module ↔ Database ════ -->
+
+        <!-- P1 ↔ DB -->
+        <line x1="390" y1="43" x2="680" y2="360" stroke="var(--blotter)" stroke-width="1.8" marker-end="url(#a1)"/>
+        <text x="500" y="170" fill="var(--blotter)" font-size="9" font-weight="600" transform="rotate(35,500,170)">Store Incident Record</text>
+        <line x1="680" y1="368" x2="390" y2="55" stroke="var(--blotter)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a1)"/>
+        <text x="510" y="210" fill="var(--blotter)" font-size="9" font-weight="600" transform="rotate(35,510,210)">Retrieve Blotter Data</text>
+
+        <!-- P2 ↔ DB -->
+        <line x1="630" y1="43" x2="682" y2="350" stroke="var(--profiling)" stroke-width="1.8" marker-end="url(#a2)"/>
+        <text x="640" y="190" fill="var(--profiling)" font-size="9" font-weight="600" transform="rotate(82,640,190)">Store Profile</text>
+        <line x1="682" y1="358" x2="630" y2="55" stroke="var(--profiling)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a2)"/>
+        <text x="668" y="200" fill="var(--profiling)" font-size="9" font-weight="600" transform="rotate(82,668,200)">Retrieve Profile</text>
+
+        <!-- P3 ↔ DB -->
+        <line x1="390" y1="373" x2="678" y2="373" stroke="var(--docproc)" stroke-width="1.8" marker-end="url(#a3)"/>
+        <text x="490" y="365" fill="var(--docproc)" font-size="9" font-weight="600">Store Document Request</text>
+        <line x1="678" y1="383" x2="390" y2="383" stroke="var(--docproc)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a3)"/>
+        <text x="490" y="396" fill="var(--docproc)" font-size="9" font-weight="600">Retrieve Resident Info</text>
+
+        <!-- P4 ↔ DB -->
+        <line x1="630" y1="373" x2="678" y2="373" stroke="var(--announce)" stroke-width="1.8" marker-end="url(#a4)"/>
+        <!-- shared horizontal, just label -->
+        <line x1="630" y1="383" x2="678" y2="383" stroke="var(--announce)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a4)"/>
+
+        <!-- P5 ↔ DB -->
+        <line x1="530" y1="693" x2="875" y2="400" stroke="var(--analytics)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a5)"/>
+        <text x="660" y="600" fill="var(--analytics)" font-size="9" font-weight="600" transform="rotate(-40,660,600)">Query All Modules</text>
+        <line x1="875" y1="400" x2="530" y2="703" stroke="var(--analytics)" stroke-width="1.8" marker-end="url(#a5)"/>
+        <text x="680" y="640" fill="var(--analytics)" font-size="9" font-weight="600" transform="rotate(-40,680,640)">Aggregated Data</text>
+
+        <!-- P5 → Official (reports) -->
+        <line x1="440" y1="726" x2="440" y2="755" stroke="#1abc9c" stroke-width="1.8" stroke-dasharray="5,3"/>
+        <line x1="440" y1="755" x2="90"  y2="755" stroke="#1abc9c" stroke-width="1.8" stroke-dasharray="5,3"/>
+        <line x1="90"  y1="755" x2="90"  y2="66"  stroke="#1abc9c" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#a-off)"/>
+        <text x="260" y="749" text-anchor="middle" fill="#1abc9c" font-size="9" font-weight="600">Analytics Report / Summary</text>
+
+        <!-- Module Inter-links (thin grey): Profiling feeds Doc Processing -->
+        <line x1="550" y1="76" x2="390" y2="340" stroke="#bdc3c7" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#a0)"/>
+        <text x="435" y="210" fill="#999" font-size="8" transform="rotate(55,435,210)">Resident Lookup</text>
+
+        <!-- P1 inter-link → Analytics (feeds) -->
+        <line x1="310" y1="76" x2="400" y2="660" stroke="#bdc3c7" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#a0)"/>
+        <text x="325" y="380" fill="#999" font-size="8" transform="rotate(86,325,380)">Blotter Stats</text>
+      </svg>
+    </div>
+    <div class="note-box">
+      <strong>Level 1 notes:</strong> Each numbered process (P1–P5) is a module in the system. D1 represents the centralized database. Solid arrows indicate write/store operations; dashed arrows indicate read/retrieve operations. Grey dashed lines show inter-module data dependencies (e.g., the Document module queries Profiling data for resident verification).
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       SYSTEM FLOWCHART  (Mermaid)
+  ═══════════════════════════════════════════════════ -->
+  <section id="flowchart">
+    <div class="section-header">
+      <div class="section-badge" style="background:#27ae60">FC</div>
+      <div>
+        <h2>System Flowchart — End-to-End Process Flow</h2>
+        <p>From Login through module selection to database save and output display</p>
+      </div>
+    </div>
+    <div class="diagram-wrap">
+      <div class="mermaid">
+%%{init:{
+  "theme":"base",
+  "themeVariables":{
+    "primaryColor":"#1a2a4a",
+    "primaryTextColor":"#ffffff",
+    "primaryBorderColor":"#1abc9c",
+    "lineColor":"#555555",
+    "secondaryColor":"#ecf0f1",
+    "tertiaryColor":"#f8f9fb",
+    "fontFamily":"Segoe UI, Arial, sans-serif",
+    "fontSize":"13px"
+  }
+}}%%
+flowchart TD
+    START([🖥️ START SYSTEM]) --> OPEN[Open Login Page]
+    OPEN --> INPUT[/Enter Credentials\nUsername & Password/]
+    INPUT --> AUTH{Authenticate\nUser}
+    AUTH -- ❌ Invalid --> ERR[Show Error Message]
+    ERR --> INPUT
+    AUTH -- ✅ Valid --> ROLE{Identify\nUser Role}
+
+    ROLE -- Barangay Official --> DASH_OFF[Admin Dashboard\n📊 Analytics · Approvals · Reports]
+    ROLE -- Barangay Staff    --> DASH_STA[Staff Dashboard\n📋 Records · Documents · Blotter]
+    ROLE -- Resident          --> DASH_RES[Resident Portal\n📄 Requests · Announcements]
+
+    DASH_OFF --> MODULE_SEL{Select Module}
+    DASH_STA --> MODULE_SEL
+    DASH_RES --> MODULE_SEL2{Select Module}
+
+    %% ── Staff / Official Module Selection ──
+    MODULE_SEL -- Blotter      --> BLOT_CHK{New or\nExisting?}
+    MODULE_SEL -- Profiling    --> PROF_CHK{New or\nExisting?}
+    MODULE_SEL -- Documents    --> DOC_CHK{New or\nExisting?}
+    MODULE_SEL -- Announcements--> ANN_CHK{New or\nExisting?}
+    MODULE_SEL -- Analytics    --> ANLYT_Q[Set Filters\nDate / Module / Category]
+
+    %% Blotter branch
+    BLOT_CHK -- New    --> BLOT_IN[/Fill Incident Details\nDate · Parties · Nature/]
+    BLOT_CHK -- Existing --> BLOT_SRH[Search & Load Record]
+    BLOT_SRH --> BLOT_EDT[Edit / Update Record]
+    BLOT_IN  --> BLOT_VAL{Validate\nInput}
+    BLOT_EDT --> BLOT_VAL
+    BLOT_VAL -- ❌ Errors --> BLOT_IN
+    BLOT_VAL -- ✅ OK     --> BLOT_STAT{Needs\nApproval?}
+    BLOT_STAT -- Yes --> BLOT_PEND[Set Status = Pending\nNotify Official]
+    BLOT_STAT -- No  --> BLOT_SAVE[(Save Blotter Record\nto Database)]
+    BLOT_PEND --> BLOT_APPV{Official\nDecision}
+    BLOT_APPV -- Approved --> BLOT_SAVE
+    BLOT_APPV -- Rejected --> BLOT_REJ[Return to Staff\nwith Remarks]
+    BLOT_REJ  --> BLOT_EDT
+    BLOT_SAVE --> BLOT_OUT[/Display Blotter Details\nPrint / Download/]
+
+    %% Profiling branch
+    PROF_CHK -- New    --> PROF_IN[/Enter Resident &\nHousehold Information/]
+    PROF_CHK -- Existing --> PROF_SRH[Search Resident]
+    PROF_SRH --> PROF_EDT[Edit Profile]
+    PROF_IN  --> PROF_VAL{Validate\nData}
+    PROF_EDT --> PROF_VAL
+    PROF_VAL -- ❌ Errors --> PROF_IN
+    PROF_VAL -- ✅ OK     --> PROF_SAVE[(Save Profile\nto Database)]
+    PROF_SAVE --> PROF_OUT[/Display Resident Profile\nView / Print/]
+
+    %% Document Processing branch
+    DOC_CHK -- New Request --> DOC_IN[/Select Document Type\nClearance · Certificate · Indigency…/]
+    DOC_CHK -- Existing    --> DOC_SRH[Search Request by\nResident / Tracking No.]
+    DOC_SRH --> DOC_STATUS[View / Update Status]
+    DOC_IN  --> DOC_LOOKUP[Lookup Resident\nin Profiling DB]
+    DOC_LOOKUP --> DOC_FOUND{Resident\nFound?}
+    DOC_FOUND -- No  --> DOC_ERR[Prompt to Add\nResident First]
+    DOC_ERR  --> PROF_IN
+    DOC_FOUND -- Yes --> DOC_REV[Review Request\nDetails]
+    DOC_REV  --> DOC_APPV{Official\nApproval}
+    DOC_APPV -- Approved --> DOC_GEN[Generate Document\nWith QR / Seal]
+    DOC_APPV -- Rejected --> DOC_REJ2[Notify Requestor\nwith Reason]
+    DOC_GEN  --> DOC_SAVE[(Save Document Record\nto Database)]
+    DOC_SAVE --> DOC_OUT[/Issue Document\nPrint / PDF Download/]
+    DOC_STATUS --> DOC_SAVE
+
+    %% Announcements branch
+    ANN_CHK -- New    --> ANN_IN[/Compose Announcement\nTitle · Body · Date · Audience/]
+    ANN_CHK -- Existing --> ANN_EDT[Edit / Archive Post]
+    ANN_IN  --> ANN_VAL{Validate\nContent}
+    ANN_EDT --> ANN_VAL
+    ANN_VAL -- ❌ Errors --> ANN_IN
+    ANN_VAL -- ✅ OK     --> ANN_SAVE[(Publish to\nDatabase)]
+    ANN_SAVE --> ANN_OUT[/Display on\nCommunity Board/]
+
+    %% Analytics branch
+    ANLYT_Q --> ANLYT_FETCH[(Query All Module Data\nfrom Database)]
+    ANLYT_FETCH --> ANLYT_PROC[Aggregate &\nProcess Statistics]
+    ANLYT_PROC --> ANLYT_OUT[/Display Charts · Tables\nExport PDF / CSV Report/]
+
+    %% ── Resident Module Selection ──
+    MODULE_SEL2 -- Request Document --> DOC_IN
+    MODULE_SEL2 -- View Announcements --> ANN_VIEW[View Published\nAnnouncements]
+    ANN_VIEW --> ANN_OUT
+
+    %% ── Shared End ──
+    BLOT_OUT   --> DONE
+    PROF_OUT   --> DONE
+    DOC_OUT    --> DONE
+    DOC_REJ2   --> DONE
+    ANN_OUT    --> DONE
+    ANLYT_OUT  --> DONE([🏁 Return to Dashboard\nor Logout])
+
+    %% ── Styles ──
+    classDef blotter   fill:#e74c3c,color:#fff,stroke:#c0392b,stroke-width:1.5px
+    classDef profiling fill:#3498db,color:#fff,stroke:#2980b9,stroke-width:1.5px
+    classDef docproc   fill:#27ae60,color:#fff,stroke:#229954,stroke-width:1.5px
+    classDef announce  fill:#f39c12,color:#fff,stroke:#d68910,stroke-width:1.5px
+    classDef analytics fill:#9b59b6,color:#fff,stroke:#7d3c98,stroke-width:1.5px
+    classDef dbnode    fill:#2c3e50,color:#fff,stroke:#1a252f,stroke-width:1.5px
+    classDef official  fill:#1abc9c,color:#fff,stroke:#17a589,stroke-width:1.5px
+    classDef staff     fill:#e67e22,color:#fff,stroke:#ca6f1e,stroke-width:1.5px
+    classDef resident  fill:#2980b9,color:#fff,stroke:#1f618d,stroke-width:1.5px
+    classDef terminal  fill:#1a2a4a,color:#fff,stroke:#1abc9c,stroke-width:2px,rx:20px
+
+    class BLOT_CHK,BLOT_IN,BLOT_SRH,BLOT_EDT,BLOT_VAL,BLOT_STAT,BLOT_PEND,BLOT_APPV,BLOT_REJ,BLOT_OUT blotter
+    class PROF_CHK,PROF_IN,PROF_SRH,PROF_EDT,PROF_VAL,PROF_OUT profiling
+    class DOC_CHK,DOC_IN,DOC_SRH,DOC_STATUS,DOC_LOOKUP,DOC_FOUND,DOC_ERR,DOC_REV,DOC_APPV,DOC_GEN,DOC_REJ2,DOC_OUT docproc
+    class ANN_CHK,ANN_IN,ANN_EDT,ANN_VAL,ANN_VIEW,ANN_OUT announce
+    class ANLYT_Q,ANLYT_PROC,ANLYT_OUT analytics
+    class BLOT_SAVE,PROF_SAVE,DOC_SAVE,ANN_SAVE,ANLYT_FETCH dbnode
+    class DASH_OFF official
+    class DASH_STA staff
+    class DASH_RES resident
+    class START,DONE terminal
+      </div>
+    </div>
+    <div class="note-box">
+      <strong>Flowchart notes:</strong> Color coding matches the module legend above. Database cylinders (dark background) represent read/write operations against the centralized database. Diamond shapes are decision points. The flowchart covers all three user roles: <strong style="color:var(--official)">Barangay Official</strong> (approvals), <strong style="color:var(--staff)">Barangay Staff</strong> (encoding/processing), and <strong style="color:var(--resident)">Residents</strong> (self-service requests and viewing announcements).
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       ARCHITECTURE OVERVIEW
+  ═══════════════════════════════════════════════════ -->
+  <section id="arch">
+    <div class="section-header">
+      <div class="section-badge" style="background:#8e44ad">AO</div>
+      <div>
+        <h2>Architecture Overview</h2>
+        <p>Client-Server topology showing how the three user types connect to the five modules via the application layer</p>
+      </div>
+    </div>
+    <div class="diagram-wrap">
+      <div class="mermaid">
+%%{init:{
+  "theme":"base",
+  "themeVariables":{
+    "primaryColor":"#1a2a4a",
+    "primaryTextColor":"#ffffff",
+    "primaryBorderColor":"#1abc9c",
+    "lineColor":"#555555",
+    "fontFamily":"Segoe UI, Arial, sans-serif",
+    "fontSize":"13px"
+  }
+}}%%
+graph LR
+    subgraph CLIENT["🖥️  Client Layer"]
+        direction TB
+        OFF["👤 Barangay Official\n(Admin Browser/App)"]
+        STA["👤 Barangay Staff\n(Operator Browser/App)"]
+        RES["👤 Resident\n(Resident Portal)"]
+    end
+
+    subgraph SERVER["⚙️  Application Server (Laravel + Vite)"]
+        direction TB
+        AUTH_SVC["🔐 Auth &amp; Role Guard"]
+        P1["P1 · Blotter Module"]
+        P2["P2 · Profiling Module"]
+        P3["P3 · Document Module"]
+        P4["P4 · Announcements Module"]
+        P5["P5 · Analytics Dashboard"]
+    end
+
+    subgraph DB_LAYER["🗄️  Data Layer"]
+        DB[("Centralized Database\nMySQL / PostgreSQL")]
+    end
+
+    OFF -->|HTTPS| AUTH_SVC
+    STA -->|HTTPS| AUTH_SVC
+    RES -->|HTTPS| AUTH_SVC
+
+    AUTH_SVC --> P1
+    AUTH_SVC --> P2
+    AUTH_SVC --> P3
+    AUTH_SVC --> P4
+    AUTH_SVC --> P5
+
+    P1 <-->|ORM| DB
+    P2 <-->|ORM| DB
+    P3 <-->|ORM| DB
+    P4 <-->|ORM| DB
+    P5 -->|Read-only queries| DB
+
+    classDef client   fill:#2c3e50,color:#fff,stroke:#1abc9c,stroke-width:1.5px
+    classDef server   fill:#1a2a4a,color:#fff,stroke:#3498db,stroke-width:1.5px
+    classDef module1  fill:#e74c3c,color:#fff,stroke:#c0392b
+    classDef module2  fill:#3498db,color:#fff,stroke:#2980b9
+    classDef module3  fill:#27ae60,color:#fff,stroke:#229954
+    classDef module4  fill:#f39c12,color:#fff,stroke:#d68910
+    classDef module5  fill:#9b59b6,color:#fff,stroke:#7d3c98
+    classDef auth     fill:#1abc9c,color:#fff,stroke:#17a589
+    classDef db       fill:#2c3e50,color:#fff,stroke:#1abc9c,stroke-width:2px
+
+    class OFF,STA,RES client
+    class AUTH_SVC auth
+    class P1 module1
+    class P2 module2
+    class P3 module3
+    class P4 module4
+    class P5 module5
+    class DB db
+      </div>
+    </div>
+    <div class="note-box">
+      <strong>Architecture notes:</strong> All three user types communicate with the application server over HTTPS. Laravel's middleware layer handles authentication and role-based access control before routing requests to the appropriate module. All modules share a single centralized database via an ORM (Eloquent). The Analytics Dashboard is read-only and queries data across all modules.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Integrated Barangay Management System &nbsp;·&nbsp; Data Flow Diagrams &amp; System Flowchart &nbsp;·&nbsp; Client-Server Architecture &nbsp;·&nbsp; Agile Development
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: 'loose',
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+  });
+</script>
+</body>
+</html>

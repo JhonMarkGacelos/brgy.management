@@ -1,0 +1,152 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\DocumentRequest;
+use App\Models\Resident;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class DocumentController extends Controller
+{
+    public function index(\Illuminate\Http\Request $request)
+    {
+        $query = DocumentRequest::with(['resident', 'requestedBy']);
+
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('tracking_number', 'like', "%{$search}%")
+                  ->orWhere('or_number', 'like', "%{$search}%")
+                  ->orWhere('document_type', 'like', "%{$search}%")
+                  ->orWhereHas('resident', fn($r) => $r->where('first_name', 'like', "%{$search}%")
+                                                        ->orWhere('last_name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($type = $request->type) {
+            $query->where('document_type', $type);
+        }
+
+        if ($status = $request->status) {
+            $query->where('status', $status);
+        }
+
+        $documents = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
+
+        $stats = [
+            'pending'  => DocumentRequest::whereIn('status', ['Pending', 'Pending Official'])->count(),
+            'issued'   => DocumentRequest::where('status', 'Issued')->count(),
+            'rejected' => DocumentRequest::where('status', 'Rejected')->count(),
+        ];
+
+        $byType = DocumentRequest::selectRaw('document_type, COUNT(*) as count')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->groupBy('document_type')
+            ->pluck('count', 'document_type')
+            ->toArray();
+
+        return view('documents.index', compact('documents', 'stats', 'byType'));
+    }
+
+    public function create()
+    {
+        $residents = Resident::where('status', 'Active')->orderBy('last_name')->get();
+        $nextTracking = DocumentRequest::generateTrackingNumber();
+        return view('documents.create', compact('residents', 'nextTracking'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'document_type' => 'required|string',
+            'purpose'       => 'required|string|max:255',
+            'resident_id'   => 'nullable|exists:residents,id',
+        ]);
+
+        $document = DocumentRequest::create([
+            'tracking_number'  => DocumentRequest::generateTrackingNumber(),
+            'document_type'    => $request->document_type,
+            'purpose'          => $request->purpose,
+            'fee'              => $request->fee ?? 0,
+            'or_number'        => $request->or_number,
+            'status'           => 'Pending',
+            'resident_id'      => $request->resident_id,
+            'requested_by'     => Auth::id(),
+            'business_name'    => $request->business_name,
+            'business_type'    => $request->business_type,
+            'business_address' => $request->business_address,
+        ]);
+
+        $printRoute = Auth::user()->role === 'staff' ? 'staff.documents.print' : 'documents.print';
+        return redirect()->route($printRoute, $document->id);
+    }
+
+    public function show(string $id)
+    {
+        $document = DocumentRequest::with(['resident', 'requestedBy', 'processedBy'])->findOrFail($id);
+        return view('documents.show', compact('document'));
+    }
+
+    public function edit(string $id)
+    {
+        $document  = DocumentRequest::findOrFail($id);
+        $residents = Resident::where('status', 'Active')->orderBy('last_name')->get();
+        return view('documents.create', compact('document', 'residents'));
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $document = DocumentRequest::findOrFail($id);
+
+        // Auto-generate OR number when approving or issuing, if not already set
+        $orNumber = $document->or_number;
+        if (in_array($request->status, ['Approved', 'Issued']) && empty($orNumber)) {
+            $orNumber = DocumentRequest::generateOrNumber();
+        }
+
+        $document->update([
+            'status'       => $request->status,
+            'remarks'      => $request->remarks,
+            'or_number'    => $orNumber,
+            'processed_by' => Auth::id(),
+            'issued_at'    => $request->status === 'Issued' ? now() : $document->issued_at,
+        ]);
+
+        $route = Auth::user()->role === 'staff' ? 'staff.documents.index' : 'documents.index';
+        return redirect()->route($route)->with('success', 'Document updated. OR No: ' . $orNumber);
+    }
+
+    public function destroy(string $id)
+    {
+        DocumentRequest::findOrFail($id)->delete();
+        return redirect()->route('documents.index')->with('success', 'Document request deleted.');
+    }
+
+    public function print(string $id)
+    {
+        $document = DocumentRequest::with(['resident.household'])->findOrFail($id);
+
+        // Auto-issue: generate OR and mark as Issued on first print
+        if (empty($document->or_number)) {
+            $document->or_number = DocumentRequest::generateOrNumber();
+        }
+        if ($document->status !== 'Issued') {
+            $document->status      = 'Issued';
+            $document->issued_at   = now();
+            $document->processed_by = Auth::id();
+        }
+        $document->save();
+
+        $viewMap = [
+            'Barangay Clearance'       => 'documents.print.clearance',
+            'Certificate of Residency' => 'documents.print.residency',
+            'Certificate of Indigency' => 'documents.print.indigency',
+            'Business Clearance'       => 'documents.print.business',
+        ];
+
+        $view = $viewMap[$document->document_type] ?? 'documents.print.clearance';
+
+        return view($view, compact('document'));
+    }
+}
