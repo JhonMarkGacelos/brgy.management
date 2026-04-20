@@ -158,47 +158,6 @@
             <p class="mt-2 text-center text-xs text-gray-400">
                 Authorized personnel only &mdash; Brgy. Caranas, Motiong, Samar
             </p>
-
-            {{-- Credentials hint --}}
-            <div class="mt-6 rounded-xl border border-dashed border-gray-200 bg-white p-4 space-y-4">
-                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Default credentials</p>
-
-                {{-- Admin --}}
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1.5 flex items-center gap-1">
-                        <i class="fa-solid fa-shield-halved text-[9px]"></i> Admin Account
-                    </p>
-                    <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-400">Email</span>
-                            <code class="text-xs font-mono font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5">admin@brgy-caranas.gov.ph</code>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-400">Password</span>
-                            <code class="text-xs font-mono font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5">Admin@1234</code>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t border-dashed border-gray-200"></div>
-
-                {{-- Staff/Clerk --}}
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wide text-amber-600 mb-1.5 flex items-center gap-1">
-                        <i class="fa-solid fa-id-badge text-[9px]"></i> Clerk / Staff Account
-                    </p>
-                    <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-400">Email</span>
-                            <code class="text-xs font-mono font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5">clerk@brgy-caranas.gov.ph</code>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-400">Password</span>
-                            <code class="text-xs font-mono font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5">Clerk@1234</code>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
