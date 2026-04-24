@@ -7,7 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
+        try {
+            DB::statement('ALTER TABLE users DROP CHECK users_role_check');
+        } catch (\Throwable) {
+            // Constraint doesn't exist or already removed — safe to ignore.
+        }
     }
 
     public function down(): void
