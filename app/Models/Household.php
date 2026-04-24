@@ -5,10 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\IncomeSource;
 
 class Household extends Model
 {
-    protected $fillable = ['house_no', 'street', 'purok'];
+    protected $fillable = ['house_no', 'street', 'purok', 'classification', 'welfare_score', 'per_capita_income'];
+
+    protected $casts = [
+        'welfare_score'    => 'decimal:2',
+        'per_capita_income'=> 'decimal:2',
+    ];
 
     public function residents(): HasMany
     {
@@ -23,6 +29,11 @@ class Household extends Model
     public function members(): HasMany
     {
         return $this->hasMany(Resident::class)->where('is_head', false);
+    }
+
+    public function incomeSources(): HasMany
+    {
+        return $this->hasMany(IncomeSource::class);
     }
 
     public function getFullAddressAttribute(): string

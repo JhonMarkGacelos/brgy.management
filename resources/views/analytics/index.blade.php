@@ -3,77 +3,82 @@
 
 @push('styles')
 <style>
+@media screen {
+    .print-header  { display: none; }
+    .print-only    { display: none !important; }
+}
+
 @media print {
+    /* ── Hide on-screen UI ── */
     .no-print { display: none !important; }
 
+    /* ── Reset layout so sidebar disappears ── */
     body, html {
         background: #fff !important;
         margin: 0 !important; padding: 0 !important;
         height: auto !important; overflow: visible !important;
         font-size: 8pt !important;
     }
-
     body > div, .flex.h-screen {
+        display: block !important;
         height: auto !important; overflow: visible !important;
     }
-
+    aside, nav, header { display: none !important; }
     .print-main {
-        padding-left: 0 !important; margin-left: 0 !important;
+        padding: 0 !important; margin: 0 !important;
         width: 100% !important; min-height: auto !important;
         overflow: visible !important;
     }
+    main { padding: 4px !important; overflow: visible !important; }
 
-    main { padding: 6px !important; overflow: visible !important; }
-
+    /* ── Print header ── */
     .print-header { display: block !important; }
-    .print-header h1 { font-size: 13pt !important; }
-    .print-header h2 { font-size: 10pt !important; }
+    .print-header h1 { font-size: 12pt !important; }
+    .print-header h2 { font-size: 9pt !important; }
     .print-header p  { font-size: 7pt !important; }
 
-    /* Compact section labels */
-    .text-xs  { font-size: 7pt !important; }
-    .text-sm  { font-size: 8pt !important; }
-    .text-2xl { font-size: 12pt !important; }
+    /* ── Typography ── */
+    .text-xs             { font-size: 7pt !important; }
+    .text-sm             { font-size: 8pt !important; }
+    .text-2xl            { font-size: 11pt !important; }
     .text-base, .text-lg { font-size: 9pt !important; }
 
-    /* Tighter padding on cards */
+    /* ── Cards ── */
     .rounded-2xl {
         break-inside: avoid;
         box-shadow: none !important;
         border: 1px solid #d1d5db !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 5px !important;
     }
-    .p-4, .p-5 { padding: 6px !important; }
-    .px-5 { padding-left: 6px !important; padding-right: 6px !important; }
-    .py-4 { padding-top: 4px !important; padding-bottom: 4px !important; }
-    .py-3, .py-3\.5 { padding-top: 3px !important; padding-bottom: 3px !important; }
-    .mb-6  { margin-bottom: 6px !important; }
-    .mb-3  { margin-bottom: 4px !important; }
-    .gap-4, .gap-5 { gap: 5px !important; }
-    .space-y-3 > * + * { margin-top: 4px !important; }
+    .p-4, .p-5     { padding: 5px !important; }
+    .px-5          { padding-left: 5px !important; padding-right: 5px !important; }
+    .py-4          { padding-top: 3px !important; padding-bottom: 3px !important; }
+    .py-3, .py-3\.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
+    .mb-6, .mb-5   { margin-bottom: 5px !important; }
+    .mb-4, .mb-3   { margin-bottom: 3px !important; }
+    .gap-4, .gap-5 { gap: 4px !important; }
+    .space-y-3 > * + * { margin-top: 3px !important; }
+    .h-9, .h-10    { height: 16px !important; width: 16px !important; font-size: 7pt !important; }
 
-    /* 2-column grids for stat cards */
+    /* ── Grid columns ── */
     .grid { display: grid !important; }
-    .grid-cols-2  { grid-template-columns: repeat(2, 1fr) !important; }
-    .grid-cols-3, .sm\:grid-cols-3, .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
-    .grid-cols-4, .sm\:grid-cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
-    .lg\:grid-cols-6, .sm\:grid-cols-6 { grid-template-columns: repeat(3, 1fr) !important; }
-    .lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+    .grid-cols-2                                              { grid-template-columns: repeat(2, 1fr) !important; }
+    .grid-cols-3, .sm\:grid-cols-3, .lg\:grid-cols-3         { grid-template-columns: repeat(3, 1fr) !important; }
+    .grid-cols-4, .sm\:grid-cols-4                           { grid-template-columns: repeat(4, 1fr) !important; }
+    .lg\:grid-cols-6, .sm\:grid-cols-6                       { grid-template-columns: repeat(6, 1fr) !important; }
+    .lg\:grid-cols-2, .grid-cols-1                           { grid-template-columns: repeat(2, 1fr) !important; }
 
-    /* Hide charts, show print fallback tables */
-    #blotterChart, #docPieChart, #purokChart, #monthlyDocsChart { display: none !important; }
-    .print-only { display: table !important; }
+    /* ── Hide all ApexCharts, show print fallbacks ── */
+    #blotterChart, #docPieChart, #purokChart,
+    #monthlyDocsChart, #welfareChart,
+    #civilStatusChart, #employmentChart { display: none !important; }
+    .print-only  { display: table !important; }
+    .print-block { display: block !important; }
 
-    /* Compact icon sizes */
-    .h-9, .h-10 { height: 20px !important; width: 20px !important; font-size: 8pt !important; }
-    .mb-3 { margin-bottom: 3px !important; }
+    /* ── Page 2 break ── */
+    .print-page-2 { break-before: page !important; page-break-before: always !important; }
 
-    svg { max-width: 100% !important; }
-
-    @page { size: A4; margin: 1cm; }
-}
-@media screen {
-    .print-header { display: none; }
+    @page { size: A4 portrait; margin: 1.2cm; }
 }
 </style>
 @endpush
@@ -260,6 +265,62 @@
     </div>
 </div>
 
+{{-- ── WELFARE CLASSIFICATION  (PAGE 2) ── --}}
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 print-page-2">Welfare Classification</p>
+
+{{-- Summary cards --}}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+    @php
+        $welfareSummary = [
+            ['label'=>'Families Assessed',   'value'=> number_format($householdsClassified), 'icon'=>'fa-clipboard-check', 'bg'=>'bg-gray-50',   'color'=>'text-gray-600'],
+            ['label'=>'Avg. Per Capita / mo', 'value'=>'₱'.number_format($avgPerCapita, 0),  'icon'=>'fa-peso-sign',       'bg'=>'bg-green-50',  'color'=>'text-green-700'],
+            ['label'=>'Below Poverty Line',   'value'=> number_format($belowPovertyLine),     'icon'=>'fa-circle-exclamation','bg'=>'bg-red-50',  'color'=>'text-red-600'],
+            ['label'=>'Non-Poor / Vulnerable','value'=> number_format(($classificationCounts['Non-Poor'] ?? 0) + ($classificationCounts['Vulnerable'] ?? 0)), 'icon'=>'fa-circle-check', 'bg'=>'bg-teal-50', 'color'=>'text-teal-600'],
+        ];
+    @endphp
+    @foreach($welfareSummary as $s)
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl {{ $s['bg'] }} {{ $s['color'] }} text-sm mb-3">
+            <i class="fa-solid {{ $s['icon'] }}"></i>
+        </div>
+        <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $s['value'] }}</p>
+        <p class="text-xs text-gray-400 mt-0.5 leading-tight">{{ $s['label'] }}</p>
+    </div>
+    @endforeach
+</div>
+
+{{-- Tier distribution --}}
+<div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
+            <i class="fa-solid fa-scale-balanced"></i>
+        </div>
+        <p class="text-sm font-semibold text-gray-800">Household Classification Distribution</p>
+        @if($householdsClassified < $totalHouseholds)
+        <span class="ml-auto text-[11px] text-gray-400">{{ $totalHouseholds - $householdsClassified }} household(s) not yet assessed</span>
+        @endif
+    </div>
+    <div id="welfareChart" class="px-5 py-4"></div>
+    {{-- Print fallback --}}
+    @php $welfareTotal = array_sum($classificationCounts) ?: 1; @endphp
+    <table class="print-only w-full text-xs px-5 pb-3" style="display:none;">
+        <thead><tr class="border-b border-gray-200">
+            <th class="text-left py-1 text-gray-500">Classification</th>
+            <th class="text-right py-1 text-gray-500">Households</th>
+            <th class="text-right py-1 text-gray-500">%</th>
+        </tr></thead>
+        <tbody>
+            @foreach($classificationCounts as $tier => $cnt)
+            <tr class="border-b border-gray-100">
+                <td class="py-1 text-gray-700">{{ $tier }}</td>
+                <td class="py-1 text-right font-semibold text-gray-900">{{ $cnt }}</td>
+                <td class="py-1 text-right text-gray-500">{{ round($cnt / $welfareTotal * 100, 1) }}%</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+
 {{-- ── AGE GROUP TABLE ── --}}
 <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
     <div class="px-5 py-4 border-b border-gray-100">
@@ -315,62 +376,78 @@
 {{-- ── CIVIL STATUS & EMPLOYMENT ── --}}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
 
-    {{-- Civil Status --}}
+    {{-- Civil Status — Donut (proportional breakdown) --}}
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100">
             <p class="text-sm font-semibold text-gray-900">Civil Status Breakdown</p>
+            <p class="text-xs text-gray-400 mt-0.5">Distribution across all residents</p>
         </div>
-        <div class="p-5 space-y-3">
-            @php $totalCivil = array_sum($civilStatus) ?: 1; @endphp
-            @forelse($civilStatus as $status => $count)
-            @php $pct = round($count / $totalCivil * 100, 1); @endphp
-            <div>
-                <div class="flex justify-between mb-1">
-                    <span class="text-xs text-gray-600 font-medium">{{ $status }}</span>
-                    <span class="text-xs font-bold text-gray-800">{{ number_format($count) }} <span class="text-gray-400 font-normal">({{ $pct }}%)</span></span>
-                </div>
-                <div class="h-2 w-full rounded-full bg-gray-100">
-                    <div class="h-2 rounded-full bg-indigo-500" style="width: {{ $pct }}%"></div>
-                </div>
-            </div>
-            @empty
-            <p class="text-xs text-gray-400 text-center py-4">No data available.</p>
-            @endforelse
-        </div>
+        <div id="civilStatusChart" class="px-5 py-4"></div>
+        {{-- Print fallback --}}
+        @php $totalCivil = array_sum($civilStatus) ?: 1; @endphp
+        <table class="print-only w-full text-xs px-5 pb-3" style="display:none;">
+            <thead><tr class="border-b border-gray-200">
+                <th class="text-left py-1 text-gray-500">Civil Status</th>
+                <th class="text-right py-1 text-gray-500">Count</th>
+                <th class="text-right py-1 text-gray-500">%</th>
+            </tr></thead>
+            <tbody>
+                @forelse($civilStatus as $status => $count)
+                <tr class="border-b border-gray-100">
+                    <td class="py-1 text-gray-700">{{ $status }}</td>
+                    <td class="py-1 text-right font-semibold text-gray-900">{{ number_format($count) }}</td>
+                    <td class="py-1 text-right text-gray-500">{{ round($count / $totalCivil * 100, 1) }}%</td>
+                </tr>
+                @empty
+                <tr><td colspan="3" class="py-2 text-center text-gray-400">No data</td></tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
-    {{-- Employment Status --}}
+    {{-- Employment Status — Horizontal Bar (comparison across categories) --}}
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100">
             <p class="text-sm font-semibold text-gray-900">Employment Status Breakdown</p>
+            <p class="text-xs text-gray-400 mt-0.5">Number of residents per employment category</p>
         </div>
-        <div class="p-5 space-y-3">
-            @php $totalEmp = array_sum($employmentStatus) ?: 1; @endphp
-            @forelse($employmentStatus as $status => $count)
-            @php $pct = round($count / $totalEmp * 100, 1); @endphp
-            <div>
-                <div class="flex justify-between mb-1">
-                    <span class="text-xs text-gray-600 font-medium">{{ $status }}</span>
-                    <span class="text-xs font-bold text-gray-800">{{ number_format($count) }} <span class="text-gray-400 font-normal">({{ $pct }}%)</span></span>
-                </div>
-                <div class="h-2 w-full rounded-full bg-gray-100">
-                    <div class="h-2 rounded-full bg-emerald-500" style="width: {{ $pct }}%"></div>
-                </div>
-            </div>
-            @empty
-            <p class="text-xs text-gray-400 text-center py-4">No data available.</p>
-            @endforelse
-        </div>
+        <div id="employmentChart" class="px-5 py-4"></div>
+        {{-- Print fallback --}}
+        @php $totalEmp = array_sum($employmentStatus) ?: 1; @endphp
+        <table class="print-only w-full text-xs px-5 pb-3" style="display:none;">
+            <thead><tr class="border-b border-gray-200">
+                <th class="text-left py-1 text-gray-500">Employment Status</th>
+                <th class="text-right py-1 text-gray-500">Count</th>
+                <th class="text-right py-1 text-gray-500">%</th>
+            </tr></thead>
+            <tbody>
+                @forelse($employmentStatus as $status => $count)
+                <tr class="border-b border-gray-100">
+                    <td class="py-1 text-gray-700">{{ $status }}</td>
+                    <td class="py-1 text-right font-semibold text-gray-900">{{ number_format($count) }}</td>
+                    <td class="py-1 text-right text-gray-500">{{ round($count / $totalEmp * 100, 1) }}%</td>
+                </tr>
+                @empty
+                <tr><td colspan="3" class="py-2 text-center text-gray-400">No data</td></tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 </div>
 
 @php
-$monthlyCasesJson    = json_encode($monthlyCases);
-$monthlyDocsJson     = json_encode($monthlyDocuments);
-$docTypesValuesJson  = json_encode(array_values($documentTypes));
-$docTypesLabelsJson  = json_encode(array_keys($documentTypes));
-$purokValuesJson     = json_encode(array_values($populationByPurok));
-$purokLabelsJson     = json_encode(array_keys($populationByPurok));
+$monthlyCasesJson        = json_encode($monthlyCases);
+$monthlyDocsJson         = json_encode($monthlyDocuments);
+$docTypesValuesJson      = json_encode(array_values($documentTypes));
+$docTypesLabelsJson      = json_encode(array_keys($documentTypes));
+$purokValuesJson         = json_encode(array_values($populationByPurok));
+$purokLabelsJson         = json_encode(array_keys($populationByPurok));
+$welfareLabelsJson       = json_encode(array_keys($classificationCounts));
+$welfareValuesJson       = json_encode(array_values($classificationCounts));
+$civilLabelsJson         = json_encode(array_keys($civilStatus));
+$civilValuesJson         = json_encode(array_values($civilStatus));
+$empLabelsJson           = json_encode(array_keys($employmentStatus));
+$empValuesJson           = json_encode(array_values($employmentStatus));
 @endphp
 
 <script>
@@ -411,6 +488,51 @@ new ApexCharts(document.getElementById('purokChart'), {
     dataLabels: { enabled: false },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
 }).render();
+
+// Welfare Classification Donut
+if (document.getElementById('welfareChart')) {
+new ApexCharts(document.getElementById('welfareChart'), {
+    chart: { type: 'donut', height: 220 },
+    series: {!! $welfareValuesJson !!},
+    labels: {!! $welfareLabelsJson !!},
+    colors: ['#ef4444','#f97316','#eab308','#60a5fa','#22c55e'],
+    legend: { position: 'bottom', fontSize: '10px', labels: { colors: '#6b7280' } },
+    dataLabels: { style: { fontSize: '10px' } },
+    plotOptions: { pie: { donut: { size: '60%' } } },
+    stroke: { width: 0 },
+}).render();
+}
+
+// Civil Status — Donut
+if (document.getElementById('civilStatusChart')) {
+new ApexCharts(document.getElementById('civilStatusChart'), {
+    chart: { type: 'donut', height: 260 },
+    series: {!! $civilValuesJson !!},
+    labels: {!! $civilLabelsJson !!},
+    colors: ['#6366f1','#ec4899','#f59e0b','#10b981'],
+    legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#6b7280' } },
+    dataLabels: { style: { fontSize: '11px' }, dropShadow: { enabled: false } },
+    plotOptions: { pie: { donut: { size: '55%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '11px', color: '#9ca3af', formatter: (w) => w.globals.seriesTotals.reduce((a,b) => a+b, 0) } } } } },
+    stroke: { width: 0 },
+    tooltip: { y: { formatter: (v) => v + ' residents' } },
+}).render();
+}
+
+// Employment Status — Horizontal Bar
+if (document.getElementById('employmentChart')) {
+new ApexCharts(document.getElementById('employmentChart'), {
+    chart: { type: 'bar', height: 260, toolbar: { show: false } },
+    series: [{ name: 'Residents', data: {!! $empValuesJson !!} }],
+    xaxis: { categories: {!! $empLabelsJson !!}, labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: '#9ca3af' } } },
+    colors: ['#10b981'],
+    plotOptions: { bar: { borderRadius: 5, horizontal: true, barHeight: '50%',
+        dataLabels: { position: 'center' } } },
+    dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#fff'] }, formatter: (v) => v > 0 ? v : '' },
+    grid: { borderColor: '#f3f4f6', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    tooltip: { y: { formatter: (v) => v + ' residents' } },
+}).render();
+}
 
 // Monthly Documents Chart
 new ApexCharts(document.getElementById('monthlyDocsChart'), {

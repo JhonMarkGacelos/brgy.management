@@ -160,9 +160,15 @@
             <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">OR Number</label>
-                    <input type="text" name="or_number" value="{{ old('or_number', isset($document) ? $document->or_number : 'OR-2024-088') }}"
-                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
-                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                    <div class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm flex items-center gap-2">
+                        @if(isset($document) && $document->or_number)
+                            <i class="fa-solid fa-receipt text-green-600 text-xs"></i>
+                            <span class="font-semibold text-gray-800">{{ $document->or_number }}</span>
+                        @else
+                            <i class="fa-solid fa-clock-rotate-left text-gray-400 text-xs"></i>
+                            <span class="text-gray-400 italic">Auto-generated upon issuance</span>
+                        @endif
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Fee Amount (₱)</label>

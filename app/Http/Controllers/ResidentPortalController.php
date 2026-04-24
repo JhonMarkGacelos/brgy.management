@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use App\Models\DocumentRequest;
 use App\Models\Resident;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -80,9 +81,9 @@ class ResidentPortalController extends Controller
             'purpose'       => 'required|string|max:255',
             'last_name'     => 'required|string|max:100',
             'first_name'    => 'required|string|max:100',
+            'id_photo'      => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
-        // Look up the resident in profiling database
         $resident = Resident::where('last_name', 'like', $request->last_name)
             ->where('first_name', 'like', $request->first_name)
             ->where('status', 'Active')
@@ -92,14 +93,19 @@ class ResidentPortalController extends Controller
             return back()->withInput()->with('resident_not_found', true);
         }
 
+        $upload = (new CloudinaryService)->uploadIdPhoto($request->file('id_photo'));
+
         $doc = DocumentRequest::create([
-            'tracking_number' => DocumentRequest::generateTrackingNumber(),
-            'document_type'   => $request->document_type,
-            'purpose'         => $request->purpose,
-            'fee'             => 0,
-            'status'          => 'Pending',
-            'resident_id'     => $resident->id,
-            'requested_by'    => Auth::id(),
+            'tracking_number'   => DocumentRequest::generateTrackingNumber(),
+            'document_type'     => $request->document_type,
+            'purpose'           => $request->purpose,
+            'fee'               => 0,
+            'status'            => 'Pending',
+            'id_photo_url'      => $upload['url'],
+            'id_photo_public_id'=> $upload['public_id'],
+            'id_verified'       => 'pending',
+            'resident_id'       => $resident->id,
+            'requested_by'      => Auth::id(),
         ]);
 
         return redirect()->route('resident.documents.index')

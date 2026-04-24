@@ -69,7 +69,6 @@ class DocumentController extends Controller
             'document_type'    => $request->document_type,
             'purpose'          => $request->purpose,
             'fee'              => $request->fee ?? 0,
-            'or_number'        => $request->or_number,
             'status'           => 'Pending',
             'resident_id'      => $request->resident_id,
             'requested_by'     => Auth::id(),
@@ -115,6 +114,19 @@ class DocumentController extends Controller
 
         $route = Auth::user()->role === 'staff' ? 'staff.documents.index' : 'documents.index';
         return redirect()->route($route)->with('success', 'Document updated. OR No: ' . $orNumber);
+    }
+
+    public function verifyId(Request $request, string $id)
+    {
+        $document = DocumentRequest::findOrFail($id);
+        $document->update([
+            'id_verified'  => $request->action === 'verify' ? 'verified' : 'rejected',
+            'processed_by' => Auth::id(),
+        ]);
+
+        $label = $request->action === 'verify' ? 'ID verified.' : 'ID rejected.';
+        $route = Auth::user()->role === 'staff' ? 'staff.documents.show' : 'documents.show';
+        return redirect()->route($route, $id)->with('success', $label);
     }
 
     public function destroy(string $id)

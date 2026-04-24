@@ -95,6 +95,22 @@ class AnalyticsController extends Controller
             ->pluck('count', 'households.purok')
             ->toArray();
 
+        // Welfare classification
+        $tierOrder = ['Extremely Poor', 'Poor', 'Near Poor', 'Vulnerable', 'Non-Poor'];
+        $rawCounts = Household::whereNotNull('classification')
+            ->selectRaw('classification, count(*) as total')
+            ->groupBy('classification')
+            ->pluck('total', 'classification')
+            ->toArray();
+        $classificationCounts = [];
+        foreach ($tierOrder as $tier) {
+            $classificationCounts[$tier] = $rawCounts[$tier] ?? 0;
+        }
+
+        $householdsClassified = array_sum($classificationCounts);
+        $avgPerCapita         = Household::whereNotNull('per_capita_income')->avg('per_capita_income') ?? 0;
+        $belowPovertyLine     = ($classificationCounts['Extremely Poor'] ?? 0) + ($classificationCounts['Poor'] ?? 0);
+
         return view('analytics.index', compact(
             'totalResidents', 'maleResidents', 'femaleResidents',
             'seniorCitizens', 'pwds', 'totalHouseholds',
@@ -102,7 +118,8 @@ class AnalyticsController extends Controller
             'totalCases', 'pendingCases', 'resolvedCases', 'ongoingCases',
             'totalDocuments', 'pendingDocuments', 'issuedDocuments', 'rejectedDocuments',
             'ageGroups', 'civilStatus', 'employmentStatus',
-            'monthlyCases', 'monthlyDocuments', 'documentTypes', 'populationByPurok'
+            'monthlyCases', 'monthlyDocuments', 'documentTypes', 'populationByPurok',
+            'classificationCounts', 'householdsClassified', 'avgPerCapita', 'belowPovertyLine'
         ));
     }
 }

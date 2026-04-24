@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResidentController;
 use App\Http\Controllers\BlotterController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentVerifyController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\SettingsController;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// ── PUBLIC DOCUMENT VERIFICATION (no login required) ──────────
+Route::get('/verify',  [DocumentVerifyController::class, 'index'])->name('document.verify');
+Route::post('/verify', [DocumentVerifyController::class, 'check'])->name('document.verify.check');
 
 // Post-login redirect: send each role to their own dashboard
 Route::get('/dashboard', function () {
@@ -39,7 +44,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::delete('/residents/{id}/member/{memberId}', [ResidentController::class, 'destroyMember'])->name('residents.member.destroy');
     Route::resource('blotter',      BlotterController::class);
     Route::resource('documents',    DocumentController::class);
-    Route::get('/documents/{id}/print', [DocumentController::class, 'print'])->name('documents.print');
+    Route::get('/documents/{id}/print',    [DocumentController::class, 'print'])->name('documents.print');
+    Route::post('/documents/{id}/verify-id', [DocumentController::class, 'verifyId'])->name('documents.verify-id');
     Route::resource('announcements', AnnouncementController::class);
 
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
@@ -81,9 +87,10 @@ Route::middleware(['auth', 'verified', 'role:staff'])->prefix('staff')->name('st
     Route::get('/documents',        [DocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
     Route::post('/documents',       [DocumentController::class, 'store'])->name('documents.store');
-    Route::get('/documents/{id}',         [DocumentController::class, 'show'])->name('documents.show');
-    Route::put('/documents/{id}',         [DocumentController::class, 'update'])->name('documents.update');
-    Route::get('/documents/{id}/print',   [DocumentController::class, 'print'])->name('documents.print');
+    Route::get('/documents/{id}',              [DocumentController::class, 'show'])->name('documents.show');
+    Route::put('/documents/{id}',              [DocumentController::class, 'update'])->name('documents.update');
+    Route::get('/documents/{id}/print',        [DocumentController::class, 'print'])->name('documents.print');
+    Route::post('/documents/{id}/verify-id',   [DocumentController::class, 'verifyId'])->name('documents.verify-id');
 
     // Announcements
     Route::get('/announcements',           [AnnouncementController::class, 'index'])->name('announcements.index');

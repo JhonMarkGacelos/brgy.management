@@ -47,7 +47,7 @@
         <p class="text-sm text-gray-500 mt-0.5">Fill out the form below. Your request will be processed by barangay staff.</p>
     </div>
 
-    <form action="{{ route('resident.documents.store') }}" method="POST" class="space-y-5">
+    <form action="{{ route('resident.documents.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
         @csrf
 
         {{-- Step 1: Document Type --}}
@@ -126,6 +126,52 @@
                 <textarea name="purpose" rows="3" placeholder="e.g. For employment purposes, For school enrollment, etc."
                           class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none @error('purpose') border-red-400 @enderror">{{ old('purpose') }}</textarea>
                 @error('purpose')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        {{-- Step 4: ID Photo Upload --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
+                <p class="text-sm font-semibold text-gray-800">
+                    <i class="fa-solid fa-id-card mr-2 text-gray-500"></i>Step 4: Upload Valid ID
+                </p>
+                <p class="text-xs text-gray-400 mt-0.5">Required for identity verification. Accepted: PhilSys, Driver's License, Passport, UMID, Voter's ID, etc.</p>
+            </div>
+            <div class="p-5" x-data="{ preview: null, fileName: null }">
+                <label class="block w-full cursor-pointer">
+                    <input type="file" name="id_photo" accept="image/*" class="sr-only"
+                           @change="
+                               const f = $event.target.files[0];
+                               if (f) {
+                                   fileName = f.name;
+                                   const r = new FileReader();
+                                   r.onload = e => preview = e.target.result;
+                                   r.readAsDataURL(f);
+                               }
+                           ">
+                    <div x-show="!preview"
+                         class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-10 hover:border-green-400 hover:bg-green-50 transition-all">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
+                            <i class="fa-solid fa-camera text-gray-400 text-lg"></i>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm font-semibold text-gray-700">Click to upload your ID photo</p>
+                            <p class="text-xs text-gray-400 mt-1">JPG, PNG or WEBP · Max 5 MB</p>
+                        </div>
+                    </div>
+                    <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                        <img :src="preview" class="w-full max-h-64 object-contain bg-gray-100">
+                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-4 py-2 flex items-center justify-between">
+                            <span class="text-xs text-white truncate" x-text="fileName"></span>
+                            <span class="text-xs text-green-300 font-semibold">
+                                <i class="fa-solid fa-check mr-1"></i>Ready to upload
+                            </span>
+                        </div>
+                    </div>
+                </label>
+                @error('id_photo')
+                <p class="text-xs text-red-600 mt-2"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $message }}</p>
+                @enderror
             </div>
         </div>
 

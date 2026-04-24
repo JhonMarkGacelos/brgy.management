@@ -169,6 +169,57 @@
             min-width: 180px;
         }
 
+        /* ── VERIFY BOX ── */
+        .verify-box {
+            margin-top: 40px;
+            border: 1px dashed #9ca3af;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            color: #6b7280;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .verify-box .vb-icon {
+            font-size: 18px;
+            color: #1a4731;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+        .verify-box .vb-title {
+            font-weight: bold;
+            font-size: 9.5pt;
+            color: #1a4731;
+            margin-bottom: 3px;
+        }
+        .verify-box .vb-url {
+            font-weight: bold;
+            color: #111;
+        }
+        .verify-box .vb-codes {
+            margin-top: 4px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .verify-box .vb-code-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .verify-box .vb-label {
+            font-size: 8pt;
+            color: #6b7280;
+        }
+        .verify-box .vb-value {
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #111;
+            font-family: 'Courier New', monospace;
+        }
+
         /* ── PRINT ── */
         @media print {
             body { background: #fff; padding: 0; }
@@ -217,6 +268,29 @@
     <hr class="header-divider">
 
     @yield('document-body')
+
+    {{-- Verification instructions printed on every document --}}
+    <div class="verify-box">
+        <div class="vb-icon">&#9646;</div>
+        <div>
+            <div class="vb-title">VERIFY THIS DOCUMENT</div>
+            <div>
+                To confirm the authenticity of this document, visit
+                <span class="vb-url">{{ url('/verify') }}</span>
+                and enter the OR Number or Tracking Number below.
+            </div>
+            <div class="vb-codes">
+                <div class="vb-code-item">
+                    <span class="vb-label">OR No.:</span>
+                    <span class="vb-value">{{ $document->or_number ?? '—' }}</span>
+                </div>
+                <div class="vb-code-item">
+                    <span class="vb-label">Tracking No.:</span>
+                    <span class="vb-value">{{ $document->tracking_number }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 

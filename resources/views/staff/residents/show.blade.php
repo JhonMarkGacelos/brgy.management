@@ -25,6 +25,10 @@
         'Voter'      => 'bg-brand-50 text-brand-700 ring-1 ring-brand-100',
     ];
     $avatarColors = ['bg-brand-100 text-brand-700','bg-blue-100 text-blue-700','bg-orange-100 text-orange-700','bg-purple-100 text-purple-700','bg-pink-100 text-pink-700','bg-teal-100 text-teal-700'];
+    $hasMemberIncome = !$isDemo && $household->residents->sum('monthly_income') > 0;
+    $classification  = $hasMemberIncome
+        ? \App\Services\ClassificationService::classify($household)
+        : null;
 @endphp
 
 <div class="flex items-center justify-between gap-3 mb-6">
@@ -81,6 +85,18 @@
                             <span><i class="fa-solid fa-ring mr-1 text-gray-400"></i>{{ $isDemo ? $head['civil'] : $head->civil_status }}</span>
                         </div>
                     </div>
+                    @if(!$isDemo && $head->monthly_income !== null)
+                    @php $povertyLine = \App\Models\Setting::get('poverty_line', 10957); @endphp
+                    <div class="text-right shrink-0">
+                        <p class="text-[11px] text-gray-400">Monthly Income</p>
+                        <p class="text-xs font-semibold {{ $head->monthly_income <= $povertyLine ? 'text-red-600' : 'text-gray-700' }}">
+                            ₱{{ number_format($head->monthly_income, 2) }}
+                        </p>
+                        @if($head->monthly_income <= $povertyLine)
+                        <p class="text-[10px] text-red-500 font-medium mt-0.5">Below poverty line</p>
+                        @endif
+                    </div>
+                    @endif
                 </div>
             </div>
             @endif
@@ -104,6 +120,7 @@
                             <th class="px-5 py-3">Name</th>
                             <th class="px-5 py-3">Relationship</th>
                             <th class="px-5 py-3">Age / Gender</th>
+                            <th class="px-5 py-3">Monthly Income</th>
                             <th class="px-5 py-3">Sectors</th>
                             <th class="px-5 py-3">Status</th>
                             <th class="px-5 py-3 text-right">Actions</th>
@@ -139,6 +156,19 @@
                                 </span>
                             </td>
                             <td class="px-5 py-3.5 text-xs text-gray-600">{{ $mAge }} yrs &middot; {{ $mGender }}</td>
+                            <td class="px-5 py-3.5 text-xs">
+                                @if(!$isDemo && $m->monthly_income !== null)
+                                    @php $pl = \App\Models\Setting::get('poverty_line', 10957); @endphp
+                                    <span class="font-semibold {{ $m->monthly_income <= $pl ? 'text-red-600' : 'text-gray-700' }}">
+                                        ₱{{ number_format($m->monthly_income, 2) }}
+                                    </span>
+                                    @if($m->monthly_income <= $pl)
+                                    <span class="block text-[10px] text-red-500 font-medium">Below poverty line</span>
+                                    @endif
+                                @else
+                                    <span class="text-gray-300">—</span>
+                                @endif
+                            </td>
                             <td class="px-5 py-3.5">
                                 <div class="flex flex-wrap gap-1">
                                     @forelse($mSectors as $sector)
@@ -196,6 +226,128 @@
                 </div>
             </div>
         </div>
+
+        {{-- Welfare Classification --}}
+        @if(!$isDemo)
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+                <p class="text-sm font-semibold text-gray-800">Welfare Classification</p>
+            </div>
+            <div class="p-5 space-y-4">
+                @if($classification)
+                <div class="rounded-xl border-2 p-4 text-center {{ $classification['bg'] }}">
+                    <p class="text-[10px] font-semibold uppercase tracking-widest {{ $classification['color'] }} opacity-60 mb-1">Family Status</p>
+                    <p class="text-xl font-bold {{ $classification['color'] }}">{{ $classification['classification'] }}</p>
+                    <p class="text-xs {{ $classification['color'] }} opacity-70 mt-0.5">Score: {{ $classification['final_score'] }} / 100</p>
+                </div>
+
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">Total Member Income</span>
+                        <span class="text-xs font-bold text-gray-800">₱{{ number_format($classification['total_income'], 2) }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">Members</span>
+                        <span class="text-xs font-semibold text-gray-700">{{ $classification['member_count'] }}</span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-2">
+                        <span class="text-xs font-semibold text-gray-600">Per Capita Income</span>
+                        <span class="text-sm font-bold text-gray-900">₱{{ number_format($classification['per_capita'], 2) }}</span>
+                    </div>
+                </div>
+
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">Base Score</span>
+                        <span class="text-xs font-semibold text-gray-700">{{ $classification['base_score'] }}</span>
+                    </div>
+                    @if($classification['total_modifier'] < 0)
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">Modifiers</span>
+                        <span class="text-xs font-semibold text-red-500">{{ $classification['total_modifier'] }}</span>
+                    </div>
+                    @endif
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-1.5">
+                        <span class="text-xs font-semibold text-gray-600">Final Score</span>
+                        <span class="text-sm font-bold {{ $classification['color'] }}">{{ $classification['final_score'] }}</span>
+                    </div>
+                </div>
+
+                {{-- Formula (collapsible) --}}
+                <div x-data="{ open: false }">
+                    <button @click="open = !open"
+                            class="flex w-full items-center justify-between rounded-xl border border-dashed border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-function text-gray-400"></i>
+                            How it's calculated
+                        </span>
+                        <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200"
+                           :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="mt-2 rounded-xl border border-gray-100 bg-gray-50 p-3.5 space-y-3.5 text-xs text-gray-600">
+                        <div>
+                            <p class="font-semibold text-gray-700 mb-1">Step 1 — Per Capita Income</p>
+                            <p class="font-mono text-[11px] text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
+                                Per Capita = Total Income ÷ Members<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ₱{{ number_format($classification['total_income'], 2) }} ÷ {{ $classification['member_count'] }}<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="font-bold text-gray-800">₱{{ number_format($classification['per_capita'], 2) }}</span>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-700 mb-1">Step 2 — Base Score (0–100)</p>
+                            @php
+                                $t = $classification['thresholds'];
+                                $bands = [
+                                    ['range' => '≤ ₱'.number_format($t['extremely_poor']),                                                'score' => '0–20'],
+                                    ['range' => '₱'.number_format($t['extremely_poor']).' – ₱'.number_format($t['poor']),                 'score' => '20–40'],
+                                    ['range' => '₱'.number_format($t['poor']).' – ₱'.number_format($t['near_poor']),                      'score' => '40–60'],
+                                    ['range' => '₱'.number_format($t['near_poor']).' – ₱'.number_format($t['vulnerable']),                'score' => '60–80'],
+                                    ['range' => '> ₱'.number_format($t['vulnerable']),                                                    'score' => '80–100'],
+                                ];
+                                $activeBand = match(true) {
+                                    $classification['per_capita'] <= $t['extremely_poor'] => 0,
+                                    $classification['per_capita'] <= $t['poor']           => 1,
+                                    $classification['per_capita'] <= $t['near_poor']      => 2,
+                                    $classification['per_capita'] <= $t['vulnerable']     => 3,
+                                    default                                               => 4,
+                                };
+                            @endphp
+                            <div class="space-y-1">
+                                @foreach($bands as $bi => $band)
+                                <div class="flex items-center justify-between rounded-lg px-2.5 py-1.5
+                                    {{ $bi === $activeBand ? 'bg-brand-50 border border-brand-100 font-semibold' : 'bg-white border border-gray-100' }}">
+                                    <span class="text-[11px] {{ $bi === $activeBand ? 'text-brand-700' : 'text-gray-500' }}">
+                                        @if($bi === $activeBand)<i class="fa-solid fa-arrow-right text-brand-500 mr-1 text-[10px]"></i>@endif
+                                        {{ $band['range'] }}
+                                    </span>
+                                    <span class="text-[11px] {{ $bi === $activeBand ? 'text-brand-700' : 'text-gray-400' }}">{{ $band['score'] }}</span>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-700 mb-1">Step 3 — Final Score</p>
+                            <p class="font-mono text-[11px] text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
+                                Final = Base Score + Modifiers<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= {{ $classification['base_score'] }} + ({{ $classification['total_modifier'] }})<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="font-bold text-gray-800">{{ $classification['final_score'] }} / 100</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                @else
+                <div class="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-4 text-center">
+                    <i class="fa-solid fa-circle-info text-gray-300 text-lg mb-2"></i>
+                    <p class="text-xs text-gray-400">No income sources recorded yet.</p>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
 
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-2.5" id="add-member">
             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Quick Actions</p>

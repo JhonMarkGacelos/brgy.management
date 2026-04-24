@@ -89,6 +89,121 @@
             </form>
         </div>
 
+        {{-- Poverty Line --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
+                    <i class="fa-solid fa-people-roof"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">Poverty Threshold</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Monthly income at or below this amount flags a family as below poverty line</p>
+                </div>
+            </div>
+            @if(session('success'))
+            <div class="mx-5 mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <i class="fa-solid fa-circle-check shrink-0"></i> {{ session('success') }}
+            </div>
+            @endif
+            <form method="POST" action="{{ route('settings.update') }}">
+                @csrf
+                <div class="p-5 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                Monthly Poverty Line (₱)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm font-semibold">₱</span>
+                                <input type="number" name="poverty_line" value="{{ old('poverty_line', $povertyLine) }}"
+                                       min="0" step="0.01" required
+                                       class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-3.5 py-2.5 text-sm text-gray-900
+                                              focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all
+                                              @error('poverty_line') border-red-400 @enderror">
+                            </div>
+                            @error('poverty_line')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col justify-end">
+                            <div class="rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 text-xs text-orange-700 space-y-1">
+                                <p class="font-semibold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-info"></i> PSA Reference
+                                </p>
+                                <p>2023 Eastern Visayas poverty threshold is around <span class="font-semibold">₱10,957/month</span> per family.</p>
+                                <p class="text-orange-500">Check <span class="font-semibold">psa.gov.ph</span> for the latest figures.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-5 pb-5">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Poverty Line
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{-- Per Capita Thresholds --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-500 text-xs">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">Per Capita Income Thresholds</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Monthly per-person income ceiling for each welfare tier</p>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('settings.update') }}">
+                @csrf
+                <input type="hidden" name="_thresholds" value="1">
+                <div class="p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                        @php
+                            $tiers = [
+                                ['key'=>'per_capita_extremely_poor','label'=>'Extremely Poor','color'=>'bg-red-500',   'default'=>1500],
+                                ['key'=>'per_capita_poor',          'label'=>'Poor',          'color'=>'bg-orange-500','default'=>2500],
+                                ['key'=>'per_capita_near_poor',     'label'=>'Near Poor',     'color'=>'bg-yellow-500','default'=>3500],
+                                ['key'=>'per_capita_vulnerable',    'label'=>'Vulnerable',    'color'=>'bg-blue-500',  'default'=>5000],
+                            ];
+                        @endphp
+                        @foreach($tiers as $tier)
+                        <div>
+                            <label class="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                <span class="h-2 w-2 rounded-full {{ $tier['color'] }}"></span>
+                                {{ $tier['label'] }} — up to (₱)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm font-semibold">₱</span>
+                                <input type="number" name="{{ $tier['key'] }}"
+                                       value="{{ old($tier['key'], \App\Models\Setting::get($tier['key'], $tier['default'])) }}"
+                                       min="0" step="1" required
+                                       class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-3.5 py-2.5 text-sm text-gray-900
+                                              focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    <div class="rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-xs text-purple-700 mb-4">
+                        <p class="font-semibold flex items-center gap-1.5 mb-1"><i class="fa-solid fa-circle-info"></i> How it works</p>
+                        <p>Per Capita = Total Household Income ÷ No. of Members. Each tier's threshold is the <strong>upper limit</strong> — families at or below that value fall into that category. Non-Poor means above the Vulnerable threshold.</p>
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Thresholds
+                    </button>
+                </div>
+            </form>
+        </div>
+
         {{-- Document Fees --}}
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">

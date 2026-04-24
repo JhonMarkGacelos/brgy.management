@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Household;
+use App\Models\IncomeSource;
 use App\Models\Resident;
+use App\Services\ClassificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -56,6 +58,10 @@ class ResidentController extends Controller
             }
         }
 
+        if ($classification = $request->classification) {
+            $query->where('classification', $classification);
+        }
+
         $households      = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
         $totalResidents  = Resident::count();
         $totalHouseholds = Household::count();
@@ -63,7 +69,15 @@ class ResidentController extends Controller
         $pwdMembers      = Resident::where('is_pwd', true)->count();
         $puroks          = Household::distinct()->orderBy('purok')->pluck('purok');
 
-        return $this->view('residents.index', compact('households', 'totalResidents', 'totalHouseholds', 'seniorCitizens', 'pwdMembers', 'puroks'));
+        $classificationCounts = Household::whereNotNull('classification')
+            ->selectRaw('classification, count(*) as total')
+            ->groupBy('classification')
+            ->pluck('total', 'classification');
+
+        return $this->view('residents.index', compact(
+            'households', 'totalResidents', 'totalHouseholds',
+            'seniorCitizens', 'pwdMembers', 'puroks', 'classificationCounts'
+        ));
     }
 
     public function create()
@@ -103,6 +117,7 @@ class ResidentController extends Controller
                 'is_head'              => true,
                 'contact_number'       => $head['contact_number'] ?? null,
                 'employment_status'    => $head['employment_status'] ?? null,
+                'monthly_income'       => $head['monthly_income'] ?? null,
                 'is_4ps'               => !empty($head['is_4ps']),
                 'is_senior_citizen'    => !empty($head['is_senior_citizen']),
                 'is_pwd'               => !empty($head['is_pwd']),
@@ -123,6 +138,8 @@ class ResidentController extends Controller
                     'nationality'          => 'Filipino',
                     'relationship_to_head' => $member['relationship'] ?? null,
                     'is_head'              => false,
+                    'employment_status'    => $member['employment_status'] ?? null,
+                    'monthly_income'       => $member['monthly_income'] ?? null,
                     'is_4ps'               => !empty($member['is_4ps']),
                     'is_senior_citizen'    => !empty($member['is_senior_citizen']),
                     'is_pwd'               => !empty($member['is_pwd']),
@@ -131,6 +148,8 @@ class ResidentController extends Controller
                     'is_indigent'          => !empty($member['is_indigent']),
                 ]);
             }
+
+            $this->recomputeClassification($household);
         }
 
         return redirect()->to($this->route('residents.index'))
@@ -139,13 +158,13 @@ class ResidentController extends Controller
 
     public function show(string $id)
     {
-        $household = Household::with(['residents' => fn($q) => $q->orderByDesc('is_head')])->findOrFail($id);
+        $household = Household::with(['residents' => fn($q) => $q->orderByDesc('is_head'), 'incomeSources'])->findOrFail($id);
         return $this->view('residents.show', compact('household'));
     }
 
     public function edit(string $id)
     {
-        $household = Household::with(['head', 'residents'])->findOrFail($id);
+        $household = Household::with(['head', 'residents', 'incomeSources'])->findOrFail($id);
         return $this->view('residents.create', compact('household'));
     }
 
@@ -176,6 +195,7 @@ class ResidentController extends Controller
                 'civil_status'         => $headData['civil_status'] ?? null,
                 'contact_number'       => $headData['contact_number'] ?? null,
                 'employment_status'    => $headData['employment_status'] ?? null,
+                'monthly_income'       => $headData['monthly_income'] ?? null,
                 'is_4ps'               => !empty($headData['is_4ps']),
                 'is_senior_citizen'    => !empty($headData['is_senior_citizen']),
                 'is_pwd'               => !empty($headData['is_pwd']),
@@ -199,6 +219,7 @@ class ResidentController extends Controller
                 'nationality'          => 'Filipino',
                 'relationship_to_head' => $member['relationship'] ?? null,
                 'is_head'              => false,
+                'monthly_income'       => $member['monthly_income'] ?? null,
                 'is_4ps'               => !empty($member['is_4ps']),
                 'is_senior_citizen'    => !empty($member['is_senior_citizen']),
                 'is_pwd'               => !empty($member['is_pwd']),
@@ -208,8 +229,21 @@ class ResidentController extends Controller
             ]);
         }
 
+        $this->recomputeClassification($household);
+
         return redirect()->to($this->route('residents.show', $household->id))
             ->with('success', 'Household updated successfully.');
+    }
+
+    private function recomputeClassification(Household $household): void
+    {
+        $household->load(['residents', 'incomeSources']);
+        $result = \App\Services\ClassificationService::classify($household);
+        $household->update([
+            'classification'  => $result['classification'],
+            'welfare_score'   => $result['final_score'],
+            'per_capita_income'=> $result['per_capita'],
+        ]);
     }
 
     public function destroy(string $id)
@@ -234,6 +268,7 @@ class ResidentController extends Controller
             'relationship_to_head' => $request->relationship,
             'contact_number'       => $request->contact_number,
             'employment_status'    => $request->employment_status,
+            'monthly_income'       => $request->monthly_income,
             'is_4ps'               => $request->boolean('is_4ps'),
             'is_senior_citizen'    => $request->boolean('is_senior_citizen'),
             'is_pwd'               => $request->boolean('is_pwd'),

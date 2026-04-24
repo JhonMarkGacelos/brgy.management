@@ -11,7 +11,7 @@ class Resident extends Model
         'household_id', 'first_name', 'middle_name', 'last_name',
         'date_of_birth', 'age', 'gender', 'civil_status', 'nationality',
         'relationship_to_head', 'is_head', 'contact_number', 'email',
-        'employment_status', 'occupation', 'education',
+        'employment_status', 'monthly_income', 'occupation', 'education',
         'is_4ps', 'is_senior_citizen', 'is_pwd', 'is_solo_parent',
         'is_voter', 'is_indigent', 'status',
     ];
@@ -19,6 +19,7 @@ class Resident extends Model
     protected $casts = [
         'date_of_birth'    => 'date',
         'is_head'          => 'boolean',
+        'monthly_income'   => 'decimal:2',
         'is_4ps'           => 'boolean',
         'is_senior_citizen'=> 'boolean',
         'is_pwd'           => 'boolean',

@@ -59,6 +59,58 @@
             </div>
         </div>
 
+        {{-- ID Photo Verification --}}
+        @if($document->id_photo_url)
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 text-xs">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800">Valid ID</p>
+                </div>
+                @php
+                    $verifiedBadge = match($document->id_verified) {
+                        'verified' => ['bg-green-100 text-green-700',  'fa-circle-check',       'Verified'],
+                        'rejected' => ['bg-red-100 text-red-700',      'fa-circle-xmark',       'Rejected'],
+                        default    => ['bg-yellow-100 text-yellow-700','fa-clock',              'Pending Verification'],
+                    };
+                @endphp
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold {{ $verifiedBadge[0] }}">
+                    <i class="fa-solid {{ $verifiedBadge[1] }} text-[10px]"></i>
+                    {{ $verifiedBadge[2] }}
+                </span>
+            </div>
+            <div class="p-4">
+                <a href="{{ $document->id_photo_url }}" target="_blank">
+                    <img src="{{ $document->id_photo_url }}" alt="ID Photo"
+                         class="w-full rounded-xl border border-gray-200 object-contain max-h-56 bg-gray-50 hover:opacity-90 transition-opacity cursor-zoom-in">
+                </a>
+                <p class="text-[11px] text-gray-400 mt-2 text-center">Click image to view full size</p>
+            </div>
+            @if($document->id_verified === 'pending')
+            <div class="px-4 pb-4 grid grid-cols-2 gap-2">
+                <form method="POST" action="{{ route($isStaff ? 'staff.documents.verify-id' : 'documents.verify-id', $document->id) }}">
+                    @csrf
+                    <input type="hidden" name="action" value="verify">
+                    <button type="submit"
+                            class="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition-colors">
+                        <i class="fa-solid fa-check text-[10px]"></i> Verify ID
+                    </button>
+                </form>
+                <form method="POST" action="{{ route($isStaff ? 'staff.documents.verify-id' : 'documents.verify-id', $document->id) }}">
+                    @csrf
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit"
+                            class="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
+                        <i class="fa-solid fa-xmark text-[10px]"></i> Reject ID
+                    </button>
+                </form>
+            </div>
+            @endif
+        </div>
+        @endif
+
         {{-- Payment & Status --}}
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">

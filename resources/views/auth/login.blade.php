@@ -36,7 +36,7 @@
         {{-- Middle: Headline --}}
         <div class="relative z-10">
             <h1 class="text-white text-4xl font-bold leading-tight mb-4">
-                Barangay<br>Management<br>System
+                Integrated<br>Barangay<br>Management<br>System
             </h1>
             <p class="text-white/50 text-sm leading-relaxed max-w-xs">
                 A centralized platform for managing resident records, blotter cases, document issuance, and community announcements.
@@ -155,7 +155,25 @@
                 <a href="{{ route('register') }}" class="font-semibold text-green-700 hover:underline">Create an account</a>
             </p>
 
-            <p class="mt-2 text-center text-xs text-gray-400">
+            {{-- Public document verification --}}
+            <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 flex items-center gap-3">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-500 text-xs shadow-sm">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-gray-700">Verify a Barangay Document</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Check if an issued document is authentic using its OR or tracking number.</p>
+                </div>
+                <a href="{{ route('document.verify') }}"
+                   class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                   style="background-color:#1a4731;"
+                   onmouseover="this.style.backgroundColor='#2d6a4f'"
+                   onmouseout="this.style.backgroundColor='#1a4731'">
+                    Verify
+                </a>
+            </div>
+
+            <p class="mt-4 text-center text-xs text-gray-400">
                 Authorized personnel only &mdash; Brgy. Caranas, Motiong, Samar
             </p>
         </div>

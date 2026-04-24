@@ -12,7 +12,8 @@ $initData = null;
 if ($isEdit) {
     $head    = $household->residents->firstWhere('is_head', true);
     $members = $household->residents->where('is_head', false)->values();
-    $initData = [[
+    $initData = [
+        'families' => [[
         'head' => [
             'first_name'        => $head?->first_name ?? '',
             'middle_name'       => $head?->middle_name ?? '',
@@ -23,6 +24,7 @@ if ($isEdit) {
             'civil_status'      => $head?->civil_status ?? '',
             'contact_number'    => $head?->contact_number ?? '',
             'employment_status' => $head?->employment_status ?? '',
+            'monthly_income'    => $head?->monthly_income ?? '',
             'sectors' => [
                 '4ps'            => (bool)($head?->is_4ps),
                 'senior_citizen' => (bool)($head?->is_senior_citizen),
@@ -33,13 +35,15 @@ if ($isEdit) {
             ],
         ],
         'members' => $members->map(fn($m) => [
-            'first_name'    => $m->first_name ?? '',
-            'middle_name'   => $m->middle_name ?? '',
-            'last_name'     => $m->last_name ?? '',
-            'date_of_birth' => $m->date_of_birth?->format('Y-m-d') ?? '',
-            'age'           => $m->age ?? '',
-            'gender'        => $m->gender ?? '',
-            'relationship'  => $m->relationship_to_head ?? '',
+            'first_name'     => $m->first_name ?? '',
+            'middle_name'    => $m->middle_name ?? '',
+            'last_name'      => $m->last_name ?? '',
+            'date_of_birth'  => $m->date_of_birth?->format('Y-m-d') ?? '',
+            'age'            => $m->age ?? '',
+            'gender'         => $m->gender ?? '',
+            'relationship'      => $m->relationship_to_head ?? '',
+            'employment_status' => $m->employment_status ?? '',
+            'monthly_income'    => $m->monthly_income ?? '',
             'sectors' => [
                 '4ps'            => (bool)($m->is_4ps),
                 'senior_citizen' => (bool)($m->is_senior_citizen),
@@ -49,7 +53,7 @@ if ($isEdit) {
                 'indigent'       => (bool)($m->is_indigent),
             ],
         ])->values()->all(),
-    ]];
+    ]]];
 }
 @endphp
 
@@ -215,8 +219,8 @@ if ($isEdit) {
                                             </select>
                                         </div>
                                     </div>
-                                    {{-- Contact + Employment --}}
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {{-- Contact + Employment + Income --}}
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div>
                                             <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Contact Number</label>
                                             <input type="text" :name="'families['+fi+'][head][contact_number]'" x-model="family.head.contact_number"
@@ -232,6 +236,13 @@ if ($isEdit) {
                                                 <option value="">Select</option>
                                                 <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Retired</option>
                                             </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Monthly Income (₱)</label>
+                                            <input type="number" :name="'families['+fi+'][head][monthly_income]'" x-model="family.head.monthly_income"
+                                                   placeholder="0.00" min="0" step="0.01"
+                                                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400
+                                                          focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                         </div>
                                     </div>
                                     {{-- Head Sectors --}}
@@ -342,6 +353,22 @@ if ($isEdit) {
                                                     </optgroup>
                                                 </select>
                                             </div>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                                                <div>
+                                                    <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Employment Status</label>
+                                                    <select :name="'families['+fi+'][members]['+mi+'][employment_status]'" x-model="member.employment_status"
+                                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                                        <option value="">Select</option>
+                                                        <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Retired</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Monthly Income (₱)</label>
+                                                    <input type="number" :name="'families['+fi+'][members]['+mi+'][monthly_income]'" x-model="member.monthly_income"
+                                                           placeholder="0.00" min="0" step="0.01"
+                                                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                                </div>
+                                            </div>
                                             <div class="flex flex-wrap gap-1.5">
                                                 <template x-for="s in sectorList" :key="s">
                                                     <label x-show="showMemberSector(member, s)"
@@ -442,25 +469,24 @@ if ($isEdit) {
 </form>
 
 <script>
-function householdForm(initFamilies) {
+function householdForm(initData) {
     const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false });
-    const emptyHead   = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', employment_status:'', sectors: emptySectors() });
-    const emptyMember = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', sectors: emptySectors() });
-
+    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', employment_status:'', monthly_income:'', sectors: emptySectors() });
+    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', sectors: emptySectors() });
     const COLORS = ['#1a4731','#1d4ed8','#7c3aed','#b45309','#be185d'];
     const BGS    = ['#f0faf4','#eff6ff','#f5f3ff','#fffbeb','#fdf2f8'];
 
     return {
-        families: initFamilies ?? [{ head: emptyHead(), members: [] }],
+        families:  initData?.families ?? [{ head: emptyHead(), members: [] }],
         sectorList: ['4ps','senior_citizen','pwd','solo_parent','voter','indigent'],
 
         sectorLabel(s) {
             return { '4ps':'4Ps', 'senior_citizen':'Senior Citizen', 'pwd':'PWD', 'solo_parent':'Solo Parent', 'voter':'Voter', 'indigent':'Indigent' }[s] || s;
         },
         showMemberSector(member, s) {
+            if (s === '4ps') return false;
             const childRoles = ['Son','Daughter','Stepson','Stepdaughter','Adopted Son','Adopted Daughter','Grandson','Granddaughter','Nephew','Niece'];
             if (s === 'solo_parent' && childRoles.includes(member.relationship)) return false;
-            if (s === 'indigent'    && childRoles.includes(member.relationship)) return false;
             return true;
         },
         familyColor(fi) { return COLORS[fi % COLORS.length]; },
