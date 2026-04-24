@@ -17,11 +17,13 @@ class ClassificationService
         $perCapita    = round($totalIncome / $memberCount, 2);
 
         // --- Thresholds from settings ---
+        // PSA 2021 Region VIII (Eastern Visayas / Samar) per capita monthly thresholds:
+        // Food poverty line ≈ ₱1,383 | Total poverty line ≈ ₱1,992
         $t = [
-            'extremely_poor' => (float) Setting::get('per_capita_extremely_poor', 1500),
-            'poor'           => (float) Setting::get('per_capita_poor',            2500),
+            'extremely_poor' => (float) Setting::get('per_capita_extremely_poor', 1383),
+            'poor'           => (float) Setting::get('per_capita_poor',            1992),
             'near_poor'      => (float) Setting::get('per_capita_near_poor',       3500),
-            'vulnerable'     => (float) Setting::get('per_capita_vulnerable',      5000),
+            'vulnerable'     => (float) Setting::get('per_capita_vulnerable',      6000),
         ];
 
         // --- Base score (0–100) mapped linearly across 5 bands ---

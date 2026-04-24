@@ -86,13 +86,13 @@
                         </div>
                     </div>
                     @if(!$isDemo && $head->monthly_income !== null)
-                    @php $povertyLine = \App\Models\Setting::get('poverty_line', 10957); @endphp
+                    @php $pcPoverty = (float) \App\Models\Setting::get('per_capita_poor', 1992); @endphp
                     <div class="text-right shrink-0">
                         <p class="text-[11px] text-gray-400">Monthly Income</p>
-                        <p class="text-xs font-semibold {{ $head->monthly_income <= $povertyLine ? 'text-red-600' : 'text-gray-700' }}">
+                        <p class="text-xs font-semibold {{ $head->monthly_income <= $pcPoverty ? 'text-red-600' : 'text-gray-700' }}">
                             ₱{{ number_format($head->monthly_income, 2) }}
                         </p>
-                        @if($head->monthly_income <= $povertyLine)
+                        @if($head->monthly_income <= $pcPoverty)
                         <p class="text-[10px] text-red-500 font-medium mt-0.5">Below poverty line</p>
                         @endif
                     </div>
@@ -158,11 +158,11 @@
                             <td class="px-5 py-3.5 text-xs text-gray-600">{{ $mAge }} yrs &middot; {{ $mGender }}</td>
                             <td class="px-5 py-3.5 text-xs">
                                 @if(!$isDemo && $m->monthly_income !== null)
-                                    @php $pl = \App\Models\Setting::get('poverty_line', 10957); @endphp
-                                    <span class="font-semibold {{ $m->monthly_income <= $pl ? 'text-red-600' : 'text-gray-700' }}">
+                                    @php $pcPoverty = (float) \App\Models\Setting::get('per_capita_poor', 1992); @endphp
+                                    <span class="font-semibold {{ $m->monthly_income <= $pcPoverty ? 'text-red-600' : 'text-gray-700' }}">
                                         ₱{{ number_format($m->monthly_income, 2) }}
                                     </span>
-                                    @if($m->monthly_income <= $pl)
+                                    @if($m->monthly_income <= $pcPoverty)
                                     <span class="block text-[10px] text-red-500 font-medium">Below poverty line</span>
                                     @endif
                                 @else
