@@ -188,16 +188,16 @@ if ($isEdit) {
                                     {{-- Bio --}}
                                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Date of Birth</label>
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Date of Birth *</label>
                                             <input type="date" :name="'families['+fi+'][head][date_of_birth]'" x-model="family.head.date_of_birth"
-                                                   @change="autoAge(family.head)"
+                                                   @change="autoAge(family.head)" required
                                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm
                                                           focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Age</label>
                                             <input type="number" :name="'families['+fi+'][head][age]'" x-model="family.head.age"
-                                                   placeholder="Age" min="0"
+                                                   placeholder="Auto-filled" min="0"
                                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400
                                                           focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                         </div>
@@ -210,8 +210,8 @@ if ($isEdit) {
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Civil Status</label>
-                                            <select :name="'families['+fi+'][head][civil_status]'" x-model="family.head.civil_status"
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Civil Status *</label>
+                                            <select :name="'families['+fi+'][head][civil_status]'" x-model="family.head.civil_status" required
                                                     class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900
                                                            focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 <option value="">Select</option>
@@ -301,29 +301,29 @@ if ($isEdit) {
                                             </div>
                                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                                                 <input type="text" :name="'families['+fi+'][members]['+mi+'][first_name]'" x-model="member.first_name"
-                                                       placeholder="First name"
+                                                       placeholder="First name *" required
                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 <input type="text" :name="'families['+fi+'][members]['+mi+'][middle_name]'" x-model="member.middle_name"
                                                        placeholder="Middle name"
                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 <input type="text" :name="'families['+fi+'][members]['+mi+'][last_name]'" x-model="member.last_name"
-                                                       placeholder="Last name"
+                                                       placeholder="Last name *" required
                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                             </div>
                                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                                                 <input type="date" :name="'families['+fi+'][members]['+mi+'][date_of_birth]'" x-model="member.date_of_birth"
-                                                       @change="autoAge(member)"
+                                                       @change="autoAge(member)" required
                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 <input type="number" :name="'families['+fi+'][members]['+mi+'][age]'" x-model="member.age"
-                                                       placeholder="Age" min="0"
+                                                       placeholder="Auto-filled" min="0"
                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
-                                                <select :name="'families['+fi+'][members]['+mi+'][gender]'" x-model="member.gender"
+                                                <select :name="'families['+fi+'][members]['+mi+'][gender]'" x-model="member.gender" required
                                                         class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
-                                                    <option value="">Gender</option><option>Male</option><option>Female</option>
+                                                    <option value="">Gender *</option><option>Male</option><option>Female</option>
                                                 </select>
-                                                <select :name="'families['+fi+'][members]['+mi+'][relationship]'" x-model="member.relationship"
+                                                <select :name="'families['+fi+'][members]['+mi+'][relationship]'" x-model="member.relationship" required
                                                         class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
-                                                    <option value="">Role / Relation</option>
+                                                    <option value="">Role / Relation *</option>
                                                     <optgroup label="Spouse / Partner">
                                                         <option>Wife</option><option>Husband</option><option>Partner</option>
                                                     </optgroup>

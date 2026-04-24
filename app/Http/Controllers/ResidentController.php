@@ -88,10 +88,25 @@ class ResidentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'purok'                        => 'required|string',
-            'families.*.head.first_name'   => 'required|string|max:100',
-            'families.*.head.last_name'    => 'required|string|max:100',
-            'families.*.head.gender'       => 'required|string',
+            'purok'                               => 'required|string',
+            'families.*.head.first_name'          => 'required|string|max:100',
+            'families.*.head.last_name'           => 'required|string|max:100',
+            'families.*.head.date_of_birth'       => 'required|date',
+            'families.*.head.gender'              => 'required|string',
+            'families.*.head.civil_status'        => 'required|string',
+            'families.*.members.*.first_name'     => 'required|string|max:100',
+            'families.*.members.*.last_name'      => 'required|string|max:100',
+            'families.*.members.*.date_of_birth'  => 'required|date',
+            'families.*.members.*.gender'         => 'required|string',
+            'families.*.members.*.relationship'   => 'required|string',
+        ], [
+            'families.*.head.date_of_birth.required'      => 'Date of birth is required for the head of family.',
+            'families.*.head.civil_status.required'       => 'Civil status is required for the head of family.',
+            'families.*.members.*.first_name.required'    => 'First name is required for all members.',
+            'families.*.members.*.last_name.required'     => 'Last name is required for all members.',
+            'families.*.members.*.date_of_birth.required' => 'Date of birth is required for all members.',
+            'families.*.members.*.gender.required'        => 'Gender is required for all members.',
+            'families.*.members.*.relationship.required'  => 'Relationship is required for all members.',
         ]);
 
         foreach ($request->input('families', []) as $familyData) {
@@ -170,6 +185,28 @@ class ResidentController extends Controller
 
     public function update(Request $request, string $id)
     {
+        $request->validate([
+            'purok'                              => 'required|string',
+            'families.0.head.first_name'         => 'required|string|max:100',
+            'families.0.head.last_name'          => 'required|string|max:100',
+            'families.0.head.date_of_birth'      => 'required|date',
+            'families.0.head.gender'             => 'required|string',
+            'families.0.head.civil_status'       => 'required|string',
+            'families.0.members.*.first_name'    => 'required|string|max:100',
+            'families.0.members.*.last_name'     => 'required|string|max:100',
+            'families.0.members.*.date_of_birth' => 'required|date',
+            'families.0.members.*.gender'        => 'required|string',
+            'families.0.members.*.relationship'  => 'required|string',
+        ], [
+            'families.0.head.date_of_birth.required'      => 'Date of birth is required.',
+            'families.0.head.civil_status.required'       => 'Civil status is required.',
+            'families.0.members.*.first_name.required'    => 'First name is required for all members.',
+            'families.0.members.*.last_name.required'     => 'Last name is required for all members.',
+            'families.0.members.*.date_of_birth.required' => 'Date of birth is required for all members.',
+            'families.0.members.*.gender.required'        => 'Gender is required for all members.',
+            'families.0.members.*.relationship.required'  => 'Relationship is required for all members.',
+        ]);
+
         $household = Household::with('residents')->findOrFail($id);
 
         $household->update([
