@@ -55,7 +55,7 @@ class BlotterController extends Controller
             'returned'        => BlotterRecord::where('status', 'Returned w/ Remarks')->count(),
         ];
 
-        return $this->v('blotter.index', compact('records', 'stats'));
+        return view('blotter.index', compact('records', 'stats'));
     }
 
     public function create()
