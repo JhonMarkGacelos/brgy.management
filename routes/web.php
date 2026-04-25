@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified', 'role:staff'])->prefix('staff')->name('st
     Route::get('/residents/{id}',                     [ResidentController::class, 'show'])->name('residents.show');
     Route::get('/residents/{id}/edit',                [ResidentController::class, 'edit'])->name('residents.edit');
     Route::put('/residents/{id}',                     [ResidentController::class, 'update'])->name('residents.update');
+    Route::delete('/residents/{id}',                  [ResidentController::class, 'destroy'])->name('residents.destroy');
     Route::put('/residents/{id}/member/{memberId}',   [ResidentController::class, 'updateMember'])->name('residents.member.update');
     Route::delete('/residents/{id}/member/{memberId}',[ResidentController::class, 'destroyMember'])->name('residents.member.destroy');
 
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'verified', 'role:staff'])->prefix('staff')->name('st
     Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
     Route::post('/documents',       [DocumentController::class, 'store'])->name('documents.store');
     Route::get('/documents/{id}',              [DocumentController::class, 'show'])->name('documents.show');
+    Route::get('/documents/{id}/edit',         [DocumentController::class, 'edit'])->name('documents.edit');
     Route::put('/documents/{id}',              [DocumentController::class, 'update'])->name('documents.update');
     Route::get('/documents/{id}/print',        [DocumentController::class, 'print'])->name('documents.print');
     Route::post('/documents/{id}/verify-id',   [DocumentController::class, 'verifyId'])->name('documents.verify-id');
