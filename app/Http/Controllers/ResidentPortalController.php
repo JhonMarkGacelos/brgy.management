@@ -122,4 +122,23 @@ class ResidentPortalController extends Controller
 
         return view('resident.documents.track', compact('document'));
     }
+
+    public function documentsPrint(string $id)
+    {
+        $document = DocumentRequest::with(['resident.household'])
+            ->where('requested_by', Auth::id())
+            ->where('status', 'Issued')
+            ->findOrFail($id);
+
+        $viewMap = [
+            'Barangay Clearance'       => 'documents.print.clearance',
+            'Certificate of Residency' => 'documents.print.residency',
+            'Certificate of Indigency' => 'documents.print.indigency',
+            'Business Clearance'       => 'documents.print.business',
+        ];
+
+        $view = $viewMap[$document->document_type] ?? 'documents.print.clearance';
+
+        return view($view, compact('document'));
+    }
 }

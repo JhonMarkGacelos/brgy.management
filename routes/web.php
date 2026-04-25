@@ -116,6 +116,7 @@ Route::middleware(['auth', 'verified', 'role:resident'])->prefix('portal')->name
     Route::get('/documents/create',    [ResidentPortalController::class, 'documentsCreate'])->name('documents.create');
     Route::post('/documents',          [ResidentPortalController::class, 'documentsStore'])->name('documents.store');
     Route::get('/documents/track',     [ResidentPortalController::class, 'documentsTrack'])->name('documents.track');
+    Route::get('/documents/{id}/print', [ResidentPortalController::class, 'documentsPrint'])->name('documents.print');
 });
 
 // ── PROFILE (both roles) ──────────────────────────────────────

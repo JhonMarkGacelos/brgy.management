@@ -17,6 +17,23 @@
     </a>
 </div>
 
+{{-- Payment Notice --}}
+<div class="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 mb-5">
+    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+        <i class="fa-solid fa-hand-holding-dollar text-sm"></i>
+    </div>
+    <div>
+        <p class="text-sm font-semibold text-blue-800">Online Payment is Not Available</p>
+        <p class="text-xs text-blue-700 mt-0.5 leading-relaxed">
+            This system does not process payments online. Even if you are in a <strong>different city or location</strong>,
+            you can still submit your request here and contact the
+            <strong>Barangay Captain</strong> or <strong>Barangay Staff</strong> to arrange payment remotely.
+            Once payment is confirmed and your document is processed, you can
+            <strong>print it directly from this portal</strong> — no need to visit the Barangay Hall.
+        </p>
+    </div>
+</div>
+
 {{-- Track Form --}}
 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
     <form action="{{ route('resident.documents.track') }}" method="GET" class="flex flex-col sm:flex-row gap-3">
@@ -64,6 +81,7 @@
                     <th class="px-4 py-3">Purpose</th>
                     <th class="px-4 py-3">Date Requested</th>
                     <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3"></th>
                 </tr>
             </thead>
             <tbody>
@@ -78,6 +96,17 @@
                             <i class="fa-solid {{ $statusIcons[$req->status] ?? 'fa-circle' }} text-[9px]"></i>
                             {{ $req->status }}
                         </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        @if($req->status === 'Issued')
+                        <a href="{{ route('resident.documents.print', $req->id) }}" target="_blank"
+                           class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                           style="background-color:#1a4731;"
+                           onmouseover="this.style.backgroundColor='#2d6a4f'"
+                           onmouseout="this.style.backgroundColor='#1a4731'">
+                            <i class="fa-solid fa-print text-[10px]"></i> Print
+                        </a>
+                        @endif
                     </td>
                 </tr>
                 @empty

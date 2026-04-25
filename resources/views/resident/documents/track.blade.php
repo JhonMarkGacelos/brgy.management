@@ -140,11 +140,28 @@
                 </dl>
             </div>
 
-            <div class="px-5 py-4 border-t border-gray-100 bg-gray-50">
-                <p class="text-xs text-gray-400 text-center">
-                    For inquiries, please visit <strong>Barangay Caranas Hall</strong> or call your barangay office.
+            {{-- Print button when Issued --}}
+            @if($document->status === 'Issued')
+            <div class="px-5 py-4 border-t border-gray-100">
+                <a href="{{ route('resident.documents.print', $document->id) }}" target="_blank"
+                   class="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-colors"
+                   style="background-color:#1a4731;"
+                   onmouseover="this.style.backgroundColor='#2d6a4f'"
+                   onmouseout="this.style.backgroundColor='#1a4731'">
+                    <i class="fa-solid fa-print text-xs"></i> Print My Document
+                </a>
+                <p class="text-[11px] text-gray-400 text-center mt-2">
+                    Your document is ready. Click to open the printable version.
                 </p>
             </div>
+            @else
+            <div class="px-5 py-4 border-t border-gray-100 bg-gray-50">
+                <p class="text-xs text-gray-400 text-center">
+                    Once your document is <strong>Issued</strong>, a print button will appear here.
+                    For payment arrangements, contact the <strong>Barangay Captain</strong> or <strong>Barangay Staff</strong>.
+                </p>
+            </div>
+            @endif
         </div>
 
         @else

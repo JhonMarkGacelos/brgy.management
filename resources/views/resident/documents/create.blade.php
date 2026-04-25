@@ -175,6 +175,18 @@
             </div>
         </div>
 
+        {{-- Payment Notice --}}
+        <div class="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
+            <i class="fa-solid fa-hand-holding-dollar text-blue-500 mt-0.5 shrink-0"></i>
+            <p class="text-xs text-blue-800 leading-relaxed">
+                <strong>Online payment is not available.</strong>
+                Even if you are in a <strong>different city or location</strong>, you can submit this request
+                and contact the <strong>Barangay Captain</strong> or <strong>Barangay Staff</strong> to arrange payment remotely.
+                Once payment is confirmed and your document is processed, you can
+                <strong>print it directly from this portal</strong> — no need to visit the Barangay Hall.
+            </p>
+        </div>
+
         {{-- Notice --}}
         <div class="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
             <i class="fa-solid fa-circle-info text-amber-500 mt-0.5 shrink-0"></i>
