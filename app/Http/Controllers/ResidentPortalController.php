@@ -93,7 +93,13 @@ class ResidentPortalController extends Controller
             return back()->withInput()->with('resident_not_found', true);
         }
 
-        $upload = (new CloudinaryService)->uploadIdPhoto($request->file('id_photo'));
+        try {
+            $upload = (new CloudinaryService)->uploadIdPhoto($request->file('id_photo'));
+            $photoUrl      = $upload['url'];
+            $photoPublicId = $upload['public_id'];
+        } catch (\Throwable $e) {
+            return back()->withInput()->withErrors(['id_photo' => 'ID photo upload failed. Please try again or contact barangay staff.']);
+        }
 
         $feeMap = [
             'Barangay Clearance'       => 50,
@@ -108,8 +114,8 @@ class ResidentPortalController extends Controller
             'purpose'           => $request->purpose,
             'fee'               => $feeMap[$request->document_type] ?? 0,
             'status'            => 'Pending',
-            'id_photo_url'      => $upload['url'],
-            'id_photo_public_id'=> $upload['public_id'],
+            'id_photo_url'      => $photoUrl,
+            'id_photo_public_id'=> $photoPublicId,
             'id_verified'       => 'pending',
             'resident_id'       => $resident->id,
             'requested_by'      => Auth::id(),
