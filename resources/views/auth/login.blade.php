@@ -96,14 +96,14 @@
 
                 {{-- Email --}}
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Username</label>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm">
                             <i class="fa-solid fa-user"></i>
                         </span>
                         <input id="email" type="email" name="email" value="{{ old('email') }}"
                                required autofocus autocomplete="username"
-                               placeholder="Enter your username"
+                               placeholder="Enter your email"
                                class="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                     </div>
