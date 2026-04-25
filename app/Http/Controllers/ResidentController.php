@@ -174,7 +174,7 @@ class ResidentController extends Controller
     public function show(string $id)
     {
         $household = Household::with(['residents' => fn($q) => $q->orderByDesc('is_head'), 'incomeSources'])->findOrFail($id);
-        return $this->view('residents.show', compact('household'));
+        return view('residents.show', compact('household'));
     }
 
     public function edit(string $id)
