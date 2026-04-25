@@ -95,11 +95,18 @@ class ResidentPortalController extends Controller
 
         $upload = (new CloudinaryService)->uploadIdPhoto($request->file('id_photo'));
 
+        $feeMap = [
+            'Barangay Clearance'       => 50,
+            'Certificate of Residency' => 50,
+            'Certificate of Indigency' => 0,
+            'Business Clearance'       => 100,
+        ];
+
         $doc = DocumentRequest::create([
             'tracking_number'   => DocumentRequest::generateTrackingNumber(),
             'document_type'     => $request->document_type,
             'purpose'           => $request->purpose,
-            'fee'               => 0,
+            'fee'               => $feeMap[$request->document_type] ?? 0,
             'status'            => 'Pending',
             'id_photo_url'      => $upload['url'],
             'id_photo_public_id'=> $upload['public_id'],
