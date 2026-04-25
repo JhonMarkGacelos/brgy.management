@@ -112,6 +112,14 @@ class DocumentController extends Controller
             'issued_at'    => $request->status === 'Issued' ? now() : $document->issued_at,
         ]);
 
+        // Delete ID photo from Cloudinary once document is issued (privacy cleanup)
+        if ($request->status === 'Issued' && $document->id_photo_public_id) {
+            try {
+                (new \App\Services\CloudinaryService)->delete($document->id_photo_public_id);
+                $document->update(['id_photo_url' => null, 'id_photo_public_id' => null]);
+            } catch (\Throwable) {}
+        }
+
         $route = Auth::user()->role === 'staff' ? 'staff.documents.index' : 'documents.index';
         return redirect()->route($route)->with('success', 'Document updated. OR No: ' . $orNumber);
     }
