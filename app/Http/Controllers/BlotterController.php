@@ -61,7 +61,7 @@ class BlotterController extends Controller
     public function create()
     {
         $nextCaseNo = BlotterRecord::generateCaseNumber();
-        return $this->v('blotter.create', compact('nextCaseNo'));
+        return view('blotter.create', compact('nextCaseNo'));
     }
 
     public function store(Request $request)
@@ -108,7 +108,7 @@ class BlotterController extends Controller
     public function edit(string $id)
     {
         $record = BlotterRecord::findOrFail($id);
-        return $this->v('blotter.create', compact('record'));
+        return view('blotter.create', compact('record'));
     }
 
     public function update(Request $request, string $id)
