@@ -72,6 +72,7 @@ class BlotterController extends Controller
             'complainant_name'  => 'required|string|max:150',
             'respondent_name'   => 'required|string|max:150',
             'narrative'         => 'required|string',
+            'action_taken'      => 'required|string',
             'status'            => 'required|string',
         ]);
 
