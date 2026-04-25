@@ -89,7 +89,7 @@
                     <th class="px-4 py-3">Document Type</th>
                     <th class="px-4 py-3">Date Issued</th>
                     <th class="px-4 py-3">Fee</th>
-                    <th class="px-4 py-3">Issued By</th>
+                    <th class="px-4 py-3">Requested By</th>
                     <th class="px-4 py-3 text-center">Actions</th>
                 </tr>
             </thead>
