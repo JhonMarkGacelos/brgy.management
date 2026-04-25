@@ -102,7 +102,7 @@ class BlotterController extends Controller
     public function show(string $id)
     {
         $record = BlotterRecord::with('filedBy')->findOrFail($id);
-        return $this->v('blotter.show', compact('record'));
+        return view('blotter.show', compact('record'));
     }
 
     public function edit(string $id)
