@@ -74,7 +74,7 @@ class ResidentController extends Controller
             ->groupBy('classification')
             ->pluck('total', 'classification');
 
-        return $this->view('residents.index', compact(
+        return view('residents.index', compact(
             'households', 'totalResidents', 'totalHouseholds',
             'seniorCitizens', 'pwdMembers', 'puroks', 'classificationCounts'
         ));
@@ -82,7 +82,7 @@ class ResidentController extends Controller
 
     public function create()
     {
-        return $this->view('residents.create');
+        return view('residents.create');
     }
 
     public function store(Request $request)
@@ -180,7 +180,7 @@ class ResidentController extends Controller
     public function edit(string $id)
     {
         $household = Household::with(['head', 'residents', 'incomeSources'])->findOrFail($id);
-        return $this->view('residents.create', compact('household'));
+        return view('residents.create', compact('household'));
     }
 
     public function update(Request $request, string $id)
