@@ -152,11 +152,19 @@ class DocumentController extends Controller
             $document->or_number = DocumentRequest::generateOrNumber();
         }
         if ($document->status !== 'Issued') {
-            $document->status      = 'Issued';
-            $document->issued_at   = now();
+            $document->status       = 'Issued';
+            $document->issued_at    = now();
             $document->processed_by = Auth::id();
         }
         $document->save();
+
+        // Delete ID photo from Cloudinary after issuing (privacy cleanup)
+        if ($document->id_photo_public_id) {
+            try {
+                (new \App\Services\CloudinaryService)->delete($document->id_photo_public_id);
+                $document->update(['id_photo_url' => null, 'id_photo_public_id' => null]);
+            } catch (\Throwable) {}
+        }
 
         $viewMap = [
             'Barangay Clearance'       => 'documents.print.clearance',
