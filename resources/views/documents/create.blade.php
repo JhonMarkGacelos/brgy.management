@@ -274,6 +274,14 @@ document.querySelectorAll('input[name="document_type"]').forEach(function(radio)
     });
 });
 
+// Initialize fee summary from pre-selected radio (edit mode)
+const preSelected = document.querySelector('input[name="document_type"]:checked');
+if (preSelected) {
+    const fee = parseFloat(preSelected.getAttribute('data-fee') || 0);
+    document.getElementById('fee_display').textContent = '₱' + fee.toFixed(2);
+    document.getElementById('total_display').textContent = '₱' + fee.toFixed(2);
+}
+
 // Resident autocomplete
 const residents = @json($residents->map(fn($r) => ['id' => $r->id, 'name' => $r->full_name]));
 const searchInput  = document.getElementById('resident_search');
