@@ -55,13 +55,17 @@ class AnalyticsController extends Controller
         ];
         $sectorCol = $filterSector ? ($sectorColMap[$filterSector] ?? null) : null;
 
-        // Base resident query (filtered by sector if set)
+        // Base resident query (filtered by sector and/or month if set)
         $resBase = Resident::query();
         if ($sectorCol) {
             $resBase->where($sectorCol, true);
             if ($filterSector === 'Pregnant') {
                 $resBase->where($pregnantDueCond);
             }
+        }
+        if ($filterYear && $filterMonthNum) {
+            $resBase->whereYear('created_at', $filterYear)
+                    ->whereMonth('created_at', $filterMonthNum);
         }
 
         // Population
@@ -70,7 +74,9 @@ class AnalyticsController extends Controller
         $femaleResidents = (clone $resBase)->where('gender', 'Female')->count();
         $seniorCitizens  = (clone $resBase)->where('is_senior_citizen', true)->count();
         $pwds            = (clone $resBase)->where('is_pwd', true)->count();
-        $totalHouseholds = Household::count();
+        $totalHouseholds = $filterYear && $filterMonthNum
+            ? Household::whereYear('created_at', $filterYear)->whereMonth('created_at', $filterMonthNum)->count()
+            : Household::count();
         $voters          = (clone $resBase)->where('is_voter', true)->count();
         $soloParents     = (clone $resBase)->where('is_solo_parent', true)->count();
         $fourPs          = (clone $resBase)->where('is_4ps', true)->count();
