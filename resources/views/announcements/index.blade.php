@@ -38,6 +38,7 @@
     @endforeach
 </div>
 
+<div class="space-y-4">
 @forelse($announcements as $announcement)
     <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 {{ $announcement->status === 'Published' ? 'border-green-400' : 'border-gray-300' }}">
         <div class="flex items-start justify-between gap-3">
@@ -73,7 +74,7 @@
             </div>
         </div>
     </div>
-    @empty
+@empty
     <div class="bg-white rounded-xl shadow-sm p-8 text-center">
         <i class="fa-solid fa-bullhorn text-4xl text-gray-300 mb-4"></i>
         <h3 class="text-lg font-semibold text-gray-800 mb-2">No announcements yet</h3>
