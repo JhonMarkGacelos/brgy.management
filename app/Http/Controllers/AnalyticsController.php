@@ -26,17 +26,18 @@ class AnalyticsController extends Controller
         // Pregnancy window condition:
         //   No month filter  → due_date IS NULL or due_date >= today
         //   Month filter M   → due_date IS NULL
-        //                      OR (due_date >= M-start   AND  due_date - 9 months <= M-end)
+        //                      OR (due_date >= M-start  AND  due_date <= M-end + 9 months)
         // The second branch means the filtered month falls inside the ~9-month pregnancy period.
+        // We compute the cutoff in PHP (M.end + 9 months) to avoid raw SQL date functions.
         $pregnantDueCond = function ($q) use ($filterMonthCarbon) {
             $q->whereNull('pregnant_due_date');
             if ($filterMonthCarbon) {
-                $mStart = $filterMonthCarbon->copy()->startOfMonth()->toDateString();
-                $mEnd   = $filterMonthCarbon->copy()->endOfMonth()->toDateString();
-                $q->orWhere(fn($q2) => $q2
-                    ->where('pregnant_due_date', '>=', $mStart)
-                    ->whereRaw('DATE_SUB(pregnant_due_date, INTERVAL 9 MONTH) <= ?', [$mEnd])
-                );
+                $mStart  = $filterMonthCarbon->copy()->startOfMonth()->toDateString();
+                $mCutoff = $filterMonthCarbon->copy()->endOfMonth()->addMonths(9)->toDateString();
+                $q->orWhere(function ($q2) use ($mStart, $mCutoff) {
+                    $q2->where('pregnant_due_date', '>=', $mStart)
+                       ->where('pregnant_due_date', '<=', $mCutoff);
+                });
             } else {
                 $q->orWhere('pregnant_due_date', '>=', now()->toDateString());
             }
