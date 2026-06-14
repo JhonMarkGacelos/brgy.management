@@ -64,8 +64,8 @@ class AnalyticsController extends Controller
             }
         }
         if ($filterYear && $filterMonthNum) {
-            $resBase->whereYear('created_at', $filterYear)
-                    ->whereMonth('created_at', $filterMonthNum);
+            $resBase->whereYear('residents.created_at', $filterYear)
+                    ->whereMonth('residents.created_at', $filterMonthNum);
         }
 
         // Population
