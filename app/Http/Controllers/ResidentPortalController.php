@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use App\Models\DocumentRequest;
 use App\Models\Resident;
+use App\Models\Setting;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -71,7 +72,13 @@ class ResidentPortalController extends Controller
 
     public function documentsCreate()
     {
-        return view('resident.documents.create');
+        $fees = [
+            'Barangay Clearance'       => (float) Setting::get('fee_barangay_clearance', 50),
+            'Certificate of Residency' => (float) Setting::get('fee_certificate_of_residency', 50),
+            'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
+            'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
+        ];
+        return view('resident.documents.create', compact('fees'));
     }
 
     public function documentsStore(Request $request)
@@ -102,10 +109,10 @@ class ResidentPortalController extends Controller
         }
 
         $feeMap = [
-            'Barangay Clearance'       => 50,
-            'Certificate of Residency' => 50,
-            'Certificate of Indigency' => 0,
-            'Business Clearance'       => 100,
+            'Barangay Clearance'       => (float) Setting::get('fee_barangay_clearance', 50),
+            'Certificate of Residency' => (float) Setting::get('fee_certificate_of_residency', 50),
+            'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
+            'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
         ];
 
         $doc = DocumentRequest::create([

@@ -13,7 +13,7 @@ class Resident extends Model
         'relationship_to_head', 'is_head', 'contact_number', 'email',
         'employment_status', 'monthly_income', 'occupation', 'education',
         'is_4ps', 'is_senior_citizen', 'is_pwd', 'is_solo_parent',
-        'is_voter', 'is_indigent', 'status',
+        'is_voter', 'is_indigent', 'is_pregnant', 'pregnant_due_date', 'status',
     ];
 
     protected $casts = [
@@ -24,8 +24,10 @@ class Resident extends Model
         'is_senior_citizen'=> 'boolean',
         'is_pwd'           => 'boolean',
         'is_solo_parent'   => 'boolean',
-        'is_voter'         => 'boolean',
-        'is_indigent'      => 'boolean',
+        'is_voter'           => 'boolean',
+        'is_indigent'        => 'boolean',
+        'is_pregnant'        => 'boolean',
+        'pregnant_due_date'  => 'date',
     ];
 
     public function household(): BelongsTo
@@ -46,6 +48,9 @@ class Resident extends Model
         if ($this->is_pwd)            $sectors[] = 'PWD';
         if ($this->is_solo_parent)    $sectors[] = 'Solo Parent';
         if ($this->is_voter)          $sectors[] = 'Voter';
+        if ($this->is_pregnant && (!$this->pregnant_due_date || $this->pregnant_due_date->gte(now()->startOfDay()))) {
+            $sectors[] = 'Pregnant';
+        }
         return $sectors;
     }
 }

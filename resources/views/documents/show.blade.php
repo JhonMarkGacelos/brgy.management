@@ -219,6 +219,44 @@
             </div>
         </div>
 
+        {{-- Edit OR Number & Purpose --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-500 text-xs">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+                <p class="text-sm font-semibold text-gray-800">Edit Details</p>
+            </div>
+            <form method="POST" action="{{ route($isStaff ? 'staff.documents.update' : 'documents.update', $document->id) }}">
+                @csrf @method('PUT')
+                <input type="hidden" name="status" value="{{ $document->status }}">
+                <input type="hidden" name="edit_details" value="1">
+                <div class="p-5 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">OR Number</label>
+                        <input type="text" name="or_number" value="{{ $document->or_number }}"
+                               placeholder="Leave blank to auto-generate on issuance"
+                               class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Purpose</label>
+                        <input type="text" name="purpose" value="{{ $document->purpose }}"
+                               placeholder="e.g. For employment, For travel"
+                               class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+                    </div>
+                    <button type="submit"
+                            class="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </div>
 </div>
 

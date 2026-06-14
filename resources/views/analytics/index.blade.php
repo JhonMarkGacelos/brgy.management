@@ -90,10 +90,19 @@
     <p class="text-xs text-gray-500 uppercase tracking-widest">Republic of the Philippines · Province of Samar · Municipality of Motiong</p>
     <h1 class="text-2xl font-bold text-gray-900 mt-1">Barangay Caranas</h1>
     <h2 class="text-base font-semibold text-gray-700 mt-0.5">Population &amp; Activity Report</h2>
+    @if($filterMonth || $filterSector)
+    <p class="text-xs text-gray-600 mt-1 font-medium">
+        Report Filter:
+        @if($filterMonth) {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }} @endif
+        @if($filterMonth && $filterSector) &nbsp;·&nbsp; @endif
+        @if($filterSector) Sector: {{ $filterSector }} @endif
+    </p>
+    @endif
     <p class="text-xs text-gray-400 mt-1">Printed: {{ now()->format('F j, Y h:i A') }}</p>
 </div>
 
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
+{{-- Screen header + filter panel --}}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 no-print">
     <div>
         <h2 class="text-base font-semibold text-gray-900">Population &amp; Activity Reports</h2>
         <p class="text-xs text-gray-400 mt-0.5">Barangay Caranas statistics and insights</p>
@@ -106,8 +115,72 @@
     </div>
 </div>
 
+{{-- Filter Panel --}}
+<div class="no-print mb-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+        <i class="fa-solid fa-filter mr-1.5 text-gray-400"></i> Filter Report
+    </p>
+    <form method="GET" action="{{ route('analytics.index') }}" class="flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Month</label>
+            <select name="month"
+                    class="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                           focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                <option value="">All Time</option>
+                @foreach($availableMonths as $value => $label)
+                <option value="{{ $value }}" {{ $filterMonth === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Sector</label>
+            <select name="sector"
+                    class="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                           focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                <option value="">All Sectors</option>
+                @foreach(['4Ps','Senior Citizen','PWD','Solo Parent','Voter','Indigent','Pregnant'] as $s)
+                <option value="{{ $s }}" {{ $filterSector === $s ? 'selected' : '' }}>{{ $s }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                style="background-color:#1a4731;"
+                onmouseover="this.style.backgroundColor='#2d6a4f'"
+                onmouseout="this.style.backgroundColor='#1a4731'">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i> Apply Filter
+        </button>
+        @if($filterMonth || $filterSector)
+        <a href="{{ route('analytics.index') }}"
+           class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+            <i class="fa-solid fa-xmark text-xs"></i> Clear
+        </a>
+        @endif
+    </form>
+    @if($filterMonth || $filterSector)
+    <div class="mt-3 flex flex-wrap gap-2 items-center">
+        <span class="text-xs text-gray-400">Active filters:</span>
+        @if($filterMonth)
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-2.5 py-1 text-xs font-semibold text-green-700">
+            <i class="fa-solid fa-calendar-day text-[10px]"></i>
+            {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }}
+        </span>
+        @endif
+        @if($filterSector)
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-700">
+            <i class="fa-solid fa-tag text-[10px]"></i>
+            {{ $filterSector }}
+        </span>
+        @endif
+    </div>
+    @endif
+</div>
+
 {{-- ── POPULATION OVERVIEW ── --}}
-<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Population Overview</p>
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+    Population Overview
+    @if($filterSector)<span class="normal-case font-normal text-gray-400 ml-1">— {{ $filterSector }} only</span>@endif
+</p>
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     @php
         $popCards = [
@@ -135,10 +208,11 @@
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
     @php
         $sectorCards = [
-            ['label'=>'Registered Voters', 'value'=>$voters,     'icon'=>'fa-check-to-slot', 'bg'=>'bg-teal-50',   'color'=>'text-teal-600'],
-            ['label'=>'4Ps Beneficiaries', 'value'=>$fourPs,     'icon'=>'fa-hand-holding-heart','bg'=>'bg-sky-50', 'color'=>'text-sky-600'],
-            ['label'=>'Solo Parents',       'value'=>$soloParents,'icon'=>'fa-person-breastfeeding','bg'=>'bg-rose-50','color'=>'text-rose-600'],
-            ['label'=>'Indigent',           'value'=>$indigent,  'icon'=>'fa-people-roof',   'bg'=>'bg-amber-50',  'color'=>'text-amber-600'],
+            ['label'=>'Registered Voters', 'value'=>$voters,     'icon'=>'fa-check-to-slot',       'bg'=>'bg-teal-50',  'color'=>'text-teal-600'],
+            ['label'=>'4Ps Beneficiaries', 'value'=>$fourPs,     'icon'=>'fa-hand-holding-heart',  'bg'=>'bg-sky-50',   'color'=>'text-sky-600'],
+            ['label'=>'Solo Parents',       'value'=>$soloParents,'icon'=>'fa-person-breastfeeding','bg'=>'bg-rose-50',  'color'=>'text-rose-600'],
+            ['label'=>'Indigent',           'value'=>$indigent,  'icon'=>'fa-people-roof',          'bg'=>'bg-amber-50', 'color'=>'text-amber-600'],
+            ['label'=>'Pregnant',           'value'=>$pregnant,  'icon'=>'fa-baby',                 'bg'=>'bg-pink-50',  'color'=>'text-pink-600'],
         ];
     @endphp
     @foreach($sectorCards as $s)
@@ -161,7 +235,9 @@
             <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-500 text-xs">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <p class="text-sm font-semibold text-gray-800">Blotter Cases</p>
+            <p class="text-sm font-semibold text-gray-800">Blotter Cases
+                @if($filterMonth)<span class="text-xs font-normal text-gray-400 ml-1">— {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }}</span>@endif
+            </p>
         </div>
         <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
             @php
@@ -190,7 +266,9 @@
             <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 text-xs">
                 <i class="fa-solid fa-file-lines"></i>
             </div>
-            <p class="text-sm font-semibold text-gray-800">Document Requests</p>
+            <p class="text-sm font-semibold text-gray-800">Document Requests
+                @if($filterMonth)<span class="text-xs font-normal text-gray-400 ml-1">— {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }}</span>@endif
+            </p>
         </div>
         <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
             @php
@@ -247,14 +325,9 @@
         <p class="text-xs text-gray-400 mb-4">Last 12 months</p>
         <div id="monthlyDocsChart"></div>
         {{-- Print fallback --}}
-        @php
-            $monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            $startMonth  = now()->subMonths(11)->month - 1;
-            $orderedMonths = array_merge(array_slice($monthLabels, $startMonth), array_slice($monthLabels, 0, $startMonth));
-        @endphp
         <table class="print-only w-full text-xs" style="display:none;">
             <thead><tr class="border-b border-gray-200">
-                @foreach($orderedMonths as $m)<th class="text-center py-1 text-gray-500">{{ $m }}</th>@endforeach
+                @foreach($monthLabels as $m)<th class="text-center py-1 text-gray-500">{{ $m }}</th>@endforeach
             </tr></thead>
             <tbody><tr>
                 @foreach($monthlyDocuments as $val)
@@ -438,6 +511,7 @@
 @php
 $monthlyCasesJson        = json_encode($monthlyCases);
 $monthlyDocsJson         = json_encode($monthlyDocuments);
+$monthLabelsJson         = json_encode($monthLabels);
 $docTypesValuesJson      = json_encode(array_values($documentTypes));
 $docTypesLabelsJson      = json_encode(array_keys($documentTypes));
 $purokValuesJson         = json_encode(array_values($populationByPurok));
@@ -451,7 +525,7 @@ $empValuesJson           = json_encode(array_values($employmentStatus));
 @endphp
 
 <script>
-const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const months = {!! $monthLabelsJson !!};
 
 // Monthly Blotter Chart
 new ApexCharts(document.getElementById('blotterChart'), {

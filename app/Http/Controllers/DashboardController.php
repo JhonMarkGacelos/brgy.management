@@ -49,6 +49,7 @@ class DashboardController extends Controller
             ['label' => 'Senior Citizens','count' => Resident::where('is_senior_citizen', true)->count(),'bar' => 'bg-orange-500'],
             ['label' => 'PWD',            'count' => Resident::where('is_pwd', true)->count(),           'bar' => 'bg-purple-500'],
             ['label' => 'Solo Parents',   'count' => Resident::where('is_solo_parent', true)->count(),   'bar' => 'bg-pink-500'],
+            ['label' => 'Pregnant',       'count' => Resident::where('is_pregnant', true)->count(),      'bar' => 'bg-rose-400'],
         ];
 
         return view('dashboard', compact(

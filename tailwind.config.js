@@ -40,5 +40,11 @@ export default {
         },
     },
 
+    safelist: [
+        // Dashboard sector summary bar colors (set dynamically in PHP controllers)
+        'bg-orange-500', 'bg-purple-500', 'bg-pink-500', 'bg-rose-400',
+        'bg-teal-500',   'bg-blue-500',   'bg-amber-500',
+    ],
+
     plugins: [forms],
 };

@@ -9,6 +9,12 @@
     <p class="text-xs text-gray-400 mt-0.5">Manage barangay information, fees, and system configuration</p>
 </div>
 
+@if(session('success'))
+<div class="mb-5 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+    <i class="fa-solid fa-circle-check shrink-0"></i> {{ session('success') }}
+</div>
+@endif
+
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
     {{-- Left Column --}}
@@ -100,11 +106,6 @@
                     <p class="text-xs text-gray-400 mt-0.5">Monthly income at or below this amount flags a family as below poverty line</p>
                 </div>
             </div>
-            @if(session('success'))
-            <div class="mx-5 mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                <i class="fa-solid fa-circle-check shrink-0"></i> {{ session('success') }}
-            </div>
-            @endif
             <form method="POST" action="{{ route('settings.update') }}">
                 @csrf
                 <div class="p-5 space-y-4">
@@ -212,52 +213,61 @@
                 </div>
                 <p class="text-sm font-semibold text-gray-800">Document Fees</p>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                            <th class="px-5 py-3.5">Document Type</th>
-                            <th class="px-5 py-3.5">Fee (₱)</th>
-                            <th class="px-5 py-3.5">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $fees = [
-                                ['type' => 'Barangay Clearance',       'fee' => 50,  'icon' => 'fa-file-shield',       'color' => 'bg-brand-50 text-brand-600'],
-                                ['type' => 'Certificate of Residency', 'fee' => 50,  'icon' => 'fa-house-flag',        'color' => 'bg-blue-50 text-blue-600'],
-                                ['type' => 'Certificate of Indigency', 'fee' => 0,   'icon' => 'fa-hand-holding-heart','color' => 'bg-orange-50 text-orange-500'],
-                                ['type' => 'Business Clearance',       'fee' => 200, 'icon' => 'fa-briefcase',         'color' => 'bg-purple-50 text-purple-600'],
-                            ];
-                        @endphp
-                        @foreach($fees as $f)
-                        <tr class="odd:bg-white even:bg-gray-50/70 hover:bg-blue-50/20 transition-colors border-b border-gray-100 last:border-0">
-                            <td class="px-5 py-3.5">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-7 w-7 items-center justify-center rounded-lg {{ $f['color'] }} text-xs">
-                                        <i class="fa-solid {{ $f['icon'] }}"></i>
+            <form method="POST" action="{{ route('settings.update') }}">
+                @csrf
+                <input type="hidden" name="_fees" value="1">
+                @php
+                    $feeRows = [
+                        ['key' => 'fee_barangay_clearance',       'type' => 'Barangay Clearance',       'icon' => 'fa-file-shield',        'color' => 'bg-brand-50 text-brand-600'],
+                        ['key' => 'fee_certificate_of_residency', 'type' => 'Certificate of Residency', 'icon' => 'fa-house-flag',         'color' => 'bg-blue-50 text-blue-600'],
+                        ['key' => 'fee_certificate_of_indigency', 'type' => 'Certificate of Indigency', 'icon' => 'fa-hand-holding-heart', 'color' => 'bg-orange-50 text-orange-500'],
+                        ['key' => 'fee_business_clearance',       'type' => 'Business Clearance',       'icon' => 'fa-briefcase',          'color' => 'bg-purple-50 text-purple-600'],
+                    ];
+                @endphp
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                <th class="px-5 py-3.5">Document Type</th>
+                                <th class="px-5 py-3.5">Fee (₱)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($feeRows as $f)
+                            <tr class="odd:bg-white even:bg-gray-50/70 border-b border-gray-100 last:border-0">
+                                <td class="px-5 py-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-7 w-7 items-center justify-center rounded-lg {{ $f['color'] }} text-xs">
+                                            <i class="fa-solid {{ $f['icon'] }}"></i>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-800">{{ $f['type'] }}</span>
                                     </div>
-                                    <span class="text-sm font-medium text-gray-800">{{ $f['type'] }}</span>
-                                </div>
-                            </td>
-                            <td class="px-5 py-3.5">
-                                <input type="number" value="{{ $f['fee'] }}" min="0"
-                                       class="w-28 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900
-                                              focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
-                            </td>
-                            <td class="px-5 py-3.5">
-                                <button class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors"
-                                        style="background-color:#1a4731;"
-                                        onmouseover="this.style.backgroundColor='#2d6a4f'"
-                                        onmouseout="this.style.backgroundColor='#1a4731'">
-                                    <i class="fa-solid fa-floppy-disk"></i> Save
-                                </button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                                </td>
+                                <td class="px-5 py-3.5">
+                                    <div class="relative w-32">
+                                        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm font-semibold">₱</span>
+                                        <input type="number" name="{{ $f['key'] }}"
+                                               value="{{ old($f['key'], $docFees[$f['key']]) }}"
+                                               min="0" step="0.01" required
+                                               class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-7 pr-3 py-1.5 text-sm text-gray-900
+                                                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-5 py-4 border-t border-gray-100">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Document Fees
+                    </button>
+                </div>
+            </form>
         </div>
 
     </div>

@@ -199,6 +199,12 @@
                                                 </label>
                                             </template>
                                         </div>
+                                        <div x-show="family.head.sectors.pregnant" x-cloak class="mt-2">
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Due Date / Expected Labor Date</label>
+                                            <input type="date" :name="'families['+fi+'][head][pregnant_due_date]'" x-model="family.head.pregnant_due_date"
+                                                   class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm
+                                                          focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-400/20 focus:outline-none transition-all">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -321,6 +327,12 @@
                                                     </label>
                                                 </template>
                                             </div>
+                                            <div x-show="member.sectors.pregnant" x-cloak class="mt-1.5">
+                                                <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Due Date / Expected Labor Date</label>
+                                                <input type="date" :name="'families['+fi+'][members]['+mi+'][pregnant_due_date]'" x-model="member.pregnant_due_date"
+                                                       class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm
+                                                              focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-400/20 focus:outline-none transition-all">
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
@@ -411,18 +423,18 @@
 
 <script>
 function householdForm() {
-    const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false });
-    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', employment_status:'', monthly_income:'', sectors: emptySectors() });
-    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', sectors: emptySectors() });
+    const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false, 'pregnant':false });
+    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors() });
+    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors() });
     const COLORS = ['#1a4731','#1d4ed8','#7c3aed','#b45309','#be185d'];
     const BGS    = ['#f0faf4','#eff6ff','#f5f3ff','#fffbeb','#fdf2f8'];
 
     return {
         families:  [{ head: emptyHead(), members: [] }],
-        sectorList: ['4ps','senior_citizen','pwd','solo_parent','voter','indigent'],
+        sectorList: ['4ps','senior_citizen','pwd','solo_parent','voter','indigent','pregnant'],
 
         sectorLabel(s) {
-            return { '4ps':'4Ps', 'senior_citizen':'Senior Citizen', 'pwd':'PWD', 'solo_parent':'Solo Parent', 'voter':'Voter', 'indigent':'Indigent' }[s] || s;
+            return { '4ps':'4Ps', 'senior_citizen':'Senior Citizen', 'pwd':'PWD', 'solo_parent':'Solo Parent', 'voter':'Voter', 'indigent':'Indigent', 'pregnant':'Pregnant' }[s] || s;
         },
         showMemberSector(member, s) {
             if (s === '4ps') return false;

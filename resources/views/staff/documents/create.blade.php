@@ -33,10 +33,10 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     @php
                         $docTypes = [
-                            ['value' => 'Barangay Clearance',       'fee' => 50,  'icon' => 'fa-file-shield',        'color' => 'bg-brand-50 text-brand-600 border-brand-200'],
-                            ['value' => 'Certificate of Residency', 'fee' => 50,  'icon' => 'fa-house-flag',         'color' => 'bg-blue-50 text-blue-600 border-blue-200'],
-                            ['value' => 'Certificate of Indigency', 'fee' => 0,   'icon' => 'fa-hand-holding-heart', 'color' => 'bg-orange-50 text-orange-600 border-orange-200'],
-                            ['value' => 'Business Clearance',       'fee' => 200, 'icon' => 'fa-briefcase',          'color' => 'bg-purple-50 text-purple-600 border-purple-200'],
+                            ['value' => 'Barangay Clearance',       'fee' => $fees['Barangay Clearance'],       'icon' => 'fa-file-shield',        'color' => 'bg-brand-50 text-brand-600 border-brand-200'],
+                            ['value' => 'Certificate of Residency', 'fee' => $fees['Certificate of Residency'], 'icon' => 'fa-house-flag',         'color' => 'bg-blue-50 text-blue-600 border-blue-200'],
+                            ['value' => 'Certificate of Indigency', 'fee' => $fees['Certificate of Indigency'], 'icon' => 'fa-hand-holding-heart', 'color' => 'bg-orange-50 text-orange-600 border-orange-200'],
+                            ['value' => 'Business Clearance',       'fee' => $fees['Business Clearance'],       'icon' => 'fa-briefcase',          'color' => 'bg-purple-50 text-purple-600 border-purple-200'],
                         ];
                     @endphp
                     @foreach($docTypes as $dt)

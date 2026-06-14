@@ -23,6 +23,7 @@
         'PWD'        => 'bg-purple-50 text-purple-600 ring-1 ring-purple-100',
         'Solo Parent'=> 'bg-pink-50 text-pink-600 ring-1 ring-pink-100',
         'Voter'      => 'bg-brand-50 text-brand-700 ring-1 ring-brand-100',
+        'Pregnant'   => 'bg-rose-50 text-rose-600 ring-1 ring-rose-100',
     ];
     $avatarColors = ['bg-brand-100 text-brand-700','bg-blue-100 text-blue-700','bg-orange-100 text-orange-700','bg-purple-100 text-purple-700','bg-pink-100 text-pink-700','bg-teal-100 text-teal-700'];
     $hasMemberIncome = !$isDemo && $household->residents->sum('monthly_income') > 0;

@@ -26,6 +26,7 @@ $isStaff = Auth::user()->role === 'staff';
         'PWD'        => 'bg-purple-50 text-purple-600 ring-1 ring-purple-100',
         'Solo Parent'=> 'bg-pink-50 text-pink-600 ring-1 ring-pink-100',
         'Voter'      => 'bg-brand-50 text-brand-700 ring-1 ring-brand-100',
+        'Pregnant'   => 'bg-rose-50 text-rose-600 ring-1 ring-rose-100',
     ];
     $avatarColors = ['bg-brand-100 text-brand-700','bg-blue-100 text-blue-700','bg-orange-100 text-orange-700','bg-purple-100 text-purple-700','bg-pink-100 text-pink-700','bg-teal-100 text-teal-700'];
     $hasMemberIncome = !$isDemo && $household->residents->sum('monthly_income') > 0;
@@ -228,13 +229,15 @@ $isStaff = Auth::user()->role === 'staff';
                                         'employment_status' => $m->employment_status,
                                         'monthly_income'    => $m->monthly_income,
                                         'date_of_birth'     => $m->date_of_birth?->format('Y-m-d'),
-                                        'is_head'          => $m->is_head,
-                                        'is_4ps'           => $m->is_4ps,
-                                        'is_senior_citizen'=> $m->is_senior_citizen,
-                                        'is_pwd'           => $m->is_pwd,
-                                        'is_solo_parent'   => $m->is_solo_parent,
-                                        'is_voter'         => $m->is_voter,
-                                        'is_indigent'      => $m->is_indigent,
+                                        'is_head'           => $m->is_head,
+                                        'is_4ps'            => $m->is_4ps,
+                                        'is_senior_citizen' => $m->is_senior_citizen,
+                                        'is_pwd'            => $m->is_pwd,
+                                        'is_solo_parent'    => $m->is_solo_parent,
+                                        'is_voter'          => $m->is_voter,
+                                        'is_indigent'       => $m->is_indigent,
+                                        'is_pregnant'       => $m->is_pregnant,
+                                        'pregnant_due_date' => $m->pregnant_due_date?->format('Y-m-d'),
                                     ]) }})"
                                     class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
                                         <i class="fa-solid fa-pen text-[11px]"></i> Edit
@@ -670,6 +673,17 @@ $isStaff = Auth::user()->role === 'staff';
                             {{ $label }}
                         </label>
                         @endforeach
+                        <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                            <input type="checkbox" name="is_pregnant" id="em_is_pregnant" value="1"
+                                   class="rounded border-gray-300 text-rose-500 focus:ring-rose-400"
+                                   onchange="togglePregnantDueDateModal(this.checked)">
+                            Pregnant
+                        </label>
+                    </div>
+                    <div id="em_pregnant_due_wrap" class="hidden mt-2">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Due Date / Expected Labor Date</label>
+                        <input type="date" name="pregnant_due_date" id="em_pregnant_due_date"
+                               class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
                     </div>
                 </div>
             </div>
@@ -713,11 +727,18 @@ function openEditMember(data) {
     fourPsWrap.style.display = data.is_head ? '' : 'none';
     document.getElementById('em_is_4ps').checked = !!data.is_4ps;
 
-    ['is_senior_citizen','is_pwd','is_solo_parent','is_voter','is_indigent'].forEach(function(f) {
+    ['is_senior_citizen','is_pwd','is_solo_parent','is_voter','is_indigent','is_pregnant'].forEach(function(f) {
         document.getElementById('em_' + f).checked = !!data[f];
     });
 
+    document.getElementById('em_pregnant_due_date').value = data.pregnant_due_date || '';
+    togglePregnantDueDateModal(!!data.is_pregnant);
+
     document.getElementById('modal-edit-member').classList.remove('hidden');
+}
+
+function togglePregnantDueDateModal(show) {
+    document.getElementById('em_pregnant_due_wrap').classList.toggle('hidden', !show);
 }
 </script>
 

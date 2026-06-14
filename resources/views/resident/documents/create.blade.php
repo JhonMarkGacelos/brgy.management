@@ -61,9 +61,9 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     @php
                         $docTypes = [
-                            ['value' => 'Barangay Clearance',      'icon' => 'fa-file-shield',        'desc' => 'For employment, NBI, etc.', 'fee' => '₱50'],
-                            ['value' => 'Certificate of Residency','icon' => 'fa-house-flag',          'desc' => 'Proof of residence',        'fee' => '₱50'],
-                            ['value' => 'Certificate of Indigency','icon' => 'fa-hand-holding-heart',  'desc' => 'For financial assistance',  'fee' => 'Free'],
+                            ['value' => 'Barangay Clearance',      'icon' => 'fa-file-shield',       'desc' => 'For employment, NBI, etc.', 'fee' => $fees['Barangay Clearance'] > 0       ? '₱'.number_format($fees['Barangay Clearance'], 0)       : 'Free'],
+                            ['value' => 'Certificate of Residency','icon' => 'fa-house-flag',        'desc' => 'Proof of residence',        'fee' => $fees['Certificate of Residency'] > 0 ? '₱'.number_format($fees['Certificate of Residency'], 0) : 'Free'],
+                            ['value' => 'Certificate of Indigency','icon' => 'fa-hand-holding-heart','desc' => 'For financial assistance',  'fee' => $fees['Certificate of Indigency'] > 0 ? '₱'.number_format($fees['Certificate of Indigency'], 0) : 'Free'],
                         ];
                     @endphp
                     @foreach($docTypes as $dt)

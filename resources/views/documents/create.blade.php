@@ -45,10 +45,10 @@
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         @php
                             $docTypes = [
-                                ['value' => 'Barangay Clearance',       'fee' => 50,  'icon' => 'fa-file-shield',   'color' => 'bg-brand-50 text-brand-600 border-brand-200'],
-                                ['value' => 'Certificate of Residency', 'fee' => 50,  'icon' => 'fa-house-flag',    'color' => 'bg-blue-50 text-blue-600 border-blue-200'],
-                                ['value' => 'Certificate of Indigency', 'fee' => 0,   'icon' => 'fa-hand-holding-heart', 'color' => 'bg-orange-50 text-orange-600 border-orange-200'],
-                                ['value' => 'Business Clearance',       'fee' => 200, 'icon' => 'fa-briefcase',     'color' => 'bg-purple-50 text-purple-600 border-purple-200'],
+                                ['value' => 'Barangay Clearance',       'fee' => $fees['Barangay Clearance'],       'icon' => 'fa-file-shield',        'color' => 'bg-brand-50 text-brand-600 border-brand-200'],
+                                ['value' => 'Certificate of Residency', 'fee' => $fees['Certificate of Residency'], 'icon' => 'fa-house-flag',         'color' => 'bg-blue-50 text-blue-600 border-blue-200'],
+                                ['value' => 'Certificate of Indigency', 'fee' => $fees['Certificate of Indigency'], 'icon' => 'fa-hand-holding-heart', 'color' => 'bg-orange-50 text-orange-600 border-orange-200'],
+                                ['value' => 'Business Clearance',       'fee' => $fees['Business Clearance'],       'icon' => 'fa-briefcase',          'color' => 'bg-purple-50 text-purple-600 border-purple-200'],
                             ];
                         @endphp
                         @foreach($docTypes as $dt)
@@ -160,22 +160,16 @@
             <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">OR Number</label>
-                    <div class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm flex items-center gap-2">
-                        @if(isset($document) && $document->or_number)
-                            <i class="fa-solid fa-receipt text-green-600 text-xs"></i>
-                            <span class="font-semibold text-gray-800">{{ $document->or_number }}</span>
-                        @else
-                            <i class="fa-solid fa-clock-rotate-left text-gray-400 text-xs"></i>
-                            <span class="text-gray-400 italic">Auto-generated upon issuance</span>
-                        @endif
-                    </div>
+                    <input type="text" name="or_number" value="{{ old('or_number', isset($document) ? $document->or_number : '') }}"
+                           placeholder="Leave blank to auto-generate on issuance"
+                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Fee Amount (₱)</label>
-                    <input type="number" name="fee" id="fee_amount" value="{{ old('fee', isset($document) ? $document->fee : '0') }}" min="0" step="0.01"
-                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
-                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
-                    <p class="text-[11px] text-gray-400 mt-1">Auto-filled based on document type</p>
+                    <input type="number" name="fee" id="fee_amount" value="{{ old('fee', isset($document) ? $document->fee : '0') }}" readonly
+                           class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm text-gray-400 cursor-not-allowed">
+                    <p class="text-[11px] text-gray-400 mt-1">Set by document type · configurable in admin settings</p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Issued By</label>

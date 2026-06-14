@@ -48,10 +48,11 @@ class ResidentController extends Controller
 
         if ($sector = $request->sector) {
             $sectorMap = [
-                '4Ps'          => 'is_4ps',
-                'Senior Citizen' => 'is_senior_citizen',
-                'PWD'          => 'is_pwd',
-                'Solo Parent'  => 'is_solo_parent',
+                '4Ps'           => 'is_4ps',
+                'Senior Citizen'=> 'is_senior_citizen',
+                'PWD'           => 'is_pwd',
+                'Solo Parent'   => 'is_solo_parent',
+                'Pregnant'      => 'is_pregnant',
             ];
             if ($col = $sectorMap[$sector] ?? null) {
                 $query->whereHas('residents', fn($r) => $r->where($col, true));
@@ -139,6 +140,8 @@ class ResidentController extends Controller
                 'is_solo_parent'       => !empty($head['is_solo_parent']),
                 'is_voter'             => !empty($head['is_voter']),
                 'is_indigent'          => !empty($head['is_indigent']),
+                'is_pregnant'          => !empty($head['is_pregnant']),
+                'pregnant_due_date'    => !empty($head['is_pregnant']) ? ($head['pregnant_due_date'] ?: null) : null,
             ]);
 
             foreach ($familyData['members'] ?? [] as $member) {
@@ -161,6 +164,8 @@ class ResidentController extends Controller
                     'is_solo_parent'       => !empty($member['is_solo_parent']),
                     'is_voter'             => !empty($member['is_voter']),
                     'is_indigent'          => !empty($member['is_indigent']),
+                    'is_pregnant'          => !empty($member['is_pregnant']),
+                    'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
                 ]);
             }
 
@@ -239,6 +244,8 @@ class ResidentController extends Controller
                 'is_solo_parent'       => !empty($headData['is_solo_parent']),
                 'is_voter'             => !empty($headData['is_voter']),
                 'is_indigent'          => !empty($headData['is_indigent']),
+                'is_pregnant'          => !empty($headData['is_pregnant']),
+                'pregnant_due_date'    => !empty($headData['is_pregnant']) ? ($headData['pregnant_due_date'] ?: null) : null,
             ]);
         }
 
@@ -263,6 +270,8 @@ class ResidentController extends Controller
                 'is_solo_parent'       => !empty($member['is_solo_parent']),
                 'is_voter'             => !empty($member['is_voter']),
                 'is_indigent'          => !empty($member['is_indigent']),
+                'is_pregnant'          => !empty($member['is_pregnant']),
+                'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
             ]);
         }
 
@@ -312,6 +321,8 @@ class ResidentController extends Controller
             'is_solo_parent'       => $request->boolean('is_solo_parent'),
             'is_voter'             => $request->boolean('is_voter'),
             'is_indigent'          => $request->boolean('is_indigent'),
+            'is_pregnant'          => $request->boolean('is_pregnant'),
+            'pregnant_due_date'    => $request->boolean('is_pregnant') ? ($request->pregnant_due_date ?: null) : null,
         ]);
 
         return redirect()->to($this->route('residents.show', $householdId))
