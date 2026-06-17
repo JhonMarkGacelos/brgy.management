@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <title>{{ $document->document_type }} — {{ $document->resident?->full_name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman:ital,wght@0,400;0,700;1,400;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -235,9 +236,21 @@
                 min-height: auto;
                 border: 3px double #111;
                 box-shadow: none;
-                padding: 0.6in 0.75in;
+                padding: 0.45in 0.75in;
             }
-            @page { size: letter; margin: 0.3in; }
+            @page { size: letter; margin: 0.2in; }
+
+            /* Compact vertical spacing so everything fits on one page */
+            .doc-header { margin-bottom: 6px; }
+            .logo-wrap img { width: 75px; height: 75px; }
+            .header-text .brgy-name { font-size: 22pt; }
+            .header-divider { margin: 6px 0 14px; }
+            .doc-title { font-size: 18pt; margin-bottom: 18px; }
+            .body-text { font-size: 12pt; line-height: 1.8; margin-bottom: 8px; }
+            .sig-section { margin-top: 22px; }
+            .sig-name { margin-top: 28px; }
+            .footer-fields { margin-top: 16px; line-height: 1.9; }
+            .verify-box { margin-top: 20px; padding: 8px 12px; }
         }
     </style>
 </head>
