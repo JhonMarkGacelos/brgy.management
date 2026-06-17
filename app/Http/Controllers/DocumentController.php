@@ -180,10 +180,6 @@ class DocumentController extends Controller
     {
         $document = DocumentRequest::with(['resident.household'])->findOrFail($id);
 
-        // Auto-issue: generate OR and mark as Issued on first print
-        if (empty($document->or_number)) {
-            $document->or_number = DocumentRequest::generateOrNumber();
-        }
         if ($document->status !== 'Issued') {
             $document->status       = 'Issued';
             $document->issued_at    = now();

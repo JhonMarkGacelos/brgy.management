@@ -57,18 +57,18 @@
             <div class="flex items-center gap-1 shrink-0">
                 <a href="{{ route($isStaff ? 'staff.announcements.show' : 'announcements.show', $announcement->id) }}" title="View"
                    class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
-                    <i class="fa-solid fa-eye text-[11px]"></i> View
+                    <i class="fa-solid fa-eye text-[11px]"></i><span class="hidden sm:inline">View</span>
                 </a>
                 <a href="{{ route($isStaff ? 'staff.announcements.edit' : 'announcements.edit', $announcement->id) }}" title="Edit"
                    class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
-                    <i class="fa-solid fa-pen text-[11px]"></i> Edit
+                    <i class="fa-solid fa-pen text-[11px]"></i><span class="hidden sm:inline">Edit</span>
                 </a>
                 <form action="{{ route($isStaff ? 'staff.announcements.destroy' : 'announcements.destroy', $announcement->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this announcement?')">
                     @csrf
                     @method('DELETE')
                     <button type="submit" title="Delete"
                        class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
-                        <i class="fa-solid fa-trash text-[11px]"></i> Delete
+                        <i class="fa-solid fa-trash text-[11px]"></i><span class="hidden sm:inline">Delete</span>
                     </button>
                 </form>
             </div>

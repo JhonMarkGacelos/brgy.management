@@ -157,31 +157,50 @@
                 </div>
                 <p class="text-sm font-semibold text-gray-800">Payment & Records</p>
             </div>
-            <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">OR Number</label>
-                    <input type="text" name="or_number" value="{{ old('or_number', isset($document) ? $document->or_number : '') }}"
-                           placeholder="Leave blank to auto-generate on issuance"
-                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
-                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+            <div class="p-5 space-y-4">
+
+                {{-- OR Number — highlighted --}}
+                <div class="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-400 text-white text-[11px]">
+                            <i class="fa-solid fa-receipt"></i>
+                        </div>
+                        <label for="or_number" class="text-xs font-bold text-amber-800 uppercase tracking-wide">
+                            Official Receipt (OR) Number
+                        </label>
+                        <span class="ml-auto text-[10px] font-semibold text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full">Must be entered manually</span>
+                    </div>
+                    <input type="text" id="or_number" name="or_number"
+                           value="{{ old('or_number', isset($document) ? $document->or_number : '') }}"
+                           placeholder="e.g. 1234567"
+                           class="w-full rounded-xl border-2 border-amber-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900
+                                  focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 focus:outline-none transition-all placeholder-amber-300">
+                    <p class="mt-2 text-[11px] text-amber-800 flex items-start gap-1.5 font-semibold">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
+                        Enter the OR number from the official receipt issued to the resident. This must be filled in manually — the system will not generate one automatically.
+                    </p>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Fee Amount (₱)</label>
-                    <input type="number" name="fee" id="fee_amount" value="{{ old('fee', isset($document) ? $document->fee : '0') }}" readonly
-                           class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm text-gray-400 cursor-not-allowed">
-                    <p class="text-[11px] text-gray-400 mt-1">Set by document type · configurable in admin settings</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Fee Amount (₱)</label>
+                        <input type="number" name="fee" id="fee_amount" value="{{ old('fee', isset($document) ? $document->fee : '0') }}" readonly
+                               class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm text-gray-400 cursor-not-allowed">
+                        <p class="text-[11px] text-gray-400 mt-1">Set by document type · configurable in admin settings</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Issued By</label>
+                        <input type="text" name="issued_by" value="{{ Auth::user()->name ?? 'Admin' }}" readonly
+                               class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm text-gray-400 cursor-not-allowed">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Date Issued</label>
+                        <input type="date" name="date_issued" value="{{ old('date_issued', isset($document) ? $document->issued_at?->format('Y-m-d') : date('Y-m-d')) }}"
+                               class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Issued By</label>
-                    <input type="text" name="issued_by" value="{{ Auth::user()->name ?? 'Admin' }}" readonly
-                           class="w-full rounded-xl border border-gray-200 bg-gray-100 px-3.5 py-2.5 text-sm text-gray-400 cursor-not-allowed">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Date Issued</label>
-                    <input type="date" name="date_issued" value="{{ old('date_issued', isset($document) ? $document->issued_at?->format('Y-m-d') : date('Y-m-d')) }}"
-                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
-                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
-                </div>
+
             </div>
         </div>
 

@@ -146,6 +146,11 @@
             text-align: center;
             min-width: 220px;
         }
+        .sig-img {
+            display: block;
+            margin: 0 auto 2px;
+            height: auto;
+        }
         .sig-name {
             font-weight: bold;
             font-size: 13pt;
@@ -154,6 +159,7 @@
             padding-top: 4px;
             margin-top: 40px;
         }
+        .sig-name.has-image { margin-top: 0; }
         .sig-title { font-size: 11pt; }
 
         /* ── FOOTER FIELDS ── */

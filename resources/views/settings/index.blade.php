@@ -9,11 +9,6 @@
     <p class="text-xs text-gray-400 mt-0.5">Manage barangay information, fees, and system configuration</p>
 </div>
 
-@if(session('success'))
-<div class="mb-5 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-    <i class="fa-solid fa-circle-check shrink-0"></i> {{ session('success') }}
-</div>
-@endif
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
@@ -28,41 +23,43 @@
                 </div>
                 <p class="text-sm font-semibold text-gray-800">Barangay Information</p>
             </div>
-            <form>
+            <form method="POST" action="{{ route('settings.update') }}">
+            @csrf
+            <input type="hidden" name="_brgy_info" value="1">
             <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Barangay Name</label>
-                    <input type="text" value="Caranas"
+                    <input type="text" name="brgy_name" value="{{ old('brgy_name', $brgyInfo['brgy_name']) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Municipality</label>
-                    <input type="text" value="Motiong"
+                    <input type="text" name="brgy_municipality" value="{{ old('brgy_municipality', $brgyInfo['brgy_municipality']) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Province</label>
-                    <input type="text" value="Samar"
+                    <input type="text" name="brgy_province" value="{{ old('brgy_province', $brgyInfo['brgy_province']) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Region</label>
-                    <input type="text" value="Region VIII — Eastern Visayas"
+                    <input type="text" name="brgy_region" value="{{ old('brgy_region', $brgyInfo['brgy_region']) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Punong Barangay</label>
-                    <input type="text" value="Hon. Juan dela Cruz"
+                    <input type="text" name="captain_name" value="{{ old('captain_name', $captainName) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Contact Number</label>
-                    <input type="text" value="+63 (55) 000-0000"
+                    <input type="text" name="brgy_contact" value="{{ old('brgy_contact', $brgyInfo['brgy_contact']) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
@@ -73,7 +70,7 @@
                             <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-full w-full rounded-full object-cover">
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-gray-700">Brgy. Caranas Official Seal</p>
+                            <p class="text-sm font-medium text-gray-700">Brgy. {{ $brgyInfo['brgy_name'] }} Official Seal</p>
                             <p class="text-xs text-gray-400 mt-0.5 mb-2">PNG, JPG up to 2MB</p>
                             <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors">
                                 <i class="fa-solid fa-upload text-xs"></i> Upload New Logo
@@ -92,6 +89,124 @@
                     <i class="fa-solid fa-floppy-disk text-xs"></i> Save Changes
                 </button>
             </div>
+            </form>
+        </div>
+
+        {{-- Captain's Signature --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 text-xs">
+                    <i class="fa-solid fa-signature"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">Barangay Captain's Signature</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Displayed on all issued documents</p>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data"
+                  x-data="{ sigHeight: {{ $captainSignatureHeight }} }">
+                @csrf
+                <input type="hidden" name="_signature" value="1">
+                <input type="hidden" name="signature_height" :value="sigHeight">
+                <div class="p-5 space-y-4">
+
+                    {{-- How-to instructions --}}
+                    <div class="rounded-xl bg-blue-50 border border-blue-100 p-4 space-y-2.5">
+                        <p class="text-xs font-semibold text-blue-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info"></i> How to prepare your signature image
+                        </p>
+                        <ol class="text-xs text-blue-700 space-y-1.5 list-none">
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">1</span>
+                                <span>Sign your name on <strong>white paper</strong> using a dark pen (black or dark blue).</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">2</span>
+                                <span>Take a clear photo or scan it.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">3</span>
+                                <span><strong>Remove the white background</strong> using a free tool — go to <strong class="text-blue-800">remove.bg</strong>, <strong class="text-blue-800">Canva</strong> (Effects → Background Remover), or <strong class="text-blue-800">Adobe Express</strong>, upload your photo, and download the result as PNG.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">4</span>
+                                <span>Upload the <strong>PNG file</strong> here. The transparent background makes the signature look natural on documents.</span>
+                            </li>
+                        </ol>
+                        <div class="flex items-center gap-2 pt-1 border-t border-blue-200 mt-1">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs"></i>
+                            <p class="text-[11px] text-blue-600">A white background will show as a white box on the printed document.</p>
+                        </div>
+                    </div>
+
+                    {{-- Upload --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Signature Image</label>
+                        <div class="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-3">
+                            @if($captainSignature)
+                            <p class="text-xs text-green-600 font-medium flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check"></i> Signature uploaded
+                            </p>
+                            @else
+                            <div class="flex items-center gap-3 text-gray-400">
+                                <i class="fa-solid fa-image-portrait text-2xl"></i>
+                                <p class="text-xs">No signature uploaded yet. Follow the instructions above to prepare your image.</p>
+                            </div>
+                            @endif
+                            <div>
+                                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <i class="fa-solid fa-upload text-xs"></i> {{ $captainSignature ? 'Replace Signature' : 'Upload Signature' }}
+                                    <input type="file" name="signature_image" class="hidden" accept="image/*">
+                                </label>
+                                <p class="mt-1.5 text-[11px] text-gray-400">PNG with transparent background · Max 2MB</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($captainSignature)
+                    {{-- Size slider --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Signature Size</label>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[11px] text-gray-400 w-10">Small</span>
+                            <input type="range" min="40" max="500" step="5" x-model="sigHeight"
+                                   class="flex-1 h-1.5 rounded-full cursor-pointer accent-green-700">
+                            <span class="text-[11px] text-gray-400 w-10 text-right">Large</span>
+                            <span class="text-xs font-mono font-semibold text-gray-700 w-12 text-right" x-text="sigHeight + 'px'"></span>
+                        </div>
+                    </div>
+
+                    {{-- Document preview --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Document Preview</label>
+                        <div class="rounded-xl border border-gray-200 bg-white p-5">
+                            <p class="text-[10px] text-gray-400 mb-4 uppercase tracking-wide font-medium">As it appears on issued documents:</p>
+                            <div class="flex justify-end">
+                                <div class="text-center" style="min-width:220px; font-family:'Times New Roman',serif;">
+                                    <div :style="'position:relative; z-index:2; margin-bottom:-'+Math.round(sigHeight*0.6)+'px; text-align:center;'">
+                                        <img src="{{ $captainSignature }}" alt="Signature"
+                                             :style="'max-height:'+sigHeight+'px; max-width:'+(sigHeight*3)+'px; width:auto; height:auto;'">
+                                    </div>
+                                    <div style="position:relative; z-index:1; font-weight:bold; font-size:13pt; letter-spacing:1px; border-top:1.5px solid #111; padding-top:4px;">
+                                        {{ $captainName }}
+                                    </div>
+                                    <div style="font-size:11pt;">Barangay Captain</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                </div>
+                <div class="px-5 pb-5">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Signature
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -284,16 +399,7 @@
                 <p class="text-sm font-semibold text-gray-800">System Info</p>
             </div>
             <div class="p-5 space-y-3">
-                @php
-                    $info = [
-                        ['label' => 'System Version',  'value' => 'v1.0.0'],
-                        ['label' => 'Laravel',         'value' => '13.x'],
-                        ['label' => 'PHP Version',     'value' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION],
-                        ['label' => 'Database',        'value' => 'MySQL 8.0'],
-                        ['label' => 'Last Updated',    'value' => 'Apr 15, 2025'],
-                    ];
-                @endphp
-                @foreach($info as $i)
+                @foreach($systemInfo as $i)
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-gray-400">{{ $i['label'] }}</span>
                     <span class="text-xs font-semibold text-gray-700 font-mono">{{ $i['value'] }}</span>

@@ -2,9 +2,12 @@
 
 @section('document-body')
 @php
-    $resident  = $document->resident;
-    $household = $resident?->household;
-    $issuedAt  = $document->issued_at ?? now();
+    $resident         = $document->resident;
+    $household        = $resident?->household;
+    $issuedAt         = $document->issued_at ?? now();
+    $captainSignature       = \App\Models\Setting::get('captain_signature_url');
+    $captainName            = \App\Models\Setting::get('captain_name', 'HON. PUNONG BARANGAY');
+    $captainSignatureHeight = (int) \App\Models\Setting::get('captain_signature_height', 56);
 @endphp
 
 <div class="office-title">OFFICE OF THE BARANGAY CAPTAIN</div>
@@ -44,7 +47,12 @@
 
 <div class="sig-section">
     <div class="sig-block">
-        <div class="sig-name">HON. PUNONG BARANGAY</div>
+        @if($captainSignature)
+        <div style="position:relative; z-index:2; margin-bottom:-{{ (int)($captainSignatureHeight * 0.6) }}px; text-align:center;">
+            <img src="{{ $captainSignature }}" style="max-height:{{ $captainSignatureHeight }}px; max-width:{{ $captainSignatureHeight * 3 }}px; width:auto; height:auto;" alt="Signature">
+        </div>
+        @endif
+        <div class="sig-name {{ $captainSignature ? 'has-image' : '' }}" @if($captainSignature) style="position:relative; z-index:1;" @endif>{{ $captainName }}</div>
         <div class="sig-title">Barangay Captain</div>
     </div>
 </div>
@@ -53,7 +61,6 @@
     <table>
         <tr><td>O.R. No.</td><td><span class="field-line">&nbsp;{{ $document->or_number ?? '' }}&nbsp;</span></td></tr>
         <tr><td>Date Issued:</td><td><span class="field-line">&nbsp;{{ $issuedAt->format('F j, Y') }}&nbsp;</span></td></tr>
-        <tr><td>Doc. Stamp:</td><td><span class="field-line">&nbsp;&nbsp;</span></td></tr>
     </table>
 </div>
 
