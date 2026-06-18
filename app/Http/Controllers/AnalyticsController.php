@@ -93,7 +93,7 @@ class AnalyticsController extends Controller
         }
         $totalCases    = (clone $blotterBase)->count();
         $pendingCases  = (clone $blotterBase)->where('status', 'Pending')->count();
-        $resolvedCases = (clone $blotterBase)->where('status', 'Resolved')->count();
+        $resolvedCases = (clone $blotterBase)->whereIn('status', ['Settled', 'Resolved'])->count();
         $ongoingCases  = (clone $blotterBase)->where('status', 'Ongoing')->count();
 
         // Documents — filtered by month if set
@@ -162,9 +162,14 @@ class AnalyticsController extends Controller
             ->pluck('count', 'households.purok')
             ->toArray();
 
-        // Welfare classification (not filtered — always shows all households)
+        // Welfare classification — filtered by month when a month filter is active
+        $welfareBase = Household::query();
+        if ($filterYear && $filterMonthNum) {
+            $welfareBase->whereYear('created_at', $filterYear)
+                        ->whereMonth('created_at', $filterMonthNum);
+        }
         $tierOrder = ['Extremely Poor', 'Poor', 'Near Poor', 'Vulnerable', 'Non-Poor'];
-        $rawCounts = Household::whereNotNull('classification')
+        $rawCounts = (clone $welfareBase)->whereNotNull('classification')
             ->selectRaw('classification, count(*) as total')
             ->groupBy('classification')
             ->pluck('total', 'classification')
@@ -174,7 +179,7 @@ class AnalyticsController extends Controller
             $classificationCounts[$tier] = $rawCounts[$tier] ?? 0;
         }
         $householdsClassified = array_sum($classificationCounts);
-        $avgPerCapita         = Household::whereNotNull('per_capita_income')->avg('per_capita_income') ?? 0;
+        $avgPerCapita         = (clone $welfareBase)->whereNotNull('per_capita_income')->avg('per_capita_income') ?? 0;
         $belowPovertyLine     = ($classificationCounts['Extremely Poor'] ?? 0) + ($classificationCounts['Poor'] ?? 0);
 
         // Month options for filter dropdown (last 24 months)

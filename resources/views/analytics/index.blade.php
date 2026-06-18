@@ -338,8 +338,8 @@
     </div>
 </div>
 
-{{-- ── WELFARE CLASSIFICATION  (PAGE 2) ── --}}
-<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 print-page-2">Welfare Classification</p>
+{{-- ── WELFARE CLASSIFICATION ── --}}
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Welfare Classification</p>
 
 {{-- Summary cards --}}
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
@@ -394,8 +394,8 @@
     </table>
 </div>
 
-{{-- ── AGE GROUP TABLE ── --}}
-<div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
+{{-- ── AGE GROUP TABLE (PAGE 2) ── --}}
+<div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6 print-page-2">
     <div class="px-5 py-4 border-b border-gray-100">
         <p class="text-sm font-semibold text-gray-900">Age Group Demographics</p>
         <p class="text-xs text-gray-400 mt-0.5">Population breakdown by age category</p>

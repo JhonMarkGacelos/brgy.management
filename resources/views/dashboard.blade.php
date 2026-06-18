@@ -65,14 +65,14 @@ $statusBreakdown   = $statusBreakdown   ?? [];
     {{-- Monthly Trend --}}
     <div class="lg:col-span-2 rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
         <p class="text-sm font-semibold text-gray-900">Monthly Trend</p>
-        <p class="text-xs text-gray-400 mt-0.5 mb-4">Residents registered over the last 6 months</p>
+        <p class="text-xs text-gray-400 mt-0.5 mb-4">Blotter cases filed over the last 6 months</p>
         <div id="trendChart"></div>
     </div>
 
     {{-- Status Breakdown --}}
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-        <p class="text-sm font-semibold text-gray-900">Status Breakdown</p>
-        <p class="text-xs text-gray-400 mt-0.5 mb-4">Current distribution</p>
+        <p class="text-sm font-semibold text-gray-900">Document Requests</p>
+        <p class="text-xs text-gray-400 mt-0.5 mb-4">Status breakdown of all requests</p>
         <div id="statusChart"></div>
     </div>
 </div>
@@ -241,7 +241,7 @@ new ApexCharts(document.getElementById('statusChart'), {
     chart: { type: 'donut', height: 200 },
     series: statusBreakdownValues,
     labels: statusBreakdownLabels,
-    colors: ['#f59e0b', '#3b82f6', '#1a4731'],
+    colors: ['#f59e0b', '#1a4731', '#ef4444'],
     legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#6b7280' } },
     dataLabels: { enabled: false },
     plotOptions: { pie: { donut: { size: '65%' } } },

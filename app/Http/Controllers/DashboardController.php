@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Resident;
-use App\Models\Household;
 use App\Models\BlotterRecord;
 use App\Models\DocumentRequest;
 use App\Models\Announcement;
-use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -17,7 +15,7 @@ class DashboardController extends Controller
         $totalResidents = Resident::count();
         $thisMonthResidents = Resident::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
         $pendingDocuments = DocumentRequest::where('status', 'Pending')->count();
-        $resolvedCases = BlotterRecord::where('status', 'Resolved')->count();
+        $resolvedCases = BlotterRecord::whereIn('status', ['Settled', 'Resolved'])->count();
 
         // Recent activity
         $activities = [
@@ -37,11 +35,11 @@ class DashboardController extends Controller
                 ->count();
         }
 
-        // Status breakdown
+        // Status breakdown — document requests by status
         $statusBreakdown = [
-            'published' => Announcement::where('status', 'Published')->count(),
-            'pending' => DocumentRequest::where('status', 'Pending')->count(),
-            'resolved' => BlotterRecord::where('status', 'Resolved')->count(),
+            'Pending'  => DocumentRequest::whereIn('status', ['Pending', 'Pending Official'])->count(),
+            'Issued'   => DocumentRequest::where('status', 'Issued')->count(),
+            'Rejected' => DocumentRequest::where('status', 'Rejected')->count(),
         ];
 
         $sectorSummary = [

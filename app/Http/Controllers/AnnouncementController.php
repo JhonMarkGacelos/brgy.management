@@ -8,11 +8,15 @@ use Illuminate\Support\Facades\Auth;
 
 class AnnouncementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $announcements = Announcement::with('postedBy')
-            ->orderByDesc('created_at')
-            ->paginate(10);
+        $filterCategory = $request->category;
+
+        $query = Announcement::with('postedBy')->orderByDesc('created_at');
+        if ($filterCategory && $filterCategory !== 'All') {
+            $query->where('category', $filterCategory);
+        }
+        $announcements = $query->paginate(10)->withQueryString();
 
         $stats = [
             'published' => Announcement::where('status', 'Published')->count(),
@@ -21,7 +25,7 @@ class AnnouncementController extends Controller
             'this_month'=> Announcement::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
         ];
 
-        return view('announcements.index', compact('announcements', 'stats'));
+        return view('announcements.index', compact('announcements', 'stats', 'filterCategory'));
     }
 
     public function create()

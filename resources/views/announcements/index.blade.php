@@ -21,20 +21,18 @@
 
 {{-- Category Filter --}}
 <div class="flex flex-wrap gap-2 mb-6">
-    @php
-        $categories = ['All','Health','Peace & Order','Events','Emergency'];
-        $catColors = [
-            'All'          => 'bg-gray-800 text-white',
-            'Health'       => 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-            'Peace & Order'=> 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-            'Events'       => 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-            'Emergency'    => 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-        ];
-    @endphp
+    @php $categories = ['All','Health','Peace & Order','Events','Emergency']; @endphp
     @foreach($categories as $cat)
-    <button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {{ $catColors[$cat] }}">
+    @php
+        $isActive = ($cat === 'All' && !$filterCategory) || $filterCategory === $cat;
+        $href = $cat === 'All'
+            ? route($isStaff ? 'staff.announcements.index' : 'announcements.index')
+            : route($isStaff ? 'staff.announcements.index' : 'announcements.index', ['category' => $cat]);
+    @endphp
+    <a href="{{ $href }}"
+       class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {{ $isActive ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
         {{ $cat }}
-    </button>
+    </a>
     @endforeach
 </div>
 
