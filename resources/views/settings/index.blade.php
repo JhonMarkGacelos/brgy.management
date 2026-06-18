@@ -52,7 +52,7 @@
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Punong Barangay</label>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Barangay Captain</label>
                     <input type="text" name="captain_name" value="{{ old('captain_name', $captainName) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
@@ -62,6 +62,18 @@
                     <input type="text" name="brgy_contact" value="{{ old('brgy_contact', $brgyInfo['brgy_contact']) }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Captain's Gmail</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm">
+                            <i class="fa-brands fa-google"></i>
+                        </span>
+                        <input type="email" name="captain_gmail" value="{{ old('captain_gmail', $captainGmail) }}"
+                               placeholder="captainname@gmail.com"
+                               class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-3.5 py-2.5 text-sm text-gray-900
+                                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                    </div>
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Barangay Logo</label>

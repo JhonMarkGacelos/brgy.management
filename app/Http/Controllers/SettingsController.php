@@ -13,6 +13,7 @@ class SettingsController extends Controller
     {
         $povertyLine      = Setting::get('poverty_line', 10957);
         $captainName             = Setting::get('captain_name', 'HON. PUNONG BARANGAY');
+        $captainGmail            = Setting::get('captain_gmail', '');
         $captainSignature        = Setting::get('captain_signature_url');
         $captainSignatureHeight  = (int) Setting::get('captain_signature_height', 80);
         $brgyInfo = [
@@ -52,7 +53,7 @@ class SettingsController extends Controller
             ['label' => 'Last Updated',   'value' => \Carbon\Carbon::createFromTimestamp(filemtime(base_path('composer.lock')))->format('M d, Y')],
         ];
 
-        return view('settings.index', compact('povertyLine', 'captainName', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo'));
+        return view('settings.index', compact('povertyLine', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo'));
     }
 
     public function update(Request $request, CloudinaryService $cloudinary)
@@ -66,6 +67,7 @@ class SettingsController extends Controller
             if ($request->filled('captain_name')) {
                 Setting::set('captain_name', $request->captain_name);
             }
+            Setting::set('captain_gmail', $request->input('captain_gmail', ''));
         } elseif ($request->has('_signature')) {
             Setting::set('captain_signature_height', (int) $request->input('signature_height', 180));
             if ($request->hasFile('signature_image')) {
