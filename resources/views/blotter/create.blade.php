@@ -119,6 +119,16 @@
                                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address <span class="normal-case font-normal text-gray-400">(for notifications)</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm"><i class="fa-brands fa-google"></i></span>
+                            <input type="email" name="complainant_email" value="{{ old('complainant_email', isset($record) ? $record->complainant_email : '') }}"
+                                   placeholder="complainant@gmail.com"
+                                   class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-3.5 py-2.5 text-sm text-gray-900
+                                          focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -153,6 +163,16 @@
                                placeholder="09xx-xxx-xxxx"
                                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address <span class="normal-case font-normal text-gray-400">(for notifications)</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm"><i class="fa-brands fa-google"></i></span>
+                            <input type="email" name="respondent_email" value="{{ old('respondent_email', isset($record) ? $record->respondent_email : '') }}"
+                                   placeholder="respondent@gmail.com"
+                                   class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-3.5 py-2.5 text-sm text-gray-900
+                                          focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+                        </div>
                     </div>
                 </div>
             </div>

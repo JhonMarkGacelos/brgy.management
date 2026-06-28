@@ -9,8 +9,8 @@ class BlotterRecord extends Model
 {
     protected $fillable = [
         'case_number', 'incident_date', 'incident_time', 'incident_type',
-        'location', 'complainant_name', 'complainant_address', 'complainant_contact',
-        'respondent_name', 'respondent_address', 'respondent_contact', 'witnesses',
+        'location', 'complainant_name', 'complainant_address', 'complainant_contact', 'complainant_email',
+        'respondent_name', 'respondent_address', 'respondent_contact', 'respondent_email', 'witnesses',
         'narrative', 'action_taken', 'status', 'remarks', 'resolved_at',
         'filed_by', 'resident_id',
     ];

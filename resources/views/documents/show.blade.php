@@ -232,12 +232,20 @@
                 <input type="hidden" name="status" value="{{ $document->status }}">
                 <input type="hidden" name="edit_details" value="1">
                 <div class="p-5 space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">OR Number</label>
+                    <div class="rounded-xl border-2 {{ $document->or_number ? 'border-gray-200 bg-gray-50' : 'border-amber-400 bg-amber-50' }} p-3">
+                        <label class="block text-xs font-semibold uppercase tracking-wide mb-1.5 {{ $document->or_number ? 'text-gray-500' : 'text-amber-700' }}">
+                            OR Number
+                            @unless($document->or_number)
+                                <span class="ml-1 normal-case font-normal text-amber-600"><i class="fa-solid fa-triangle-exclamation text-xs"></i> Required before issuing</span>
+                            @endunless
+                        </label>
                         <input type="text" name="or_number" value="{{ $document->or_number }}"
-                               placeholder="Leave blank to auto-generate on issuance"
-                               class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
-                                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
+                               placeholder="Enter OR Number"
+                               class="w-full rounded-xl border px-3.5 py-2.5 text-sm text-gray-900 transition-all placeholder-gray-400
+                                      {{ $document->or_number
+                                          ? 'border-gray-200 bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20'
+                                          : 'border-amber-300 bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20' }}
+                                      focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Purpose</label>

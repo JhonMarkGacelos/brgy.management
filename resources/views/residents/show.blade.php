@@ -644,6 +644,15 @@ $isStaff = Auth::user()->role === 'staff';
                            class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
                 </div>
                 <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1.5">Gmail Address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm"><i class="fa-brands fa-google"></i></span>
+                        <input type="email" name="email" id="em_email"
+                               placeholder="example@gmail.com"
+                               class="w-full rounded-xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                    </div>
+                </div>
+                <div>
                     <label class="block text-xs font-semibold text-gray-500 mb-1.5">Employment Status</label>
                     <select name="employment_status" id="em_employment"
                             class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
@@ -719,6 +728,7 @@ function openEditMember(data) {
     document.getElementById('em_gender').value       = data.gender       || '';
     document.getElementById('em_civil').value        = data.civil_status || '';
     document.getElementById('em_contact').value        = data.contact_number || '';
+    document.getElementById('em_email').value          = data.email || '';
     document.getElementById('em_employment').value     = data.employment_status || '';
     document.getElementById('em_monthly_income').value = data.monthly_income != null ? data.monthly_income : '';
 

@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\DocumentRequest;
 use App\Models\Resident;
 use App\Models\Setting;
+use App\Models\User;
+use App\Notifications\DocumentRequestSubmitted;
+use App\Notifications\DocumentStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class DocumentController extends Controller
 {
@@ -90,6 +94,10 @@ class DocumentController extends Controller
             'business_address' => $request->business_address,
         ]);
 
+        // Notify all admins of the new request
+        $admins = User::where('role', 'admin')->whereNotNull('email')->get();
+        Notification::send($admins, new DocumentRequestSubmitted($document));
+
         $printRoute = Auth::user()->role === 'staff' ? 'staff.documents.print' : 'documents.print';
         return redirect()->route($printRoute, $document->id);
     }
@@ -136,6 +144,15 @@ class DocumentController extends Controller
         }
 
         $document->update($updateData);
+
+        // Notify resident by email when status changes to Issued or Rejected
+        if (in_array($request->status, ['Issued', 'Rejected'])) {
+            $residentEmail = $document->resident?->email;
+            if ($residentEmail) {
+                Notification::route('mail', $residentEmail)
+                    ->notify(new DocumentStatusUpdated($document));
+            }
+        }
 
         // Delete ID photo from Cloudinary once document is issued (privacy cleanup)
         if ($request->status === 'Issued' && $document->id_photo_public_id) {

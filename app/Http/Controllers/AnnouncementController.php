@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\Resident;
+use App\Notifications\AnnouncementPublished;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class AnnouncementController extends Controller
 {
@@ -42,16 +45,22 @@ class AnnouncementController extends Controller
             'audience' => 'nullable|in:All Residents,Senior Citizens,PWD,4Ps,Voters',
         ]);
 
-        Announcement::create([
+        $status       = $request->status ?? 'Published';
+        $announcement = Announcement::create([
             'title'        => $request->title,
             'content'      => $request->content,
             'category'     => $request->category,
             'audience'     => $request->audience ?? 'All Residents',
-            'status'       => $request->status ?? 'Published',
+            'status'       => $status,
             'published_at' => $request->published_at ?? now(),
             'expires_at'   => $request->expires_at,
             'posted_by'    => Auth::id(),
         ]);
+
+        // Email all residents with an email address when published
+        if ($status === 'Published') {
+            $this->notifyResidents($announcement);
+        }
 
         $route = Auth::user()->role === 'staff' ? 'staff.announcements.index' : 'announcements.index';
         return redirect()->to(route($route))->with('success', 'Announcement posted successfully.');
@@ -73,15 +82,23 @@ class AnnouncementController extends Controller
     {
         $announcement = Announcement::findOrFail($id);
 
+        $wasPublished = $announcement->status === 'Published';
+        $newStatus    = $request->status ?? $announcement->status;
+
         $announcement->update([
             'title'        => $request->title,
             'content'      => $request->content,
             'category'     => $request->category,
             'audience'     => $request->audience ?? $announcement->audience,
-            'status'       => $request->status ?? $announcement->status,
+            'status'       => $newStatus,
             'published_at' => $request->published_at ?? $announcement->published_at,
             'expires_at'   => $request->expires_at ?? $announcement->expires_at,
         ]);
+
+        // Email residents only when status first changes to Published (not on re-saves)
+        if (!$wasPublished && $newStatus === 'Published') {
+            $this->notifyResidents($announcement);
+        }
 
         $route = Auth::user()->role === 'staff' ? 'staff.announcements.index' : 'announcements.index';
         return redirect()->to(route($route))->with('success', 'Announcement updated.');
@@ -91,5 +108,20 @@ class AnnouncementController extends Controller
     {
         Announcement::findOrFail($id)->delete();
         return redirect()->route('announcements.index')->with('success', 'Announcement deleted.');
+    }
+
+    private function notifyResidents(Announcement $announcement): void
+    {
+        $emails = Resident::whereNotNull('email')
+            ->where('email', '!=', '')
+            ->where('status', 'Active')
+            ->pluck('email')
+            ->unique()
+            ->values();
+
+        foreach ($emails as $email) {
+            Notification::route('mail', $email)
+                ->notify(new AnnouncementPublished($announcement));
+        }
     }
 }

@@ -85,6 +85,16 @@
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Contact Number</label>
                         <p class="text-sm text-gray-900">{{ $record->complainant_contact ?: 'N/A' }}</p>
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address</label>
+                        <p class="text-sm text-gray-900">
+                            @if($record->complainant_email)
+                                <i class="fa-brands fa-google text-gray-400 mr-1"></i>{{ $record->complainant_email }}
+                            @else
+                                <span class="text-gray-400">N/A</span>
+                            @endif
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -108,6 +118,16 @@
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Contact Number</label>
                         <p class="text-sm text-gray-900">{{ $record->respondent_contact ?: 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address</label>
+                        <p class="text-sm text-gray-900">
+                            @if($record->respondent_email)
+                                <i class="fa-brands fa-google text-gray-400 mr-1"></i>{{ $record->respondent_email }}
+                            @else
+                                <span class="text-gray-400">N/A</span>
+                            @endif
+                        </p>
                     </div>
                 </div>
             </div>

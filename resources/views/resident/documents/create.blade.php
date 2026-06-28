@@ -129,11 +129,36 @@
             </div>
         </div>
 
-        {{-- Step 4: ID Photo Upload --}}
+        {{-- Step 4: Email for Notifications --}}
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
                 <p class="text-sm font-semibold text-gray-800">
-                    <i class="fa-solid fa-id-card mr-2 text-gray-500"></i>Step 4: Upload Valid ID
+                    <i class="fa-solid fa-envelope mr-2 text-gray-500"></i>Step 4: Email Notification <span class="text-xs font-normal text-gray-400">(Optional)</span>
+                </p>
+                <p class="text-xs text-gray-400 mt-0.5">We'll send you an email when your document is ready or if there are updates.</p>
+            </div>
+            <div class="p-5">
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Gmail Address</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm">
+                        <i class="fa-brands fa-google"></i>
+                    </span>
+                    <input type="email" name="email" value="{{ old('email') }}"
+                           placeholder="yourname@gmail.com"
+                           class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-3.5 py-2.5 text-sm
+                                  focus:outline-none focus:ring-2 focus:ring-green-600 focus:bg-white transition-all
+                                  @error('email') border-red-400 @enderror">
+                </div>
+                @error('email')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                <p class="mt-1.5 text-[11px] text-gray-400">Your email will be saved to your resident profile for future notifications.</p>
+            </div>
+        </div>
+
+        {{-- Step 5: ID Photo Upload --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
+                <p class="text-sm font-semibold text-gray-800">
+                    <i class="fa-solid fa-id-card mr-2 text-gray-500"></i>Step 5: Upload Valid ID
                 </p>
                 <p class="text-xs text-gray-400 mt-0.5">Required for identity verification. Accepted: PhilSys, Driver's License, Passport, UMID, Voter's ID, etc.</p>
             </div>

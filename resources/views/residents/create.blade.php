@@ -46,6 +46,7 @@ if ($isEdit) {
             'relationship'      => $m->relationship_to_head ?? '',
             'employment_status' => $m->employment_status ?? '',
             'monthly_income'    => $m->monthly_income ?? '',
+            'email'             => $m->email ?? '',
             'sectors' => [
                 '4ps'            => (bool)($m->is_4ps),
                 'senior_citizen' => (bool)($m->is_senior_citizen),
@@ -223,14 +224,24 @@ if ($isEdit) {
                                             </select>
                                         </div>
                                     </div>
-                                    {{-- Contact + Employment + Income --}}
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    {{-- Contact + Gmail + Employment + Income --}}
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Contact Number</label>
                                             <input type="text" :name="'families['+fi+'][head][contact_number]'" x-model="family.head.contact_number"
                                                    placeholder="09xx-xxx-xxxx"
                                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400
                                                           focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Gmail Address</label>
+                                            <div class="relative">
+                                                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-xs"><i class="fa-brands fa-google"></i></span>
+                                                <input type="email" :name="'families['+fi+'][head][email]'" x-model="family.head.email"
+                                                       placeholder="example@gmail.com"
+                                                       class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-3 py-2 text-sm placeholder-gray-400
+                                                              focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                            </div>
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Employment Status</label>
@@ -378,6 +389,15 @@ if ($isEdit) {
                                                            placeholder="0.00" min="0" step="0.01"
                                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 </div>
+                                                <div class="sm:col-span-2">
+                                                    <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Gmail Address <span class="normal-case font-normal">(for notifications)</span></label>
+                                                    <div class="relative">
+                                                        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-xs"><i class="fa-brands fa-google"></i></span>
+                                                        <input type="email" :name="'families['+fi+'][members]['+mi+'][email]'" x-model="member.email"
+                                                               placeholder="example@gmail.com"
+                                                               class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="flex flex-wrap gap-1.5">
                                                 <template x-for="s in sectorList" :key="s">
@@ -487,8 +507,8 @@ if ($isEdit) {
 <script>
 function householdForm(initData) {
     const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false, 'pregnant':false });
-    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors() });
-    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors() });
+    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors() });
+    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', email:'', pregnant_due_date:'', sectors: emptySectors() });
     const COLORS = ['#1a4731','#1d4ed8','#7c3aed','#b45309','#be185d'];
     const BGS    = ['#f0faf4','#eff6ff','#f5f3ff','#fffbeb','#fdf2f8'];
 

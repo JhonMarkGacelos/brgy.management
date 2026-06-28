@@ -6,9 +6,12 @@ use App\Models\Announcement;
 use App\Models\DocumentRequest;
 use App\Models\Resident;
 use App\Models\Setting;
+use App\Models\User;
+use App\Notifications\DocumentRequestSubmitted;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class ResidentPortalController extends Controller
 {
@@ -88,6 +91,7 @@ class ResidentPortalController extends Controller
             'purpose'       => 'required|string|max:255',
             'last_name'     => 'required|string|max:100',
             'first_name'    => 'required|string|max:100',
+            'email'         => 'nullable|email|max:255',
             'id_photo'      => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
@@ -98,6 +102,11 @@ class ResidentPortalController extends Controller
 
         if (! $resident) {
             return back()->withInput()->with('resident_not_found', true);
+        }
+
+        // Save email to resident profile if provided and not already set
+        if ($request->filled('email') && empty($resident->email)) {
+            $resident->update(['email' => $request->email]);
         }
 
         try {
@@ -127,6 +136,10 @@ class ResidentPortalController extends Controller
             'resident_id'       => $resident->id,
             'requested_by'      => Auth::id(),
         ]);
+
+        // Notify admins of the new request
+        $admins = User::where('role', 'admin')->whereNotNull('email')->get();
+        Notification::send($admins, new DocumentRequestSubmitted($doc));
 
         return redirect()->route('resident.documents.index')
             ->with('success', "Request submitted! Your tracking number is {$doc->tracking_number}.");

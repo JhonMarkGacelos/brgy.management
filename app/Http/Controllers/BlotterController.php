@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlotterRecord;
+use App\Notifications\BlotterStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View as IlluminateView;
 
 class BlotterController extends Controller
@@ -85,9 +87,11 @@ class BlotterController extends Controller
             'complainant_name'     => $request->complainant_name,
             'complainant_address'  => $request->complainant_address,
             'complainant_contact'  => $request->complainant_contact,
+            'complainant_email'    => $request->complainant_email,
             'respondent_name'      => $request->respondent_name,
             'respondent_address'   => $request->respondent_address,
             'respondent_contact'   => $request->respondent_contact,
+            'respondent_email'     => $request->respondent_email,
             'witnesses'            => $request->witnesses,
             'narrative'            => $request->narrative,
             'action_taken'         => $request->action_taken,
@@ -115,6 +119,8 @@ class BlotterController extends Controller
     {
         $record = BlotterRecord::findOrFail($id);
 
+        $oldStatus = $record->status;
+
         $record->update([
             'incident_date'       => $request->incident_date,
             'incident_time'       => $request->incident_time,
@@ -123,9 +129,11 @@ class BlotterController extends Controller
             'complainant_name'    => $request->complainant_name,
             'complainant_address' => $request->complainant_address,
             'complainant_contact' => $request->complainant_contact,
+            'complainant_email'   => $request->complainant_email ?? $record->complainant_email,
             'respondent_name'     => $request->respondent_name,
             'respondent_address'  => $request->respondent_address,
             'respondent_contact'  => $request->respondent_contact,
+            'respondent_email'    => $request->respondent_email ?? $record->respondent_email,
             'witnesses'           => $request->witnesses,
             'narrative'           => $request->narrative,
             'action_taken'        => $request->action_taken,
@@ -133,6 +141,18 @@ class BlotterController extends Controller
             'remarks'             => $request->remarks,
             'resolved_at'         => in_array($request->status, ['Settled', 'Referred']) ? now() : null,
         ]);
+
+        // Notify both parties when status changes
+        if ($oldStatus !== $request->status) {
+            if ($record->complainant_email) {
+                Notification::route('mail', $record->complainant_email)
+                    ->notify(new BlotterStatusUpdated($record, 'complainant'));
+            }
+            if ($record->respondent_email) {
+                Notification::route('mail', $record->respondent_email)
+                    ->notify(new BlotterStatusUpdated($record, 'respondent'));
+            }
+        }
 
         return redirect()->to($this->r('blotter.index'))
             ->with('success', 'Blotter record updated.');
