@@ -4,9 +4,32 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 class BlotterRecord extends Model
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['status', 'remarks', 'action_taken', 'incident_type', 'narrative'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('blotter');
+    }
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        return match($eventName) {
+            'created' => "Blotter case {$this->case_number} filed",
+            'updated' => "Blotter case {$this->case_number} updated",
+            'deleted' => "Blotter case {$this->case_number} deleted",
+            default   => "Blotter case {$this->case_number} {$eventName}",
+        };
+    }
+
     protected $fillable = [
         'case_number', 'incident_date', 'incident_time', 'incident_type',
         'location', 'complainant_name', 'complainant_address', 'complainant_contact', 'complainant_email',

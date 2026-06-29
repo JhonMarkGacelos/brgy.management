@@ -4,9 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 class Resident extends Model
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['first_name', 'middle_name', 'last_name', 'status', 'email', 'contact_number'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('resident');
+    }
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        $name = "{$this->first_name} {$this->last_name}";
+        return match($eventName) {
+            'created' => "Resident {$name} added",
+            'updated' => "Resident {$name} updated",
+            'deleted' => "Resident {$name} deleted",
+            default   => "Resident {$name} {$eventName}",
+        };
+    }
+
     protected $fillable = [
         'household_id', 'first_name', 'middle_name', 'last_name',
         'date_of_birth', 'age', 'gender', 'civil_status', 'nationality',

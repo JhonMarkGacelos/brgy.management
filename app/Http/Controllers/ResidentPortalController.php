@@ -137,6 +137,11 @@ class ResidentPortalController extends Controller
             'requested_by'      => Auth::id(),
         ]);
 
+        activity('resident_request')
+            ->causedBy(Auth::user())
+            ->performedOn($doc)
+            ->log("Resident submitted {$doc->document_type} request {$doc->tracking_number}");
+
         // Notify admins of the new request
         $admins = User::where('role', 'admin')->whereNotNull('email')->get();
         Notification::send($admins, new DocumentRequestSubmitted($doc));

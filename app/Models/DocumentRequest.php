@@ -4,9 +4,32 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 class DocumentRequest extends Model
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['status', 'or_number', 'purpose', 'remarks', 'id_verified'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('document');
+    }
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        return match($eventName) {
+            'created' => "Document request {$this->tracking_number} submitted",
+            'updated' => "Document request {$this->tracking_number} updated",
+            'deleted' => "Document request {$this->tracking_number} deleted",
+            default   => "Document request {$this->tracking_number} {$eventName}",
+        };
+    }
+
     protected $fillable = [
         'tracking_number', 'document_type', 'purpose', 'fee', 'or_number',
         'id_photo_url', 'id_photo_public_id', 'id_verified',

@@ -7,6 +7,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentVerifyController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
@@ -49,6 +50,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::resource('announcements', AnnouncementController::class);
 
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/audit',     [AuditLogController::class, 'index'])->name('audit.index');
 
     Route::get('/users',            [UserController::class, 'index'])->name('users.index');
     Route::post('/users',           [UserController::class, 'store'])->name('users.store');

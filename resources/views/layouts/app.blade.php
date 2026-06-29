@@ -72,8 +72,9 @@
                 <div class="space-y-0.5">
                     @php
                         $adminNav = [
-                            ['route' => 'analytics.index', 'label' => 'Analytics',      'icon' => 'fa-chart-bar',  'match' => 'analytics.*'],
-                            ['route' => 'users.index',     'label' => 'User Accounts',  'icon' => 'fa-users-gear', 'match' => 'users.*'],
+                            ['route' => 'analytics.index',  'label' => 'Analytics',      'icon' => 'fa-chart-bar',       'match' => 'analytics.*'],
+                            ['route' => 'audit.index',      'label' => 'Audit Log',      'icon' => 'fa-clock-rotate-left','match' => 'audit.*'],
+                            ['route' => 'users.index',      'label' => 'User Accounts',  'icon' => 'fa-users-gear',      'match' => 'users.*'],
                             ['route' => 'settings.index',  'label' => 'Settings',       'icon' => 'fa-gear',       'match' => 'settings.*'],
                         ];
                     @endphp
