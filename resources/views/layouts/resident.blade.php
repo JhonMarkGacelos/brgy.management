@@ -106,12 +106,13 @@
     {{-- ── MAIN ── --}}
     <div class="flex flex-col flex-1 md:pl-[220px] min-h-screen overflow-y-auto">
 
-        {{-- Mobile menu button --}}
-        <div class="md:hidden flex items-center px-4 pt-3">
-            <button class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 transition-colors"
+        {{-- Topbar --}}
+        <div class="flex items-center justify-between px-4 pt-3 md:justify-end md:px-6">
+            <button class="md:hidden rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 transition-colors"
                     @click="sidebarOpen = !sidebarOpen">
                 <i class="fa-solid fa-bars text-sm"></i>
             </button>
+            @include('partials.notification-bell')
         </div>
 
         {{-- Flash messages --}}

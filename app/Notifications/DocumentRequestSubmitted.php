@@ -15,7 +15,20 @@ class DocumentRequestSubmitted extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        $resident = $this->document->resident;
+
+        return [
+            'icon'  => 'fa-file-circle-plus',
+            'color' => 'blue',
+            'title' => 'New Document Request',
+            'body'  => $this->document->document_type . ' — ' . ($resident ? $resident->full_name : 'Walk-in'),
+            'url'   => route('documents.show', $this->document->id),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

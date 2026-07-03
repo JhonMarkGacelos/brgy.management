@@ -15,7 +15,26 @@ class DocumentStatusUpdated extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $notifiable instanceof \App\Models\User ? ['mail', 'database'] : ['mail'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        $status = $this->document->status;
+
+        $url = match($notifiable->role ?? null) {
+            'admin' => route('documents.show', $this->document->id),
+            'staff' => route('staff.documents.show', $this->document->id),
+            default => route('resident.documents.index'),
+        };
+
+        return [
+            'icon'  => $status === 'Issued' ? 'fa-circle-check' : 'fa-circle-xmark',
+            'color' => $status === 'Issued' ? 'green' : 'red',
+            'title' => $status === 'Issued' ? 'Document Ready for Pickup' : 'Document Request Update',
+            'body'  => $this->document->document_type . ' — ' . $this->document->tracking_number,
+            'url'   => $url,
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

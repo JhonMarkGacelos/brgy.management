@@ -145,12 +145,22 @@ class BlotterController extends Controller
         // Notify both parties when status changes
         if ($oldStatus !== $request->status) {
             if ($record->complainant_email) {
-                Notification::route('mail', $record->complainant_email)
-                    ->notify(new BlotterStatusUpdated($record, 'complainant'));
+                $user = \App\Models\User::where('email', $record->complainant_email)->first();
+                if ($user) {
+                    $user->notify(new BlotterStatusUpdated($record, 'complainant'));
+                } else {
+                    Notification::route('mail', $record->complainant_email)
+                        ->notify(new BlotterStatusUpdated($record, 'complainant'));
+                }
             }
             if ($record->respondent_email) {
-                Notification::route('mail', $record->respondent_email)
-                    ->notify(new BlotterStatusUpdated($record, 'respondent'));
+                $user = \App\Models\User::where('email', $record->respondent_email)->first();
+                if ($user) {
+                    $user->notify(new BlotterStatusUpdated($record, 'respondent'));
+                } else {
+                    Notification::route('mail', $record->respondent_email)
+                        ->notify(new BlotterStatusUpdated($record, 'respondent'));
+                }
             }
         }
 

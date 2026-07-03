@@ -15,7 +15,24 @@ class BlotterStatusUpdated extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $notifiable instanceof \App\Models\User ? ['mail', 'database'] : ['mail'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        $url = match($notifiable->role ?? null) {
+            'admin'    => route('blotter.show', $this->record->id),
+            'staff'    => route('staff.blotter.show', $this->record->id),
+            default    => route('resident.dashboard'),
+        };
+
+        return [
+            'icon'  => 'fa-shield-halved',
+            'color' => 'amber',
+            'title' => 'Blotter Case Update — ' . $this->record->status,
+            'body'  => 'Case ' . $this->record->case_number . ' (' . ucfirst($this->role) . ')',
+            'url'   => $url,
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

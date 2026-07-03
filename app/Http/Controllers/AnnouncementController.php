@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use App\Models\Resident;
+use App\Models\User;
 use App\Notifications\AnnouncementPublished;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -119,9 +120,19 @@ class AnnouncementController extends Controller
             ->unique()
             ->values();
 
+        // Residents with a portal login get mail + a bell notification; others get mail only
+        $portalUsers = User::where('role', 'resident')
+            ->whereIn('email', $emails)
+            ->get()
+            ->keyBy('email');
+
         foreach ($emails as $email) {
-            Notification::route('mail', $email)
-                ->notify(new AnnouncementPublished($announcement));
+            if ($user = $portalUsers->get($email)) {
+                $user->notify(new AnnouncementPublished($announcement));
+            } else {
+                Notification::route('mail', $email)
+                    ->notify(new AnnouncementPublished($announcement));
+            }
         }
     }
 }

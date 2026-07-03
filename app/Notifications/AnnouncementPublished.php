@@ -15,7 +15,25 @@ class AnnouncementPublished extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $notifiable instanceof \App\Models\User ? ['mail', 'database'] : ['mail'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        $categoryIcons = [
+            'Emergency'     => 'fa-triangle-exclamation',
+            'Health'        => 'fa-briefcase-medical',
+            'Events'        => 'fa-calendar-days',
+            'Peace & Order' => 'fa-shield-halved',
+        ];
+
+        return [
+            'icon'  => $categoryIcons[$this->announcement->category] ?? 'fa-bullhorn',
+            'color' => 'purple',
+            'title' => 'New Announcement',
+            'body'  => $this->announcement->title,
+            'url'   => route('resident.announcements.show', $this->announcement->id),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

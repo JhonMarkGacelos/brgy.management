@@ -12,6 +12,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResidentPortalController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,14 @@ Route::get('/dashboard', function () {
     }
     return redirect()->route('staff.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// ── NOTIFICATIONS (shared across roles) ──────────────────────
+Route::middleware(['auth', 'verified'])->prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/',           [NotificationController::class, 'index'])->name('index');
+    Route::get('/recent',     [NotificationController::class, 'recent'])->name('recent');
+    Route::post('/{id}/read', [NotificationController::class, 'read'])->name('read');
+    Route::post('/read-all',  [NotificationController::class, 'readAll'])->name('read-all');
+});
 
 // ── ADMIN ROUTES ──────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {

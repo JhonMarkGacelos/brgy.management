@@ -148,9 +148,19 @@ class DocumentController extends Controller
         // Notify resident by email when status changes to Issued or Rejected
         if (in_array($request->status, ['Issued', 'Rejected'])) {
             $residentEmail = $document->resident?->email;
-            if ($residentEmail) {
-                Notification::route('mail', $residentEmail)
-                    ->notify(new DocumentStatusUpdated($document));
+            $requester     = $document->requestedBy;
+
+            // Prefer the resident's portal account (gets mail + bell); fall back to plain email
+            if ($requester && $residentEmail && $requester->email === $residentEmail) {
+                $requester->notify(new DocumentStatusUpdated($document));
+            } else {
+                if ($residentEmail) {
+                    Notification::route('mail', $residentEmail)
+                        ->notify(new DocumentStatusUpdated($document));
+                }
+                if ($requester) {
+                    $requester->notify(new DocumentStatusUpdated($document));
+                }
             }
         }
 
