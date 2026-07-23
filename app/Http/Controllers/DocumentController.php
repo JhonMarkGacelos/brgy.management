@@ -119,24 +119,25 @@ class DocumentController extends Controller
     public function update(Request $request, string $id)
     {
         $document = DocumentRequest::findOrFail($id);
+        $status = $request->input('status', $document->status);
 
         // Manual OR number entry takes priority; otherwise auto-generate when approving/issuing
         if ($request->has('or_number') && $request->filled('or_number')) {
             $orNumber = $request->or_number;
         } elseif ($document->or_number) {
             $orNumber = $document->or_number;
-        } elseif (in_array($request->status, ['Approved', 'Issued'])) {
+        } elseif (in_array($status, ['Approved', 'Issued'])) {
             $orNumber = DocumentRequest::generateOrNumber();
         } else {
             $orNumber = null;
         }
 
         $updateData = [
-            'status'       => $request->status,
+            'status'       => $status,
             'remarks'      => $request->remarks,
             'or_number'    => $orNumber,
             'processed_by' => Auth::id(),
-            'issued_at'    => $request->status === 'Issued' ? now() : $document->issued_at,
+            'issued_at'    => $status === 'Issued' ? now() : $document->issued_at,
         ];
 
         if ($request->filled('purpose')) {
@@ -146,7 +147,7 @@ class DocumentController extends Controller
         $document->update($updateData);
 
         // Notify resident by email when status changes to Issued or Rejected
-        if (in_array($request->status, ['Issued', 'Rejected'])) {
+        if (in_array($status, ['Issued', 'Rejected'])) {
             $residentEmail = $document->resident?->email;
             $requester     = $document->requestedBy;
 
@@ -165,7 +166,7 @@ class DocumentController extends Controller
         }
 
         // Delete ID photo from Cloudinary once document is issued (privacy cleanup)
-        if ($request->status === 'Issued' && $document->id_photo_public_id) {
+        if ($status === 'Issued' && $document->id_photo_public_id) {
             try {
                 (new \App\Services\CloudinaryService)->delete($document->id_photo_public_id);
                 $document->update(['id_photo_url' => null, 'id_photo_public_id' => null]);
