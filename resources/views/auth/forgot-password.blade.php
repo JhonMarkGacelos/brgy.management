@@ -37,7 +37,7 @@
                 Integrated<br>Barangay<br>Management<br>System
             </h1>
             <p class="text-white/50 text-sm leading-relaxed max-w-xs">
-                A centralized platform for managing resident records, blotter cases, document issuance, and community announcements.
+                A centralized platform for managing resident records, complaint cases, document issuance, and community announcements.
             </p>
         </div>
 

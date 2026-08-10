@@ -26,7 +26,7 @@
         $cards = [
             ['label'=>'Docs Processed Today', 'value'=>$docsProcessedToday,  'sub'=>'Issued this session',      'icon'=>'fa-file-circle-check', 'iconBg'=>'bg-blue-100',  'iconColor'=>'text-blue-600'],
             ['label'=>'Pending Approvals',    'value'=>$pendingApprovals,  'sub'=>'Awaiting official decision','icon'=>'fa-clock',             'iconBg'=>'bg-amber-100', 'iconColor'=>'text-amber-600'],
-            ['label'=>'Active Blotter Cases', 'value'=>$activeBlotterCases,  'sub'=>'Open & under mediation',   'icon'=>'fa-shield-halved',     'iconBg'=>'bg-red-100',   'iconColor'=>'text-red-600'],
+            ['label'=>'Active Complaint Cases', 'value'=>$activeBlotterCases,  'sub'=>'Open & under mediation',   'icon'=>'fa-shield-halved',     'iconBg'=>'bg-red-100',   'iconColor'=>'text-red-600'],
             ['label'=>'Residents This Month', 'value'=>$residentsThisMonth, 'sub'=>'New registrations',        'icon'=>'fa-user-plus',         'iconBg'=>'bg-teal-100',  'iconColor'=>'text-teal-600'],
         ];
     @endphp
@@ -112,7 +112,7 @@
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500 group-hover:bg-white/20 transition-colors">
                     <i class="fa-solid fa-shield-halved text-white text-sm"></i>
                 </div>
-                <span class="text-xs font-semibold text-red-600 group-hover:text-white transition-colors leading-tight text-center">File Blotter</span>
+                <span class="text-xs font-semibold text-red-600 group-hover:text-white transition-colors leading-tight text-center">File Complaint</span>
             </a>
 
             <a href="{{ route('staff.documents.create') }}"

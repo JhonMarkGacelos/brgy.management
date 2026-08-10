@@ -1,5 +1,5 @@
 @extends('layouts.staff')
-@section('title', 'File Blotter Report')
+@section('title', 'File Complaint Report')
 
 @section('content')
 
@@ -10,7 +10,7 @@
         <i class="fa-solid fa-arrow-left text-xs"></i>
     </a>
     <div>
-        <h2 class="text-base font-semibold text-gray-900">File Blotter Report</h2>
+        <h2 class="text-base font-semibold text-gray-900">File Complaint Report</h2>
         <p class="text-xs text-gray-400 mt-0.5">Complete the form — the case will be submitted for official review</p>
     </div>
 </div>

@@ -1,5 +1,5 @@
 @extends(Auth::user()->role === 'staff' ? 'layouts.staff' : 'layouts.app')
-@section('title', 'View Blotter Case')
+@section('title', 'View Complaint Case')
 
 @section('content')
 @php $isStaff = Auth::user()->role === 'staff'; @endphp
@@ -11,7 +11,7 @@
         <i class="fa-solid fa-arrow-left text-xs"></i>
     </a>
     <div>
-        <h2 class="text-base font-semibold text-gray-900">Blotter Case Details</h2>
+        <h2 class="text-base font-semibold text-gray-900">Complaint Case Details</h2>
         <p class="text-xs text-gray-400 mt-0.5">Case {{ $record->case_number }}</p>
     </div>
 </div>
@@ -205,7 +205,7 @@
                    class="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
                     <i class="fa-solid fa-pen text-xs"></i> Edit Case
                 </a>
-                <form action="{{ route($isStaff ? 'staff.blotter.destroy' : 'blotter.destroy', $record->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this blotter record?')">
+                <form action="{{ route($isStaff ? 'staff.blotter.destroy' : 'blotter.destroy', $record->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this complaint record?')">
                     @csrf
                     @method('DELETE')
                     <button type="submit"

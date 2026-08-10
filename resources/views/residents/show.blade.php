@@ -569,7 +569,7 @@ $isStaff = Auth::user()->role === 'staff';
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white text-xs">
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
-                <span class="text-xs font-semibold text-red-700">File Blotter Report</span>
+                <span class="text-xs font-semibold text-red-700">File Complaint Report</span>
             </a>
         </div>
 

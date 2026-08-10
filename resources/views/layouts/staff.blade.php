@@ -45,7 +45,7 @@
                         $staffNav = [
                             ['route' => 'staff.dashboard',            'label' => 'Dashboard',     'icon' => 'fa-house'],
                             ['route' => 'staff.residents.index',      'label' => 'Residents',     'icon' => 'fa-users'],
-                            ['route' => 'staff.blotter.index',        'label' => 'Blotter',       'icon' => 'fa-shield-halved'],
+                            ['route' => 'staff.blotter.index',        'label' => 'Complaint',       'icon' => 'fa-shield-halved'],
                             ['route' => 'staff.documents.index',      'label' => 'Documents',     'icon' => 'fa-file-lines'],
                             ['route' => 'staff.announcements.index',  'label' => 'Announcements', 'icon' => 'fa-bullhorn'],
                         ];

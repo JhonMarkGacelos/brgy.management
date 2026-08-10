@@ -1,17 +1,17 @@
 @extends(Auth::user()->role === 'staff' ? 'layouts.staff' : 'layouts.app')
-@section('title', 'Blotter Records')
+@section('title', 'Complaint Records')
 
 @section('content')
 @php $isStaff = Auth::user()->role === 'staff'; @endphp
 
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
     <div>
-        <h2 class="text-xl font-bold text-gray-800">Blotter Records</h2>
+        <h2 class="text-xl font-bold text-gray-800">Complaint Records</h2>
         <p class="text-sm text-gray-500">Incident reports and case tracking</p>
     </div>
     <a href="{{ route($isStaff ? 'staff.blotter.create' : 'blotter.create') }}"
        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
-        <i class="fa-solid fa-shield-halved"></i> File New Blotter
+        <i class="fa-solid fa-shield-halved"></i> File New Complaint
     </a>
 </div>
 
@@ -110,7 +110,7 @@
                                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
                                 <i class="fa-solid fa-pen text-[11px]"></i> Edit
                             </a>
-                            <form action="{{ route($isStaff ? 'staff.blotter.destroy' : 'blotter.destroy', $record->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this blotter record?')">
+                            <form action="{{ route($isStaff ? 'staff.blotter.destroy' : 'blotter.destroy', $record->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this complaint record?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" title="Delete"
@@ -130,11 +130,11 @@
                             </div>
                             <div>
                                 @if(request('search') || request('status'))
-                                <p class="text-sm font-semibold text-gray-900">No blotter records found</p>
+                                <p class="text-sm font-semibold text-gray-900">No complaint records found</p>
                                 <p class="text-xs text-gray-400 mt-1">No results match your search or filter. Try different keywords.</p>
                                 @else
-                                <p class="text-sm font-semibold text-gray-900">No blotter records yet</p>
-                                <p class="text-xs text-gray-400 mt-1">Start by filing a new blotter case</p>
+                                <p class="text-sm font-semibold text-gray-900">No complaint records yet</p>
+                                <p class="text-xs text-gray-400 mt-1">Start by filing a new complaint case</p>
                                 @endif
                             </div>
                         </div>
@@ -145,7 +145,7 @@
         </table>
     </div>
     <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-        <span>{{ $records->total() }} blotter records</span>
+        <span>{{ $records->total() }} complaint records</span>
         {{ $records->links() }}
     </div>
 </div>

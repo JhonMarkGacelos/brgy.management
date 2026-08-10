@@ -1,16 +1,16 @@
 @extends('layouts.staff')
-@section('title', 'Blotter Records')
+@section('title', 'Complaint Records')
 
 @section('content')
 
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
     <div>
-        <h2 class="text-xl font-bold text-gray-800">Blotter Records</h2>
+        <h2 class="text-xl font-bold text-gray-800">Complaint Records</h2>
         <p class="text-sm text-gray-500">Incident reports and case tracking</p>
     </div>
     <a href="{{ route('staff.blotter.create') }}"
        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
-        <i class="fa-solid fa-shield-halved"></i> File New Blotter
+        <i class="fa-solid fa-shield-halved"></i> File New Complaint
     </a>
 </div>
 
@@ -154,8 +154,8 @@
                                 <i class="fa-solid fa-shield-halved text-lg"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-gray-900">No blotter records found</p>
-                                <p class="text-xs text-gray-400 mt-1">File a new blotter case to get started</p>
+                                <p class="text-sm font-semibold text-gray-900">No complaint records found</p>
+                                <p class="text-xs text-gray-400 mt-1">File a new complaint case to get started</p>
                             </div>
                         </div>
                     </td>

@@ -1,5 +1,5 @@
 @extends(Auth::user()->role === 'staff' ? 'layouts.staff' : 'layouts.app')
-@section('title', isset($record) ? 'Edit Blotter' : 'File Blotter')
+@section('title', isset($record) ? 'Edit Complaint' : 'File Complaint')
 
 @section('content')
 @php $isStaff = Auth::user()->role === 'staff'; @endphp
@@ -11,7 +11,7 @@
         <i class="fa-solid fa-arrow-left text-xs"></i>
     </a>
     <div>
-        <h2 class="text-base font-semibold text-gray-900">{{ isset($record) ? 'Edit Blotter Case' : 'File New Blotter' }}</h2>
+        <h2 class="text-base font-semibold text-gray-900">{{ isset($record) ? 'Edit Complaint Case' : 'File New Complaint' }}</h2>
         <p class="text-xs text-gray-400 mt-0.5">{{ isset($record) ? 'Update case details' : 'Record a new incident or complaint' }}</p>
     </div>
 </div>
@@ -241,7 +241,7 @@
                         style="background-color:#dc2626;"
                         onmouseover="this.style.backgroundColor='#b91c1c'"
                         onmouseout="this.style.backgroundColor='#dc2626'">
-                    <i class="fa-solid fa-shield-halved text-xs"></i> {{ isset($record) ? 'Update Blotter' : 'Submit Blotter' }}
+                    <i class="fa-solid fa-shield-halved text-xs"></i> {{ isset($record) ? 'Update Complaint' : 'Submit Complaint' }}
                 </button>
                 <a href="{{ route($isStaff ? 'staff.blotter.index' : 'blotter.index') }}"
                    class="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">

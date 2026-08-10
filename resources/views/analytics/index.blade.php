@@ -235,7 +235,7 @@
             <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-500 text-xs">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <p class="text-sm font-semibold text-gray-800">Blotter Cases
+            <p class="text-sm font-semibold text-gray-800">Complaint Cases
                 @if($filterMonth)<span class="text-xs font-normal text-gray-400 ml-1">— {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }}</span>@endif
             </p>
         </div>

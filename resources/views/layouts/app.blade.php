@@ -49,7 +49,7 @@
                         $mainNav = [
                             ['route' => 'admin.dashboard',     'label' => 'Dashboard',     'icon' => 'fa-house',         'match' => 'admin.dashboard'],
                             ['route' => 'residents.index',     'label' => 'Residents',     'icon' => 'fa-users',         'match' => 'residents.*'],
-                            ['route' => 'blotter.index',       'label' => 'Blotter',       'icon' => 'fa-shield-halved', 'match' => 'blotter.*'],
+                            ['route' => 'blotter.index',       'label' => 'Complaint',       'icon' => 'fa-shield-halved', 'match' => 'blotter.*'],
                             ['route' => 'documents.index',     'label' => 'Documents',     'icon' => 'fa-file-lines',    'match' => 'documents.*'],
                             ['route' => 'announcements.index', 'label' => 'Announcements', 'icon' => 'fa-bullhorn',      'match' => 'announcements.*'],
                         ];
