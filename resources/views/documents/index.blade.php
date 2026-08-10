@@ -87,6 +87,7 @@
                     <th class="px-4 py-3">OR No.</th>
                     <th class="px-4 py-3">Resident Name</th>
                     <th class="px-4 py-3">Document Type</th>
+                    <th class="px-4 py-3">Date Requested</th>
                     <th class="px-4 py-3">Date Issued</th>
                     <th class="px-4 py-3">Fee</th>
                     <th class="px-4 py-3">Requested By</th>
@@ -104,6 +105,7 @@
                         </span>
                     </td>
                     <td class="px-4 py-3 text-gray-600 text-xs">{{ $document->created_at->format('M d, Y') }}</td>
+                    <td class="px-4 py-3 text-gray-600 text-xs">{{ $document->issued_at?->format('M d, Y') ?? '—' }}</td>
                     <td class="px-4 py-3 text-gray-700 font-medium">{{ $document->fee ? '₱'.number_format($document->fee, 2) : 'Free' }}</td>
                     <td class="px-4 py-3 text-gray-500">{{ $document->requestedBy->name }}</td>
                     <td class="px-4 py-3">
@@ -131,7 +133,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 py-12 text-center">
+                    <td colspan="8" class="px-4 py-12 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
                                 <i class="fa-solid fa-{{ request('search') || request('type') || request('status') ? 'magnifying-glass' : 'file-circle-xmark' }} text-lg"></i>
