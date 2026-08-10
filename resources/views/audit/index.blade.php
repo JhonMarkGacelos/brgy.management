@@ -15,10 +15,13 @@
             onchange="this.form.submit()">
         <option value="">All Categories</option>
         <option value="document"     {{ request('log_name') === 'document'     ? 'selected' : '' }}>Documents</option>
-        <option value="blotter"      {{ request('log_name') === 'blotter'      ? 'selected' : '' }}>Blotter</option>
+        <option value="blotter"      {{ request('log_name') === 'blotter'      ? 'selected' : '' }}>Complaint</option>
         <option value="resident"     {{ request('log_name') === 'resident'     ? 'selected' : '' }}>Residents</option>
         <option value="announcement"    {{ request('log_name') === 'announcement'    ? 'selected' : '' }}>Announcements</option>
         <option value="resident_request" {{ request('log_name') === 'resident_request' ? 'selected' : '' }}>Resident Requests</option>
+        <option value="user"         {{ request('log_name') === 'user'         ? 'selected' : '' }}>User Accounts</option>
+        <option value="household"    {{ request('log_name') === 'household'    ? 'selected' : '' }}>Households</option>
+        <option value="setting"      {{ request('log_name') === 'setting'      ? 'selected' : '' }}>Settings</option>
     </select>
     <div class="flex-1 min-w-[200px] relative">
         <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm"><i class="fa-solid fa-magnifying-glass"></i></span>
@@ -63,14 +66,21 @@
                         'resident'         => 'bg-green-100 text-green-700',
                         'announcement'     => 'bg-purple-100 text-purple-700',
                         'resident_request' => 'bg-amber-100 text-amber-700',
+                        'user'             => 'bg-indigo-100 text-indigo-700',
+                        'household'        => 'bg-teal-100 text-teal-700',
+                        'setting'          => 'bg-cyan-100 text-cyan-700',
                         default            => 'bg-gray-100 text-gray-600',
                     };
                     $badgeLabel = match($log->log_name) {
                         'resident_request' => 'Resident Request',
+                        'user'              => 'User Accounts',
+                        'household'         => 'Households',
+                        'setting'           => 'Settings',
                         default            => ucfirst($log->log_name),
                     };
-                    $old = $log->properties['old'] ?? [];
-                    $new = $log->properties['attributes'] ?? [];
+                    // spatie/laravel-activitylog v5 stores old/new diffs in attribute_changes, not properties
+                    $old = $log->attribute_changes['old'] ?? [];
+                    $new = $log->attribute_changes['attributes'] ?? [];
                 @endphp
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap">

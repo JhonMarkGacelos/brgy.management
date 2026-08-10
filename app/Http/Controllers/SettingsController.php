@@ -5,10 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SettingsController extends Controller
 {
+    /**
+     * Setting's primary key is a string, which the shared activity_log table's
+     * subject_id column (unsignedBigInteger) can't store, so it can't use the
+     * LogsActivity trait like the other models. Log manually instead, without
+     * performedOn() (subject stays null), same as the resident_request calls
+     * elsewhere in the app.
+     */
+    private array $settingsOld = [];
+    private array $settingsNew = [];
+
+    private function setAndTrack(string $key, mixed $value): void
+    {
+        $this->settingsOld[$key] = Setting::get($key);
+        $this->settingsNew[$key] = $value;
+        Setting::set($key, $value);
+    }
+
+    private function logSettingsChange(string $description): void
+    {
+        if (empty($this->settingsNew)) {
+            return;
+        }
+
+        activity('setting')
+            ->causedBy(Auth::user())
+            ->withChanges(['old' => $this->settingsOld, 'attributes' => $this->settingsNew])
+            ->log($description);
+    }
+
     public function index()
     {
         $povertyLine      = Setting::get('poverty_line', 10957);
@@ -61,15 +91,16 @@ class SettingsController extends Controller
         if ($request->has('_brgy_info')) {
             foreach (['brgy_name', 'brgy_municipality', 'brgy_province', 'brgy_region', 'brgy_contact'] as $key) {
                 if ($request->filled($key)) {
-                    Setting::set($key, $request->$key);
+                    $this->setAndTrack($key, $request->$key);
                 }
             }
             if ($request->filled('captain_name')) {
-                Setting::set('captain_name', $request->captain_name);
+                $this->setAndTrack('captain_name', $request->captain_name);
             }
-            Setting::set('captain_gmail', $request->input('captain_gmail', ''));
+            $this->setAndTrack('captain_gmail', $request->input('captain_gmail', ''));
+            $this->logSettingsChange('Barangay info updated');
         } elseif ($request->has('_signature')) {
-            Setting::set('captain_signature_height', (int) $request->input('signature_height', 180));
+            $this->setAndTrack('captain_signature_height', (int) $request->input('signature_height', 180));
             if ($request->hasFile('signature_image')) {
                 $request->validate(['signature_image' => 'required|image|max:2048']);
                 $oldPublicId = Setting::get('captain_signature_public_id');
@@ -77,9 +108,10 @@ class SettingsController extends Controller
                     $cloudinary->delete($oldPublicId);
                 }
                 $result = $cloudinary->uploadIdPhoto($request->file('signature_image'), 'signatures');
-                Setting::set('captain_signature_url',       $result['url']);
-                Setting::set('captain_signature_public_id', $result['public_id']);
+                $this->setAndTrack('captain_signature_url',       $result['url']);
+                $this->setAndTrack('captain_signature_public_id', $result['public_id']);
             }
+            $this->logSettingsChange('Captain signature updated');
         } elseif ($request->has('_fees')) {
             $request->validate([
                 'fee_barangay_clearance'       => 'required|numeric|min:0',
@@ -88,8 +120,9 @@ class SettingsController extends Controller
                 'fee_business_clearance'       => 'required|numeric|min:0',
             ]);
             foreach (['fee_barangay_clearance','fee_certificate_of_residency','fee_certificate_of_indigency','fee_business_clearance'] as $key) {
-                Setting::set($key, $request->$key);
+                $this->setAndTrack($key, $request->$key);
             }
+            $this->logSettingsChange('Document fees updated');
         } elseif ($request->has('_thresholds')) {
             $request->validate([
                 'per_capita_extremely_poor' => 'required|numeric|min:0',
@@ -98,11 +131,13 @@ class SettingsController extends Controller
                 'per_capita_vulnerable'     => 'required|numeric|min:0',
             ]);
             foreach (['per_capita_extremely_poor','per_capita_poor','per_capita_near_poor','per_capita_vulnerable'] as $key) {
-                Setting::set($key, $request->$key);
+                $this->setAndTrack($key, $request->$key);
             }
+            $this->logSettingsChange('Poverty thresholds updated');
         } else {
             $request->validate(['poverty_line' => 'required|numeric|min:0']);
-            Setting::set('poverty_line', $request->poverty_line);
+            $this->setAndTrack('poverty_line', $request->poverty_line);
+            $this->logSettingsChange('Poverty line updated');
         }
 
         return redirect()->route('settings.index')
