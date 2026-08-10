@@ -11,6 +11,7 @@ use App\Notifications\DocumentRequestSubmitted;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class ResidentPortalController extends Controller
@@ -144,7 +145,14 @@ class ResidentPortalController extends Controller
 
         // Notify admins of the new request
         $admins = User::where('role', 'admin')->whereNotNull('email')->get();
-        Notification::send($admins, new DocumentRequestSubmitted($doc));
+        try {
+            Notification::send($admins, new DocumentRequestSubmitted($doc));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send DocumentRequestSubmitted notification', [
+                'document_id' => $doc->id,
+                'error'       => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('resident.documents.index')
             ->with('success', "Request submitted! Your tracking number is {$doc->tracking_number}.");

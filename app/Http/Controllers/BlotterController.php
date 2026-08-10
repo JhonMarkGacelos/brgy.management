@@ -6,11 +6,27 @@ use App\Models\BlotterRecord;
 use App\Notifications\BlotterStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View as IlluminateView;
 
 class BlotterController extends Controller
 {
+    /**
+     * Send a notification without letting a mail/SMTP failure bubble up and
+     * fail the controller action after the related DB write already succeeded.
+     */
+    private function safeNotify(object $notifiable, object $notification, array $context = []): void
+    {
+        try {
+            $notifiable->notify($notification);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send notification: ' . get_class($notification), array_merge($context, [
+                'error' => $e->getMessage(),
+            ]));
+        }
+    }
+
     private function isStaff(): bool
     {
         return Auth::user()->role === 'staff';
@@ -146,21 +162,13 @@ class BlotterController extends Controller
         if ($oldStatus !== $request->status) {
             if ($record->complainant_email) {
                 $user = \App\Models\User::where('email', $record->complainant_email)->first();
-                if ($user) {
-                    $user->notify(new BlotterStatusUpdated($record, 'complainant'));
-                } else {
-                    Notification::route('mail', $record->complainant_email)
-                        ->notify(new BlotterStatusUpdated($record, 'complainant'));
-                }
+                $notifiable = $user ?? Notification::route('mail', $record->complainant_email);
+                $this->safeNotify($notifiable, new BlotterStatusUpdated($record, 'complainant'), ['record_id' => $record->id, 'email' => $record->complainant_email]);
             }
             if ($record->respondent_email) {
                 $user = \App\Models\User::where('email', $record->respondent_email)->first();
-                if ($user) {
-                    $user->notify(new BlotterStatusUpdated($record, 'respondent'));
-                } else {
-                    Notification::route('mail', $record->respondent_email)
-                        ->notify(new BlotterStatusUpdated($record, 'respondent'));
-                }
+                $notifiable = $user ?? Notification::route('mail', $record->respondent_email);
+                $this->safeNotify($notifiable, new BlotterStatusUpdated($record, 'respondent'), ['record_id' => $record->id, 'email' => $record->respondent_email]);
             }
         }
 

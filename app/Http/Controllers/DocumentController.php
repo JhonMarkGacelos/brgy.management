@@ -10,10 +10,26 @@ use App\Notifications\DocumentRequestSubmitted;
 use App\Notifications\DocumentStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class DocumentController extends Controller
 {
+    /**
+     * Send a notification without letting a mail/SMTP failure bubble up and
+     * fail the controller action after the related DB write already succeeded.
+     */
+    private function safeNotify(object $notifiable, object $notification, array $context = []): void
+    {
+        try {
+            $notifiable->notify($notification);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send notification: ' . get_class($notification), array_merge($context, [
+                'error' => $e->getMessage(),
+            ]));
+        }
+    }
+
     public function index(\Illuminate\Http\Request $request)
     {
         $query = DocumentRequest::with(['resident', 'requestedBy']);
@@ -96,7 +112,14 @@ class DocumentController extends Controller
 
         // Notify all admins of the new request
         $admins = User::where('role', 'admin')->whereNotNull('email')->get();
-        Notification::send($admins, new DocumentRequestSubmitted($document));
+        try {
+            Notification::send($admins, new DocumentRequestSubmitted($document));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send DocumentRequestSubmitted notification', [
+                'document_id' => $document->id,
+                'error'       => $e->getMessage(),
+            ]);
+        }
 
         $printRoute = Auth::user()->role === 'staff' ? 'staff.documents.print' : 'documents.print';
         return redirect()->route($printRoute, $document->id);
@@ -153,14 +176,13 @@ class DocumentController extends Controller
 
             // Prefer the resident's portal account (gets mail + bell); fall back to plain email
             if ($requester && $residentEmail && $requester->email === $residentEmail) {
-                $requester->notify(new DocumentStatusUpdated($document));
+                $this->safeNotify($requester, new DocumentStatusUpdated($document), ['document_id' => $document->id, 'user_id' => $requester->id]);
             } else {
                 if ($residentEmail) {
-                    Notification::route('mail', $residentEmail)
-                        ->notify(new DocumentStatusUpdated($document));
+                    $this->safeNotify(Notification::route('mail', $residentEmail), new DocumentStatusUpdated($document), ['document_id' => $document->id, 'email' => $residentEmail]);
                 }
                 if ($requester) {
-                    $requester->notify(new DocumentStatusUpdated($document));
+                    $this->safeNotify($requester, new DocumentStatusUpdated($document), ['document_id' => $document->id, 'user_id' => $requester->id]);
                 }
             }
         }
