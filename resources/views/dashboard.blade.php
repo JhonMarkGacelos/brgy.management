@@ -9,14 +9,14 @@
 /** @var int $pendingDocuments */
 /** @var int $resolvedCases */
 /** @var array $activities */
-/** @var array $blotterTrend */
+/** @var array $monthlyBarangayTrends */
 /** @var array $statusBreakdown */
 $totalResidents    = $totalResidents    ?? 0;
 $thisMonthResidents = $thisMonthResidents ?? 0;
 $pendingDocuments  = $pendingDocuments  ?? 0;
 $resolvedCases     = $resolvedCases     ?? 0;
 $activities        = $activities        ?? [];
-$blotterTrend      = $blotterTrend      ?? [];
+$monthlyBarangayTrends = $monthlyBarangayTrends ?? ['labels'=>[], 'documentsIssued'=>[], 'complaints'=>[], 'newResidents'=>[]];
 $statusBreakdown   = $statusBreakdown   ?? [];
 @endphp
 
@@ -62,10 +62,10 @@ $statusBreakdown   = $statusBreakdown   ?? [];
 {{-- Charts Row --}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
 
-    {{-- Monthly Trend --}}
+    {{-- Monthly Barangay Trends --}}
     <div class="lg:col-span-2 rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-        <p class="text-sm font-semibold text-gray-900">Monthly Trend</p>
-        <p class="text-xs text-gray-400 mt-0.5 mb-4">Blotter cases filed over the last 6 months</p>
+        <p class="text-sm font-semibold text-gray-900">Monthly Barangay Trends</p>
+        <p class="text-xs text-gray-400 mt-0.5 mb-4">Documents issued, complaints & new residents this year</p>
         <div id="trendChart"></div>
     </div>
 
@@ -114,7 +114,7 @@ $statusBreakdown   = $statusBreakdown   ?? [];
                     $recentActivities[] = [
                         'icon' => 'fa-shield-halved',
                         'bg' => 'bg-red-50 text-red-500',
-                        'title' => 'Blotter case filed',
+                        'title' => 'Complaint case filed',
                         'sub' => $case->case_number ?? 'Case #' . $case->id,
                         'time' => $case->created_at->diffForHumans(),
                     ];
@@ -170,7 +170,7 @@ $statusBreakdown   = $statusBreakdown   ?? [];
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500 group-hover:bg-white/20 transition-colors">
                     <i class="fa-solid fa-shield-halved text-white text-sm"></i>
                 </div>
-                <span class="text-xs font-semibold text-red-600 group-hover:text-white transition-colors leading-tight text-center">File Blotter</span>
+                <span class="text-xs font-semibold text-red-600 group-hover:text-white transition-colors leading-tight text-center">File Complaint</span>
             </a>
 
             <a href="{{ route('documents.create') }}"
@@ -213,29 +213,52 @@ $statusBreakdown   = $statusBreakdown   ?? [];
 </div>
 
 @php
-$blotterTrendJson = json_encode($blotterTrend);
+$monthlyTrendsJson = json_encode($monthlyBarangayTrends);
 $statusValuesJson = json_encode(array_values($statusBreakdown));
 $statusLabelsJson = json_encode(array_keys($statusBreakdown));
 @endphp
 
 <script>
 // Data from PHP backend
-const blotterTrendData = {!! $blotterTrendJson !!};
+const monthlyTrends = {!! $monthlyTrendsJson !!};
 const statusBreakdownValues = {!! $statusValuesJson !!};
 const statusBreakdownLabels = {!! $statusLabelsJson !!};
 
-new ApexCharts(document.getElementById('trendChart'), {
-    chart: { type: 'area', height: 200, toolbar: { show: false }, sparkline: { enabled: false } },
-    series: [{ name: 'Cases', data: blotterTrendData }],
-    xaxis: { categories: ['5 months ago', '4 months ago', '3 months ago', '2 months ago', 'Last month', 'This month'], labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { style: { fontSize: '11px', colors: '#9ca3af' } } },
-    colors: ['#1a4731'],
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.0, stops: [0, 100] } },
+const trendChart = new ApexCharts(document.getElementById('trendChart'), {
+    chart: { type: 'line', height: 200, toolbar: { show: false } },
+    series: [
+        { name: 'Documents Issued', data: monthlyTrends.documentsIssued },
+        { name: 'Complaints',       data: monthlyTrends.complaints },
+        { name: 'New Residents',    data: monthlyTrends.newResidents },
+    ],
+    xaxis: {
+        categories: monthlyTrends.labels,
+        title: { text: 'Month', style: { fontSize: '11px', color: '#9ca3af' } },
+        labels: { style: { fontSize: '11px', colors: '#9ca3af' } },
+        axisBorder: { show: false }, axisTicks: { show: false },
+    },
+    yaxis: {
+        title: { text: 'Number of Records', style: { fontSize: '11px', color: '#9ca3af' } },
+        labels: { style: { fontSize: '11px', colors: '#9ca3af' } },
+    },
+    colors: ['#3b82f6', '#ef4444', '#1a4731'],
+    legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#6b7280' } },
     stroke: { curve: 'smooth', width: 2.5 },
     dataLabels: { enabled: false },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
-    tooltip: { theme: 'light' },
-}).render();
+    tooltip: { theme: 'light', shared: true },
+});
+trendChart.render();
+
+setInterval(() => {
+    axios.get('{{ route('admin.dashboard.monthly-trends') }}')
+        .then(res => trendChart.updateSeries([
+            { name: 'Documents Issued', data: res.data.documentsIssued },
+            { name: 'Complaints',       data: res.data.complaints },
+            { name: 'New Residents',    data: res.data.newResidents },
+        ]))
+        .catch(() => {});
+}, 60000);
 
 new ApexCharts(document.getElementById('statusChart'), {
     chart: { type: 'donut', height: 200 },

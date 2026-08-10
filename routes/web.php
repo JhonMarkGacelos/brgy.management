@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified'])->prefix('notifications')->name('notifica
 Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+    Route::get('/admin/dashboard/monthly-trends', [DashboardController::class, 'monthlyTrends'])->name('admin.dashboard.monthly-trends');
 
     Route::resource('residents',    ResidentController::class);
     Route::put('/residents/{id}/member/{memberId}',    [ResidentController::class, 'updateMember'])->name('residents.member.update');

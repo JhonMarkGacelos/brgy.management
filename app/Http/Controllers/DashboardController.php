@@ -26,14 +26,8 @@ class DashboardController extends Controller
             'announcements' => Announcement::latest()->take(5)->get(),
         ];
 
-        // Blotter trend (last 6 months)
-        $blotterTrend = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $blotterTrend[] = BlotterRecord::whereYear('created_at', $month->year)
-                ->whereMonth('created_at', $month->month)
-                ->count();
-        }
+        // Monthly Barangay Trends (Jan–Dec of the current year)
+        $monthlyBarangayTrends = $this->monthlyBarangayTrends();
 
         // Status breakdown — document requests by status
         $statusBreakdown = [
@@ -56,10 +50,48 @@ class DashboardController extends Controller
             'pendingDocuments',
             'resolvedCases',
             'activities',
-            'blotterTrend',
+            'monthlyBarangayTrends',
             'statusBreakdown',
             'sectorSummary'
         ));
+    }
+
+    public function monthlyTrends()
+    {
+        return response()->json($this->monthlyBarangayTrends());
+    }
+
+    private function monthlyBarangayTrends(): array
+    {
+        $year = now()->year;
+
+        $docsIssued = DocumentRequest::where('status', 'Issued')
+            ->whereYear('issued_at', $year)
+            ->selectRaw('MONTH(issued_at) as month, COUNT(*) as count')
+            ->groupBy('month')->pluck('count', 'month');
+
+        $complaints = BlotterRecord::whereYear('created_at', $year)
+            ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            ->groupBy('month')->pluck('count', 'month');
+
+        $newResidents = Resident::whereYear('created_at', $year)
+            ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            ->groupBy('month')->pluck('count', 'month');
+
+        $labels = $documentsIssued = $complaintsData = $residentsData = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $labels[]          = \Carbon\Carbon::create($year, $m, 1)->format('M');
+            $documentsIssued[] = $docsIssued[$m] ?? 0;
+            $complaintsData[]  = $complaints[$m] ?? 0;
+            $residentsData[]   = $newResidents[$m] ?? 0;
+        }
+
+        return [
+            'labels'          => $labels,
+            'documentsIssued' => $documentsIssued,
+            'complaints'      => $complaintsData,
+            'newResidents'    => $residentsData,
+        ];
     }
 
     public function staffDashboard()
