@@ -55,8 +55,16 @@ class BlotterRecord extends Model
 
     public static function generateCaseNumber(): string
     {
-        $year  = date('Y');
-        $count = static::whereYear('created_at', $year)->count() + 1;
-        return $year . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+        $year = date('Y');
+
+        $lastNumber = static::where('case_number', 'like', "{$year}-%")
+            ->orderByDesc('case_number')
+            ->value('case_number');
+
+        $next = $lastNumber
+            ? ((int) substr($lastNumber, strlen($year) + 1)) + 1
+            : 1;
+
+        return $year . '-' . str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 }

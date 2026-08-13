@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BlotterRecord;
 use App\Notifications\BlotterStatusUpdated;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -94,8 +95,7 @@ class BlotterController extends Controller
             'status'            => 'required|string',
         ]);
 
-        BlotterRecord::create([
-            'case_number'          => BlotterRecord::generateCaseNumber(),
+        $attributes = [
             'incident_date'        => $request->incident_date,
             'incident_time'        => $request->incident_time,
             'incident_type'        => $request->incident_type,
@@ -113,7 +113,21 @@ class BlotterController extends Controller
             'action_taken'         => $request->action_taken,
             'status'               => $request->status,
             'filed_by'             => Auth::id(),
-        ]);
+        ];
+
+        // generateCaseNumber() isn't lock-protected, so two near-simultaneous
+        // submissions can compute the same number; retry with a fresh one
+        // instead of 500ing on the unique constraint.
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            try {
+                BlotterRecord::create(['case_number' => BlotterRecord::generateCaseNumber()] + $attributes);
+                break;
+            } catch (QueryException $e) {
+                if (! str_starts_with($e->getCode(), '23') || $attempt === 3) {
+                    throw $e;
+                }
+            }
+        }
 
         return redirect()->to($this->r('blotter.index'))
             ->with('success', 'Blotter case filed successfully.');
