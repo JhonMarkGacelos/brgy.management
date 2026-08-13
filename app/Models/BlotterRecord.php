@@ -23,10 +23,10 @@ class BlotterRecord extends Model
     public function getDescriptionForEvent(string $eventName): string
     {
         return match($eventName) {
-            'created' => "Blotter case {$this->case_number} filed",
-            'updated' => "Blotter case {$this->case_number} updated",
-            'deleted' => "Blotter case {$this->case_number} deleted",
-            default   => "Blotter case {$this->case_number} {$eventName}",
+            'created' => "Complaint case {$this->case_number} filed",
+            'updated' => "Complaint case {$this->case_number} updated",
+            'deleted' => "Complaint case {$this->case_number} deleted",
+            default   => "Complaint case {$this->case_number} {$eventName}",
         };
     }
 
