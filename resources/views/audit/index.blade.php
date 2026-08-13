@@ -72,7 +72,8 @@
                         default            => 'bg-gray-100 text-gray-600',
                     };
                     $badgeLabel = match($log->log_name) {
-                        'resident_request' => 'Resident Request',
+                        'blotter'           => 'Complaint',
+                        'resident_request'  => 'Resident Request',
                         'user'              => 'User Accounts',
                         'household'         => 'Households',
                         'setting'           => 'Settings',
