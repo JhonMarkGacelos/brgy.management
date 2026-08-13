@@ -67,16 +67,19 @@ class DashboardController extends Controller
 
         $docsIssued = DocumentRequest::where('status', 'Issued')
             ->whereYear('issued_at', $year)
-            ->selectRaw('MONTH(issued_at) as month, COUNT(*) as count')
-            ->groupBy('month')->pluck('count', 'month');
+            ->get(['issued_at'])
+            ->groupBy(fn ($row) => $row->issued_at->month)
+            ->map->count();
 
         $complaints = BlotterRecord::whereYear('created_at', $year)
-            ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->groupBy('month')->pluck('count', 'month');
+            ->get(['created_at'])
+            ->groupBy(fn ($row) => $row->created_at->month)
+            ->map->count();
 
         $newResidents = Resident::whereYear('created_at', $year)
-            ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->groupBy('month')->pluck('count', 'month');
+            ->get(['created_at'])
+            ->groupBy(fn ($row) => $row->created_at->month)
+            ->map->count();
 
         $labels = $documentsIssued = $complaintsData = $residentsData = [];
         for ($m = 1; $m <= 12; $m++) {
