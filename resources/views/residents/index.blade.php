@@ -9,13 +9,19 @@
         <h2 class="text-xl font-semibold text-gray-900">Household Profiling</h2>
         <p class="text-sm text-gray-400 mt-0.5">Manage all registered households of Barangay Caranas</p>
     </div>
-    <a href="{{ route($isStaff ? 'staff.residents.create' : 'residents.create') }}"
-       class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
-       style="background-color:#1a4731;"
-       onmouseover="this.style.backgroundColor='#2d6a4f'"
-       onmouseout="this.style.backgroundColor='#1a4731'">
-        <i class="fa-solid fa-plus text-xs"></i> Register Household
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{{ route($isStaff ? 'staff.residents.list' : 'residents.list') }}"
+           class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+            <i class="fa-solid fa-list text-xs"></i> View Resident List
+        </a>
+        <a href="{{ route($isStaff ? 'staff.residents.create' : 'residents.create') }}"
+           class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+           style="background-color:#1a4731;"
+           onmouseover="this.style.backgroundColor='#2d6a4f'"
+           onmouseout="this.style.backgroundColor='#1a4731'">
+            <i class="fa-solid fa-plus text-xs"></i> Register Household
+        </a>
+    </div>
 </div>
 
 {{-- Summary Cards --}}
@@ -100,10 +106,18 @@
         <option value="{{ $c }}" {{ request('classification') == $c ? 'selected' : '' }}>{{ $c }}</option>
         @endforeach
     </select>
+    <select name="employment_status" onchange="this.form.submit()"
+            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+        <option value="">All Employment</option>
+        @foreach(['Employed','Self-Employed','Unemployed','Student','Retired'] as $e)
+        <option value="{{ $e }}" {{ request('employment_status') == $e ? 'selected' : '' }}>{{ $e }}</option>
+        @endforeach
+    </select>
     <button type="submit" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
         <i class="fa-solid fa-magnifying-glass text-xs"></i>
     </button>
-    @if(request('search') || request('purok') || request('sector') || request('classification'))
+    @if(request('search') || request('purok') || request('sector') || request('classification') || request('employment_status'))
     <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index') }}"
        class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
         <i class="fa-solid fa-xmark text-xs"></i>
@@ -219,10 +233,10 @@
                         <td colspan="7" class="px-5 py-12 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                                    <i class="fa-solid fa-{{ request('search') || request('purok') || request('sector') ? 'magnifying-glass' : 'house' }} text-lg"></i>
+                                    <i class="fa-solid fa-{{ request('search') || request('purok') || request('sector') || request('classification') || request('employment_status') ? 'magnifying-glass' : 'house' }} text-lg"></i>
                                 </div>
                                 <div>
-                                    @if(request('search') || request('purok') || request('sector') || request('classification'))
+                                    @if(request('search') || request('purok') || request('sector') || request('classification') || request('employment_status'))
                                     <p class="text-sm font-semibold text-gray-900">No households found</p>
                                     <p class="text-xs text-gray-400 mt-1">No results match your search or filter. Try different keywords.</p>
                                     @else
@@ -230,7 +244,7 @@
                                     <p class="text-xs text-gray-400 mt-1">Start by registering your first household</p>
                                     @endif
                                 </div>
-                                @if(!request('search') && !request('purok') && !request('sector') && !request('classification'))
+                                @if(!request('search') && !request('purok') && !request('sector') && !request('classification') && !request('employment_status'))
                                 <a href="{{ route($isStaff ? 'staff.residents.create' : 'residents.create') }}"
                                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors"
                                    style="background-color:#1a4731;">

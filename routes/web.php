@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
     Route::get('/admin/dashboard/monthly-trends', [DashboardController::class, 'monthlyTrends'])->name('admin.dashboard.monthly-trends');
 
+    Route::get('/residents/list',   [ResidentController::class, 'roster'])->name('residents.list');
     Route::resource('residents',    ResidentController::class);
     Route::put('/residents/{id}/member/{memberId}',    [ResidentController::class, 'updateMember'])->name('residents.member.update');
     Route::delete('/residents/{id}/member/{memberId}', [ResidentController::class, 'destroyMember'])->name('residents.member.destroy');
@@ -80,6 +81,7 @@ Route::middleware(['auth', 'verified', 'role:staff'])->prefix('staff')->name('st
     Route::get('/residents',                          [ResidentController::class, 'index'])->name('residents.index');
     Route::get('/residents/create',                   [ResidentController::class, 'create'])->name('residents.create');
     Route::post('/residents',                         [ResidentController::class, 'store'])->name('residents.store');
+    Route::get('/residents/list',                     [ResidentController::class, 'roster'])->name('residents.list');
     Route::get('/residents/{id}',                     [ResidentController::class, 'show'])->name('residents.show');
     Route::get('/residents/{id}/edit',                [ResidentController::class, 'edit'])->name('residents.edit');
     Route::put('/residents/{id}',                     [ResidentController::class, 'update'])->name('residents.update');

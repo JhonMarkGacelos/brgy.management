@@ -63,6 +63,10 @@ class ResidentController extends Controller
             $query->where('classification', $classification);
         }
 
+        if ($employmentStatus = $request->employment_status) {
+            $query->whereHas('residents', fn($r) => $r->where('employment_status', $employmentStatus));
+        }
+
         $households      = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
         $totalResidents  = Resident::count();
         $totalHouseholds = Household::count();
@@ -79,6 +83,55 @@ class ResidentController extends Controller
             'households', 'totalResidents', 'totalHouseholds',
             'seniorCitizens', 'pwdMembers', 'puroks', 'classificationCounts'
         ));
+    }
+
+    public function roster(Request $request)
+    {
+        $query = Resident::with('household');
+
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('middle_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($purok = $request->purok) {
+            $query->whereHas('household', fn($q) => $q->where('purok', $purok));
+        }
+
+        if ($gender = $request->gender) {
+            $query->where('gender', $gender);
+        }
+
+        if ($status = $request->status) {
+            $query->where('status', $status);
+        }
+
+        if ($employmentStatus = $request->employment_status) {
+            $query->where('employment_status', $employmentStatus);
+        }
+
+        if ($sector = $request->sector) {
+            $sectorMap = [
+                '4Ps'            => 'is_4ps',
+                'Senior Citizen' => 'is_senior_citizen',
+                'PWD'            => 'is_pwd',
+                'Solo Parent'    => 'is_solo_parent',
+                'Voter'          => 'is_voter',
+                'Indigent'       => 'is_indigent',
+                'Pregnant'       => 'is_pregnant',
+            ];
+            if ($col = $sectorMap[$sector] ?? null) {
+                $query->where($col, true);
+            }
+        }
+
+        $residents = $query->orderBy('last_name')->orderBy('first_name')->get();
+        $puroks    = Household::distinct()->orderBy('purok')->pluck('purok');
+
+        return view('residents.roster', compact('residents', 'puroks'));
     }
 
     public function create()
