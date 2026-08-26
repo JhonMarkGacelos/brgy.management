@@ -59,6 +59,9 @@ class SettingsController extends Controller
             'fee_certificate_of_indigency' => Setting::get('fee_certificate_of_indigency', 0),
             'fee_business_clearance'       => Setting::get('fee_business_clearance', 200),
         ];
+        $gcashQrUrl       = Setting::get('gcash_qr_url');
+        $gcashNumber      = Setting::get('gcash_number', '');
+        $gcashAccountName = Setting::get('gcash_account_name', '');
         $dbDriver = config('database.default');
         $dbLabel  = match($dbDriver) {
             'pgsql'  => 'PostgreSQL',
@@ -83,7 +86,7 @@ class SettingsController extends Controller
             ['label' => 'Last Updated',   'value' => \Carbon\Carbon::createFromTimestamp(filemtime(base_path('composer.lock')))->format('M d, Y')],
         ];
 
-        return view('settings.index', compact('povertyLine', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo'));
+        return view('settings.index', compact('povertyLine', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName'));
     }
 
     public function update(Request $request, CloudinaryService $cloudinary)
@@ -112,6 +115,24 @@ class SettingsController extends Controller
                 $this->setAndTrack('captain_signature_public_id', $result['public_id']);
             }
             $this->logSettingsChange('Captain signature updated');
+        } elseif ($request->has('_gcash')) {
+            $request->validate([
+                'gcash_number'       => 'nullable|string|max:20',
+                'gcash_account_name' => 'nullable|string|max:150',
+            ]);
+            if ($request->hasFile('gcash_qr_image')) {
+                $request->validate(['gcash_qr_image' => 'required|image|max:2048']);
+                $oldPublicId = Setting::get('gcash_qr_public_id');
+                if ($oldPublicId) {
+                    $cloudinary->delete($oldPublicId);
+                }
+                $result = $cloudinary->uploadIdPhoto($request->file('gcash_qr_image'), 'gcash');
+                $this->setAndTrack('gcash_qr_url',       $result['url']);
+                $this->setAndTrack('gcash_qr_public_id', $result['public_id']);
+            }
+            $this->setAndTrack('gcash_number',       $request->input('gcash_number', ''));
+            $this->setAndTrack('gcash_account_name', $request->input('gcash_account_name', ''));
+            $this->logSettingsChange('GCash payment details updated');
         } elseif ($request->has('_fees')) {
             $request->validate([
                 'fee_barangay_clearance'       => 'required|numeric|min:0',

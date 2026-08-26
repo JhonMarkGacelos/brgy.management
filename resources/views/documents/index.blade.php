@@ -9,13 +9,19 @@
         <h2 class="text-xl font-bold text-gray-800">Document Issuance</h2>
         <p class="text-sm text-gray-500">Issue and track barangay documents</p>
     </div>
-    <a href="{{ route($isStaff ? 'staff.documents.create' : 'documents.create') }}"
-       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-       style="background-color:#1a4731;"
-       onmouseover="this.style.backgroundColor='#2d6a4f'"
-       onmouseout="this.style.backgroundColor='#1a4731'">
-        <i class="fa-solid fa-file-circle-plus"></i> Issue New Document
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{{ route($isStaff ? 'staff.documents.payments' : 'documents.payments') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+            <i class="fa-solid fa-sack-dollar"></i> View Fee Collected
+        </a>
+        <a href="{{ route($isStaff ? 'staff.documents.create' : 'documents.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+           style="background-color:#1a4731;"
+           onmouseover="this.style.backgroundColor='#2d6a4f'"
+           onmouseout="this.style.backgroundColor='#1a4731'">
+            <i class="fa-solid fa-file-circle-plus"></i> Issue New Document
+        </a>
+    </div>
 </div>
 
 {{-- Document Type Cards --}}

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
 
 class ResidentPortalController extends Controller
 {
@@ -82,19 +83,34 @@ class ResidentPortalController extends Controller
             'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
             'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
         ];
-        return view('resident.documents.create', compact('fees'));
+        $gcashQrUrl       = Setting::get('gcash_qr_url');
+        $gcashNumber      = Setting::get('gcash_number');
+        $gcashAccountName = Setting::get('gcash_account_name');
+        return view('resident.documents.create', compact('fees', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName'));
     }
 
     public function documentsStore(Request $request)
     {
-        $request->validate([
-            'document_type' => 'required|string',
+        $feeMap = [
+            'Barangay Clearance'       => (float) Setting::get('fee_barangay_clearance', 50),
+            'Certificate of Residency' => (float) Setting::get('fee_certificate_of_residency', 50),
+            'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
+            'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
+        ];
+        $selectedFee     = $feeMap[$request->document_type] ?? 0;
+        $gcashConfigured = (bool) (Setting::get('gcash_number') || Setting::get('gcash_qr_url'));
+
+        $rules = [
+            'document_type' => ['required', 'string', Rule::in(array_keys($feeMap))],
             'purpose'       => 'required|string|max:255',
             'last_name'     => 'required|string|max:100',
             'first_name'    => 'required|string|max:100',
-            'email'         => 'nullable|email|max:255',
             'id_photo'      => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
-        ]);
+        ];
+        if ($selectedFee > 0 && $gcashConfigured) {
+            $rules['payment_receipt'] = 'required|image|mimes:jpg,jpeg,png,webp|max:5120';
+        }
+        $request->validate($rules);
 
         $resident = Resident::where('last_name', 'like', $request->last_name)
             ->where('first_name', 'like', $request->first_name)
@@ -105,9 +121,9 @@ class ResidentPortalController extends Controller
             return back()->withInput()->with('resident_not_found', true);
         }
 
-        // Save email to resident profile if provided and not already set
-        if ($request->filled('email') && empty($resident->email)) {
-            $resident->update(['email' => $request->email]);
+        // Use the requesting account's email for notifications if the resident profile has none yet
+        if (empty($resident->email)) {
+            $resident->update(['email' => Auth::user()->email]);
         }
 
         try {
@@ -118,24 +134,31 @@ class ResidentPortalController extends Controller
             return back()->withInput()->withErrors(['id_photo' => 'ID photo upload failed. Please try again or contact barangay staff.']);
         }
 
-        $feeMap = [
-            'Barangay Clearance'       => (float) Setting::get('fee_barangay_clearance', 50),
-            'Certificate of Residency' => (float) Setting::get('fee_certificate_of_residency', 50),
-            'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
-            'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
-        ];
+        $receiptUrl = $receiptPublicId = null;
+        if ($selectedFee > 0 && $gcashConfigured) {
+            try {
+                $receiptUpload   = (new CloudinaryService)->uploadIdPhoto($request->file('payment_receipt'), 'Payment Receipts');
+                $receiptUrl      = $receiptUpload['url'];
+                $receiptPublicId = $receiptUpload['public_id'];
+            } catch (\Throwable $e) {
+                return back()->withInput()->withErrors(['payment_receipt' => 'Payment receipt upload failed. Please try again or contact barangay staff.']);
+            }
+        }
 
         $doc = DocumentRequest::create([
-            'tracking_number'   => DocumentRequest::generateTrackingNumber(),
-            'document_type'     => $request->document_type,
-            'purpose'           => $request->purpose,
-            'fee'               => $feeMap[$request->document_type] ?? 0,
-            'status'            => 'Pending',
-            'id_photo_url'      => $photoUrl,
-            'id_photo_public_id'=> $photoPublicId,
-            'id_verified'       => 'pending',
-            'resident_id'       => $resident->id,
-            'requested_by'      => Auth::id(),
+            'tracking_number'           => DocumentRequest::generateTrackingNumber(),
+            'document_type'             => $request->document_type,
+            'purpose'                   => $request->purpose,
+            'fee'                       => $selectedFee,
+            'status'                    => 'Pending',
+            'id_photo_url'              => $photoUrl,
+            'id_photo_public_id'        => $photoPublicId,
+            'id_verified'               => 'pending',
+            'payment_receipt_url'       => $receiptUrl,
+            'payment_receipt_public_id' => $receiptPublicId,
+            'payment_verified'          => $receiptUrl ? 'pending' : null,
+            'resident_id'               => $resident->id,
+            'requested_by'              => Auth::id(),
         ]);
 
         activity('resident_request')

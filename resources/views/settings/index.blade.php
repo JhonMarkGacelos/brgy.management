@@ -332,6 +332,101 @@
             </form>
         </div>
 
+        {{-- GCash Payment Details --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600 text-xs">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">GCash Payment Details</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Shown to residents when requesting a paid document</p>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="_gcash" value="1">
+                <div class="p-5 space-y-4">
+
+                    {{-- How-to instructions --}}
+                    <div class="rounded-xl bg-blue-50 border border-blue-100 p-4 space-y-2.5">
+                        <p class="text-xs font-semibold text-blue-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info"></i> What residents will see
+                        </p>
+                        <ol class="text-xs text-blue-700 space-y-1.5 list-none">
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">1</span>
+                                <span>Your GCash QR code and/or number when they request a document with a fee.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">2</span>
+                                <span>They scan the QR or send payment manually, then save their GCash payment confirmation.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 mt-0.5">3</span>
+                                <span>They upload that screenshot as proof of payment, for you to verify here in Documents.</span>
+                            </li>
+                        </ol>
+                    </div>
+
+                    {{-- QR upload --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">QR Code Image</label>
+                        <div class="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-3">
+                            @if($gcashQrUrl)
+                            <div class="flex items-center gap-3">
+                                <img src="{{ $gcashQrUrl }}" alt="GCash QR Code" class="h-16 w-16 rounded-lg border border-gray-200 bg-white object-contain">
+                                <p class="text-xs text-green-600 font-medium flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i> QR code uploaded
+                                </p>
+                            </div>
+                            @else
+                            <div class="flex items-center gap-3 text-gray-400">
+                                <i class="fa-solid fa-qrcode text-2xl"></i>
+                                <p class="text-xs">No QR code uploaded yet. Residents will only see your GCash number below.</p>
+                            </div>
+                            @endif
+                            <div>
+                                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <i class="fa-solid fa-upload text-xs"></i> {{ $gcashQrUrl ? 'Replace QR Code' : 'Upload QR Code' }}
+                                    <input type="file" name="gcash_qr_image" class="hidden" accept="image/*">
+                                </label>
+                                <p class="mt-1.5 text-[11px] text-gray-400">PNG or JPG · Max 2MB</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- GCash number / account name --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">GCash Number</label>
+                            <input type="text" name="gcash_number" value="{{ old('gcash_number', $gcashNumber) }}"
+                                   placeholder="09XX XXX XXXX"
+                                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                          focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Account Name</label>
+                            <input type="text" name="gcash_account_name" value="{{ old('gcash_account_name', $gcashAccountName) }}"
+                                   placeholder="As registered on GCash"
+                                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                          focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                    </div>
+
+                </div>
+                <div class="px-5 pb-5">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save GCash Details
+                    </button>
+                </div>
+            </form>
+        </div>
+
         {{-- Document Fees --}}
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">

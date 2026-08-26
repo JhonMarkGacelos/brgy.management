@@ -70,6 +70,40 @@ class DocumentController extends Controller
         return view('documents.index', compact('documents', 'stats', 'byType'));
     }
 
+    public function payments(Request $request)
+    {
+        $query = DocumentRequest::whereNotNull('or_number')->with(['resident', 'processedBy']);
+
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('or_number', 'like', "%{$search}%")
+                  ->orWhereHas('resident', fn($r) => $r->where('first_name', 'like', "%{$search}%")
+                                                        ->orWhere('last_name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($type = $request->type) {
+            $query->where('document_type', $type);
+        }
+
+        if ($date = $request->date) {
+            $query->whereDate('paid_at', $date);
+        } elseif ($month = $request->month) {
+            $query->whereYear('paid_at', substr($month, 0, 4))->whereMonth('paid_at', substr($month, 5, 2));
+        }
+
+        $payments    = $query->orderByDesc('paid_at')->get();
+        $totalAmount = $payments->sum('fee');
+
+        $availableMonths = [];
+        for ($i = 0; $i <= 23; $i++) {
+            $m = now()->subMonths($i);
+            $availableMonths[$m->format('Y-m')] = $m->format('F Y');
+        }
+
+        return view('documents.payments', compact('payments', 'totalAmount', 'availableMonths'));
+    }
+
     private function docFees(): array
     {
         return [
@@ -161,6 +195,7 @@ class DocumentController extends Controller
             'or_number'    => $orNumber,
             'processed_by' => Auth::id(),
             'issued_at'    => $status === 'Issued' ? now() : $document->issued_at,
+            'paid_at'      => $document->paid_at ?? ($orNumber ? now() : null),
         ];
 
         if ($request->filled('purpose')) {
@@ -216,6 +251,19 @@ class DocumentController extends Controller
         ]);
 
         $label = $request->action === 'verify' ? 'ID verified.' : 'ID rejected.';
+        $route = Auth::user()->role === 'staff' ? 'staff.documents.show' : 'documents.show';
+        return redirect()->route($route, $id)->with('success', $label);
+    }
+
+    public function verifyPayment(Request $request, string $id)
+    {
+        $document = DocumentRequest::findOrFail($id);
+        $document->update([
+            'payment_verified' => $request->action === 'verify' ? 'verified' : 'rejected',
+            'processed_by'     => Auth::id(),
+        ]);
+
+        $label = $request->action === 'verify' ? 'Payment verified.' : 'Payment rejected.';
         $route = Auth::user()->role === 'staff' ? 'staff.documents.show' : 'documents.show';
         return redirect()->route($route, $id)->with('success', $label);
     }

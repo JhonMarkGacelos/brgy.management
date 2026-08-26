@@ -14,7 +14,7 @@ class DocumentRequest extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['status', 'or_number', 'purpose', 'remarks', 'id_verified'])
+            ->logOnly(['status', 'or_number', 'purpose', 'remarks', 'id_verified', 'payment_verified'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('document');
@@ -33,13 +33,15 @@ class DocumentRequest extends Model
     protected $fillable = [
         'tracking_number', 'document_type', 'purpose', 'fee', 'or_number',
         'id_photo_url', 'id_photo_public_id', 'id_verified',
-        'status', 'remarks', 'issued_at',
+        'payment_receipt_url', 'payment_receipt_public_id', 'payment_verified',
+        'status', 'remarks', 'issued_at', 'paid_at',
         'resident_id', 'requested_by', 'processed_by',
         'business_name', 'business_type', 'business_address',
     ];
 
     protected $casts = [
         'issued_at' => 'datetime',
+        'paid_at'   => 'datetime',
         'fee'       => 'decimal:2',
     ];
 

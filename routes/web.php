@@ -13,6 +13,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResidentPortalController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\LanguageController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// ── LANGUAGE SWITCHER (no login required) ──────────────────────
+Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
 
 // ── PUBLIC DOCUMENT VERIFICATION (no login required) ──────────
 Route::get('/verify',  [DocumentVerifyController::class, 'index'])->name('document.verify');
@@ -55,9 +59,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::put('/residents/{id}/member/{memberId}',    [ResidentController::class, 'updateMember'])->name('residents.member.update');
     Route::delete('/residents/{id}/member/{memberId}', [ResidentController::class, 'destroyMember'])->name('residents.member.destroy');
     Route::resource('blotter',      BlotterController::class);
+    Route::get('/documents/payments', [DocumentController::class, 'payments'])->name('documents.payments');
     Route::resource('documents',    DocumentController::class);
     Route::get('/documents/{id}/print',    [DocumentController::class, 'print'])->name('documents.print');
     Route::post('/documents/{id}/verify-id', [DocumentController::class, 'verifyId'])->name('documents.verify-id');
+    Route::post('/documents/{id}/verify-payment', [DocumentController::class, 'verifyPayment'])->name('documents.verify-payment');
     Route::resource('announcements', AnnouncementController::class);
 
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
@@ -102,11 +108,13 @@ Route::middleware(['auth', 'verified', 'role:staff'])->prefix('staff')->name('st
     Route::get('/documents',        [DocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
     Route::post('/documents',       [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('/documents/payments',          [DocumentController::class, 'payments'])->name('documents.payments');
     Route::get('/documents/{id}',              [DocumentController::class, 'show'])->name('documents.show');
     Route::get('/documents/{id}/edit',         [DocumentController::class, 'edit'])->name('documents.edit');
     Route::put('/documents/{id}',              [DocumentController::class, 'update'])->name('documents.update');
     Route::get('/documents/{id}/print',        [DocumentController::class, 'print'])->name('documents.print');
     Route::post('/documents/{id}/verify-id',   [DocumentController::class, 'verifyId'])->name('documents.verify-id');
+    Route::post('/documents/{id}/verify-payment', [DocumentController::class, 'verifyPayment'])->name('documents.verify-payment');
 
     // Announcements
     Route::get('/announcements',           [AnnouncementController::class, 'index'])->name('announcements.index');
