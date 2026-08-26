@@ -6,12 +6,12 @@
 <div class="mb-5">
     <a href="{{ route('resident.documents.index') }}"
        class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-green-700 transition-colors">
-        <i class="fa-solid fa-chevron-left text-xs"></i> Back to My Requests
+        <i class="fa-solid fa-chevron-left text-xs"></i> {{ __('portal.back_to_requests') }}
     </a>
 </div>
 
 <div class="max-w-xl">
-    <h2 class="text-xl font-bold text-gray-800 mb-5">Track Document Request</h2>
+    <h2 class="text-xl font-bold text-gray-800 mb-5">{{ __('portal.documents.track.title') }}</h2>
 
     {{-- Search Form --}}
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 mb-5">
@@ -30,7 +30,7 @@
                     style="background-color:#1a4731;"
                     onmouseover="this.style.backgroundColor='#2d6a4f'"
                     onmouseout="this.style.backgroundColor='#1a4731'">
-                <i class="fa-solid fa-magnifying-glass text-xs"></i> Search
+                <i class="fa-solid fa-magnifying-glass text-xs"></i> {{ __('common.search') }}
             </button>
         </form>
     </div>
@@ -60,25 +60,28 @@
                 <div>
                     <p class="text-xs text-gray-400 font-mono mb-1">{{ $document->tracking_number }}</p>
                     <h3 class="text-base font-bold text-gray-800">{{ $document->document_type }}</h3>
-                    <p class="text-xs text-gray-500 mt-1">{{ $document->resident?->full_name ?? 'N/A' }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $document->resident?->full_name ?? __('portal.na') }}</p>
                 </div>
                 <span class="inline-flex items-center gap-1.5 rounded-full {{ $sc['bg'] }} {{ $sc['text'] }} text-xs font-semibold px-3 py-1.5 shrink-0">
                     <i class="fa-solid {{ $sc['icon'] }} text-[10px]"></i>
-                    {{ $document->status }}
+                    @php
+                        $statusKeys = ['Issued'=>'issued','Approved'=>'approved','Pending'=>'pending','Pending Official'=>'pending_official','Rejected'=>'rejected'];
+                    @endphp
+                    {{ isset($statusKeys[$document->status]) ? __('common.status.'.$statusKeys[$document->status]) : $document->status }}
                 </span>
             </div>
 
             {{-- Progress Tracker --}}
             @if(! $isRejected)
             <div class="px-5 py-5 border-b border-gray-100">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Processing Progress</p>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">{{ __('portal.documents.track.processing_progress') }}</p>
                 <div class="flex items-center gap-0">
                     @php
                         $steps = [
-                            ['label' => 'Submitted',    'key' => 0],
-                            ['label' => 'For Approval', 'key' => 1],
-                            ['label' => 'Approved',     'key' => 2],
-                            ['label' => 'Issued',       'key' => 3],
+                            ['label' => __('portal.documents.track.step_submitted'),    'key' => 0],
+                            ['label' => __('portal.documents.track.step_for_approval'), 'key' => 1],
+                            ['label' => __('portal.documents.track.step_approved'),     'key' => 2],
+                            ['label' => __('portal.documents.track.step_issued'),       'key' => 3],
                         ];
                     @endphp
                     @foreach($steps as $idx => $step)
@@ -109,11 +112,11 @@
                 <div class="flex items-start gap-3">
                     <i class="fa-solid fa-circle-xmark text-red-500 mt-0.5"></i>
                     <div>
-                        <p class="text-sm font-semibold text-red-700">Request Rejected</p>
+                        <p class="text-sm font-semibold text-red-700">{{ __('portal.documents.track.rejected_title') }}</p>
                         @if($document->remarks)
                             <p class="text-xs text-red-600 mt-1">{{ $document->remarks }}</p>
                         @else
-                            <p class="text-xs text-red-500 mt-1">Please visit the Barangay Hall for more information.</p>
+                            <p class="text-xs text-red-500 mt-1">{{ __('portal.documents.track.rejected_default') }}</p>
                         @endif
                     </div>
                 </div>
@@ -124,16 +127,16 @@
             <div class="px-5 py-4">
                 <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                     <div>
-                        <dt class="text-xs text-gray-400 font-medium">Date Submitted</dt>
+                        <dt class="text-xs text-gray-400 font-medium">{{ __('portal.documents.track.date_submitted') }}</dt>
                         <dd class="text-gray-800 font-medium mt-0.5">{{ $document->created_at->format('M d, Y g:i A') }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-gray-400 font-medium">Purpose</dt>
+                        <dt class="text-xs text-gray-400 font-medium">{{ __('portal.documents.track.purpose') }}</dt>
                         <dd class="text-gray-800 font-medium mt-0.5">{{ $document->purpose }}</dd>
                     </div>
                     @if($document->issued_at)
                     <div>
-                        <dt class="text-xs text-gray-400 font-medium">Date Issued</dt>
+                        <dt class="text-xs text-gray-400 font-medium">{{ __('portal.documents.track.date_issued') }}</dt>
                         <dd class="text-gray-800 font-medium mt-0.5">{{ $document->issued_at->format('M d, Y') }}</dd>
                     </div>
                     @endif
@@ -148,17 +151,16 @@
                    style="background-color:#1a4731;"
                    onmouseover="this.style.backgroundColor='#2d6a4f'"
                    onmouseout="this.style.backgroundColor='#1a4731'">
-                    <i class="fa-solid fa-print text-xs"></i> Print My Document
+                    <i class="fa-solid fa-print text-xs"></i> {{ __('portal.documents.track.print_my_document') }}
                 </a>
                 <p class="text-[11px] text-gray-400 text-center mt-2">
-                    Your document is ready. Click to open the printable version.
+                    {{ __('portal.documents.track.print_ready_note') }}
                 </p>
             </div>
             @else
             <div class="px-5 py-4 border-t border-gray-100 bg-gray-50">
                 <p class="text-xs text-gray-400 text-center">
-                    Once your document is <strong>Issued</strong>, a print button will appear here.
-                    For payment arrangements, contact the <strong>Barangay Captain</strong> or <strong>Barangay Staff</strong>.
+                    {{ __('portal.documents.track.not_yet_issued_note') }}
                 </p>
             </div>
             @endif
@@ -169,11 +171,11 @@
         {{-- Not Found --}}
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm py-12 text-center">
             <i class="fa-solid fa-file-circle-question text-4xl text-gray-300 mb-3 block"></i>
-            <p class="text-gray-700 font-semibold">No request found</p>
+            <p class="text-gray-700 font-semibold">{{ __('portal.documents.track.not_found_title') }}</p>
             <p class="text-sm text-gray-400 mt-1">
-                No record with tracking number <span class="font-mono font-bold">{{ request('tracking_number') }}</span> was found.
+                {{ __('portal.documents.track.not_found_body', ['number' => request('tracking_number')]) }}
             </p>
-            <p class="text-xs text-gray-400 mt-2">Please double-check your tracking number or visit the Barangay Hall.</p>
+            <p class="text-xs text-gray-400 mt-2">{{ __('portal.documents.track.not_found_footer') }}</p>
         </div>
 
         @endif

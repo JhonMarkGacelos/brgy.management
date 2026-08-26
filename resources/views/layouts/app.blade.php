@@ -16,7 +16,7 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900" x-data="{ sidebarOpen: false }">
 
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-dvh overflow-hidden">
 
     {{-- ── SIDEBAR ── --}}
     <aside class="no-print fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col transition-transform duration-300 md:translate-x-0"
@@ -47,11 +47,11 @@
                 <div class="space-y-0.5">
                     @php
                         $mainNav = [
-                            ['route' => 'admin.dashboard',     'label' => 'Dashboard',     'icon' => 'fa-house',         'match' => 'admin.dashboard'],
-                            ['route' => 'residents.index',     'label' => 'Residents',     'icon' => 'fa-users',         'match' => 'residents.*'],
-                            ['route' => 'blotter.index',       'label' => 'Complaint',       'icon' => 'fa-shield-halved', 'match' => 'blotter.*'],
-                            ['route' => 'documents.index',     'label' => 'Documents',     'icon' => 'fa-file-lines',    'match' => 'documents.*'],
-                            ['route' => 'announcements.index', 'label' => 'Announcements', 'icon' => 'fa-bullhorn',      'match' => 'announcements.*'],
+                            ['route' => 'admin.dashboard',     'label' => __('nav.dashboard'),     'icon' => 'fa-house',         'match' => 'admin.dashboard'],
+                            ['route' => 'residents.index',     'label' => __('nav.residents'),     'icon' => 'fa-users',         'match' => 'residents.*'],
+                            ['route' => 'blotter.index',       'label' => __('nav.complaint'),       'icon' => 'fa-shield-halved', 'match' => 'blotter.*'],
+                            ['route' => 'documents.index',     'label' => __('nav.documents'),     'icon' => 'fa-file-lines',    'match' => 'documents.*'],
+                            ['route' => 'announcements.index', 'label' => __('nav.announcements'), 'icon' => 'fa-bullhorn',      'match' => 'announcements.*'],
                         ];
                     @endphp
                     @foreach($mainNav as $item)
@@ -72,10 +72,10 @@
                 <div class="space-y-0.5">
                     @php
                         $adminNav = [
-                            ['route' => 'analytics.index',  'label' => 'Analytics',      'icon' => 'fa-chart-bar',       'match' => 'analytics.*'],
-                            ['route' => 'audit.index',      'label' => 'Audit Log',      'icon' => 'fa-clock-rotate-left','match' => 'audit.*'],
-                            ['route' => 'users.index',      'label' => 'User Accounts',  'icon' => 'fa-users-gear',      'match' => 'users.*'],
-                            ['route' => 'settings.index',  'label' => 'Settings',       'icon' => 'fa-gear',       'match' => 'settings.*'],
+                            ['route' => 'analytics.index',  'label' => __('nav.analytics'),      'icon' => 'fa-chart-bar',       'match' => 'analytics.*'],
+                            ['route' => 'audit.index',      'label' => __('nav.audit_log'),      'icon' => 'fa-clock-rotate-left','match' => 'audit.*'],
+                            ['route' => 'users.index',      'label' => __('nav.user_accounts'),  'icon' => 'fa-users-gear',      'match' => 'users.*'],
+                            ['route' => 'settings.index',  'label' => __('nav.settings'),       'icon' => 'fa-gear',       'match' => 'settings.*'],
                         ];
                     @endphp
                     @foreach($adminNav as $item)
@@ -117,7 +117,7 @@
          x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"></div>
 
     {{-- ── MAIN ── --}}
-    <div class="print-main flex flex-col flex-1 md:pl-[220px] min-h-screen overflow-y-auto">
+    <div class="print-main flex flex-col flex-1 md:pl-[220px] h-full overflow-y-auto">
 
         {{-- Topbar --}}
         <div class="no-print flex items-center justify-between px-4 pt-3 md:justify-end md:px-6">
@@ -125,7 +125,10 @@
                     @click="sidebarOpen = !sidebarOpen">
                 <i class="fa-solid fa-bars text-sm"></i>
             </button>
-            @include('partials.notification-bell')
+            <div class="flex items-center gap-3">
+                <x-language-switcher />
+                @include('partials.notification-bell')
+            </div>
         </div>
 
         {{-- Flash messages --}}
@@ -141,7 +144,7 @@
         @endif
 
         {{-- Content --}}
-        <main class="flex-1 p-5 md:p-6">
+        <main class="p-5 md:p-6">
             @yield('content')
         </main>
     </div>

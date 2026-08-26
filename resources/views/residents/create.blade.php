@@ -73,8 +73,6 @@ if ($isEdit) {
     </div>
 </div>
 
-<style>[x-cloak]{display:none!important}</style>
-
 <form action="{{ $isEdit ? route($isStaff ? 'staff.residents.update' : 'residents.update', $household->id) : route($isStaff ? 'staff.residents.store' : 'residents.store') }}"
       method="POST" x-data="householdForm({{ $isEdit ? json_encode($initData) : 'null' }})">
 @csrf

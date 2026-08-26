@@ -12,7 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-#[Fillable(['name', 'email', 'password', 'role', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'email_verified_at', 'locale'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {

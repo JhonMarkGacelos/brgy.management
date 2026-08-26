@@ -5,15 +5,15 @@
 
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
     <div>
-        <h2 class="text-xl font-bold text-gray-800">My Document Requests</h2>
-        <p class="text-sm text-gray-500">Track all your barangay document requests</p>
+        <h2 class="text-xl font-bold text-gray-800">{{ __('portal.documents.index.title') }}</h2>
+        <p class="text-sm text-gray-500">{{ __('portal.documents.index.subtitle') }}</p>
     </div>
     <a href="{{ route('resident.documents.create') }}"
        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
        style="background-color:#1a4731;"
        onmouseover="this.style.backgroundColor='#2d6a4f'"
        onmouseout="this.style.backgroundColor='#1a4731'">
-        <i class="fa-solid fa-file-circle-plus text-xs"></i> New Request
+        <i class="fa-solid fa-file-circle-plus text-xs"></i> {{ __('nav.new_request') }}
     </a>
 </div>
 
@@ -23,13 +23,9 @@
         <i class="fa-solid fa-hand-holding-dollar text-sm"></i>
     </div>
     <div>
-        <p class="text-sm font-semibold text-blue-800">Online Payment is Not Available</p>
+        <p class="text-sm font-semibold text-blue-800">{{ __('portal.documents.index.gcash_notice_title') }}</p>
         <p class="text-xs text-blue-700 mt-0.5 leading-relaxed">
-            This system does not process payments online. Even if you are in a <strong>different city or location</strong>,
-            you can still submit your request here and contact the
-            <strong>Barangay Captain</strong> or <strong>Barangay Staff</strong> to arrange payment remotely.
-            Once payment is confirmed and your document is processed, you can
-            <strong>print it directly from this portal</strong> — no need to visit the Barangay Hall.
+            {!! __('portal.documents.index.gcash_notice_body', ['print' => '<strong>'.__('portal.documents.index.gcash_notice_print').'</strong>']) !!}
         </p>
     </div>
 </div>
@@ -49,7 +45,7 @@
                 style="background-color:#1a4731;"
                 onmouseover="this.style.backgroundColor='#2d6a4f'"
                 onmouseout="this.style.backgroundColor='#1a4731'">
-            <i class="fa-solid fa-magnifying-glass text-xs"></i> Track Request
+            <i class="fa-solid fa-magnifying-glass text-xs"></i> {{ __('portal.documents.index.track_request_button') }}
         </button>
     </form>
 </div>
@@ -71,16 +67,23 @@
             'Pending Official' => 'fa-clock',
             'Rejected'         => 'fa-circle-xmark',
         ];
+        $statusKeys = [
+            'Issued'           => 'issued',
+            'Approved'         => 'approved',
+            'Pending'          => 'pending',
+            'Pending Official' => 'pending_official',
+            'Rejected'         => 'rejected',
+        ];
     @endphp
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead style="background-color:#1a4731;">
                 <tr class="text-left text-xs text-green-100 uppercase">
-                    <th class="px-4 py-3">Tracking No.</th>
-                    <th class="px-4 py-3">Document Type</th>
-                    <th class="px-4 py-3">Purpose</th>
-                    <th class="px-4 py-3">Date Requested</th>
-                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3">{{ __('portal.documents.index.col_tracking_no') }}</th>
+                    <th class="px-4 py-3">{{ __('portal.documents.index.col_document_type') }}</th>
+                    <th class="px-4 py-3">{{ __('portal.documents.index.col_purpose') }}</th>
+                    <th class="px-4 py-3">{{ __('portal.documents.index.col_date_requested') }}</th>
+                    <th class="px-4 py-3">{{ __('portal.documents.index.col_status') }}</th>
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
@@ -94,7 +97,7 @@
                     <td class="px-4 py-3">
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $statusColors[$req->status] ?? 'bg-gray-100 text-gray-600' }}">
                             <i class="fa-solid {{ $statusIcons[$req->status] ?? 'fa-circle' }} text-[9px]"></i>
-                            {{ $req->status }}
+                            {{ isset($statusKeys[$req->status]) ? __('common.status.'.$statusKeys[$req->status]) : $req->status }}
                         </span>
                     </td>
                     <td class="px-4 py-3">
@@ -104,7 +107,7 @@
                            style="background-color:#1a4731;"
                            onmouseover="this.style.backgroundColor='#2d6a4f'"
                            onmouseout="this.style.backgroundColor='#1a4731'">
-                            <i class="fa-solid fa-print text-[10px]"></i> Print
+                            <i class="fa-solid fa-print text-[10px]"></i> {{ __('common.print') }}
                         </a>
                         @endif
                     </td>
@@ -113,8 +116,8 @@
                 <tr>
                     <td colspan="5" class="px-4 py-12 text-center text-gray-400">
                         <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
-                        No document requests found.
-                        <a href="{{ route('resident.documents.create') }}" class="text-green-700 font-medium hover:underline">Make your first request.</a>
+                        {{ __('portal.documents.index.no_requests_found') }}
+                        <a href="{{ route('resident.documents.create') }}" class="text-green-700 font-medium hover:underline">{{ __('portal.dashboard.make_first_request') }}</a>
                     </td>
                 </tr>
                 @endforelse
@@ -124,7 +127,7 @@
 
     @if($myRequests->hasPages())
     <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-        <span>Showing {{ $myRequests->firstItem() }}–{{ $myRequests->lastItem() }} of {{ $myRequests->total() }} requests</span>
+        <span>{{ __('portal.documents.index.showing_range', ['first' => $myRequests->firstItem(), 'last' => $myRequests->lastItem(), 'total' => $myRequests->total()]) }}</span>
         <div>{{ $myRequests->links() }}</div>
     </div>
     @endif

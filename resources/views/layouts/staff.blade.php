@@ -15,7 +15,7 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900" x-data="{ sidebarOpen: false }">
 
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-dvh overflow-hidden">
 
     {{-- ── SIDEBAR ── --}}
     <aside class="fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col transition-transform duration-300 md:translate-x-0"
@@ -43,11 +43,11 @@
                 <div class="space-y-0.5">
                     @php
                         $staffNav = [
-                            ['route' => 'staff.dashboard',            'label' => 'Dashboard',     'icon' => 'fa-house'],
-                            ['route' => 'staff.residents.index',      'label' => 'Residents',     'icon' => 'fa-users'],
-                            ['route' => 'staff.blotter.index',        'label' => 'Complaint',       'icon' => 'fa-shield-halved'],
-                            ['route' => 'staff.documents.index',      'label' => 'Documents',     'icon' => 'fa-file-lines'],
-                            ['route' => 'staff.announcements.index',  'label' => 'Announcements', 'icon' => 'fa-bullhorn'],
+                            ['route' => 'staff.dashboard',            'label' => __('nav.dashboard'),     'icon' => 'fa-house'],
+                            ['route' => 'staff.residents.index',      'label' => __('nav.residents'),     'icon' => 'fa-users'],
+                            ['route' => 'staff.blotter.index',        'label' => __('nav.complaint'),       'icon' => 'fa-shield-halved'],
+                            ['route' => 'staff.documents.index',      'label' => __('nav.documents'),     'icon' => 'fa-file-lines'],
+                            ['route' => 'staff.announcements.index',  'label' => __('nav.announcements'), 'icon' => 'fa-bullhorn'],
                         ];
                     @endphp
                     @foreach($staffNav as $item)
@@ -94,7 +94,7 @@
          x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"></div>
 
     {{-- ── MAIN ── --}}
-    <div class="flex flex-col flex-1 md:pl-[220px] min-h-screen overflow-y-auto">
+    <div class="flex flex-col flex-1 md:pl-[220px] h-full overflow-y-auto">
 
         {{-- Topbar --}}
         <div class="flex items-center justify-between px-4 pt-3 md:justify-end md:px-6">
@@ -102,7 +102,10 @@
                     @click="sidebarOpen = !sidebarOpen">
                 <i class="fa-solid fa-bars text-sm"></i>
             </button>
-            @include('partials.notification-bell')
+            <div class="flex items-center gap-3">
+                <x-language-switcher />
+                @include('partials.notification-bell')
+            </div>
         </div>
 
         {{-- Flash messages --}}
@@ -123,7 +126,7 @@
         @endif
 
         {{-- Content --}}
-        <main class="flex-1 p-5 md:p-6">
+        <main class="p-5 md:p-6">
             @yield('content')
         </main>
     </div>

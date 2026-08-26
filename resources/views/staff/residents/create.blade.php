@@ -14,8 +14,6 @@
     </div>
 </div>
 
-<style>[x-cloak]{display:none!important}</style>
-
 <form action="{{ route('staff.residents.store') }}" method="POST" x-data="householdForm()">
 @csrf
 

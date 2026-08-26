@@ -5,16 +5,16 @@
 
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h2 class="text-xl font-bold text-gray-800">Community Announcements</h2>
-        <p class="text-sm text-gray-500">Stay informed with the latest news from Barangay Caranas</p>
+        <h2 class="text-xl font-bold text-gray-800">{{ __('portal.announcements.index.title') }}</h2>
+        <p class="text-sm text-gray-500">{{ __('portal.announcements.index.subtitle') }}</p>
     </div>
 </div>
 
 @if($announcements->isEmpty())
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm py-16 text-center">
         <i class="fa-regular fa-bell-slash text-4xl text-gray-300 mb-3 block"></i>
-        <p class="text-gray-500 font-medium">No announcements at this time.</p>
-        <p class="text-sm text-gray-400 mt-1">Check back later for updates from your barangay.</p>
+        <p class="text-gray-500 font-medium">{{ __('portal.announcements.index.empty_title') }}</p>
+        <p class="text-sm text-gray-400 mt-1">{{ __('portal.announcements.index.empty_body') }}</p>
     </div>
 @else
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -48,9 +48,9 @@
             </div>
             <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                 <span class="text-xs text-gray-400">
-                    <i class="fa-solid fa-users text-[10px] mr-1"></i>{{ $ann->audience ?? 'All Residents' }}
+                    <i class="fa-solid fa-users text-[10px] mr-1"></i>{{ $ann->audience ?? __('portal.all_residents') }}
                 </span>
-                <span class="text-xs font-semibold text-green-700 group-hover:underline">Read more →</span>
+                <span class="text-xs font-semibold text-green-700 group-hover:underline">{{ __('portal.announcements.index.read_more') }}</span>
             </div>
         </a>
         @endforeach

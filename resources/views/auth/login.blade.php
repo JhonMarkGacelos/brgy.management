@@ -29,7 +29,7 @@
                 <img src="{{ asset('images/logo.png') }}" alt="Brgy. Caranas Logo"
                      class="h-full w-full rounded-full object-cover">
             </div>
-            <p class="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">Official Portal</p>
+            <p class="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">{{ __('auth_pages.login.official_portal') }}</p>
             <h2 class="text-white text-xl font-bold">Barangay Caranas</h2>
             <p class="text-white/50 text-xs mt-0.5">Municipality of Motiong, Samar</p>
         </div>
@@ -37,27 +37,27 @@
         {{-- Middle: Headline --}}
         <div class="relative z-10">
             <h1 class="text-white text-4xl font-bold leading-tight mb-4">
-                Integrated<br>Barangay<br>Management<br>System
+                {!! __('auth_pages.login.system_title') !!}
             </h1>
             <p class="text-white/50 text-sm leading-relaxed max-w-xs">
-                A centralized platform for managing resident records, complaint cases, document issuance, and community announcements.
+                {{ __('auth_pages.login.tagline') }}
             </p>
 
             <div class="mt-8 grid grid-cols-2 gap-3">
                 <div class="rounded-xl bg-white/10 p-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">System</p>
-                    <p class="text-white text-sm font-semibold">Resident Records</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">{{ __('auth_pages.login.feature_system') }}</p>
+                    <p class="text-white text-sm font-semibold">{{ __('auth_pages.login.feature_resident_records') }}</p>
                 </div>
                 <div class="rounded-xl bg-white/10 p-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">Secure</p>
-                    <p class="text-white text-sm font-semibold">Access Control</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">{{ __('auth_pages.login.feature_secure') }}</p>
+                    <p class="text-white text-sm font-semibold">{{ __('auth_pages.login.feature_access_control') }}</p>
                 </div>
             </div>
         </div>
 
         {{-- Footer --}}
         <p class="relative z-10 text-white/30 text-xs text-center">
-            Motiong, Samar &mdash; &copy; {{ date('Y') }} All rights reserved.
+            {{ __('auth_pages.login.footer', ['year' => date('Y')]) }}
         </p>
     </div>
 
@@ -66,18 +66,24 @@
         <div class="w-full max-w-[360px]">
 
             {{-- Mobile logo --}}
-            <div class="flex items-center gap-3 mb-8 lg:hidden">
-                <div class="h-12 w-12 rounded-full bg-white p-0.5 shadow-sm shrink-0">
-                    <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-full w-full rounded-full object-cover">
+            <div class="flex items-center justify-between gap-3 mb-8 lg:hidden">
+                <div class="flex items-center gap-3">
+                    <div class="h-12 w-12 rounded-full bg-white p-0.5 shadow-sm shrink-0">
+                        <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-full w-full rounded-full object-cover">
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900">Barangay Caranas</p>
+                        <p class="text-xs text-gray-400">Motiong, Samar</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-sm font-bold text-gray-900">Barangay Caranas</p>
-                    <p class="text-xs text-gray-400">Motiong, Samar</p>
-                </div>
+                <x-language-switcher />
+            </div>
+            <div class="hidden lg:flex justify-end mb-4">
+                <x-language-switcher />
             </div>
 
-            <h2 class="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>
-            <p class="text-sm text-gray-500 mb-7">Sign in to access the management system.</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ __('auth_pages.login.welcome_back') }}</h2>
+            <p class="text-sm text-gray-500 mb-7">{{ __('auth_pages.login.subtitle') }}</p>
 
             {{-- Alerts --}}
             @if(session('status'))
@@ -97,14 +103,14 @@
 
                 {{-- Email --}}
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{{ __('auth_pages.login.email_label') }}</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm">
                             <i class="fa-solid fa-user"></i>
                         </span>
                         <input id="email" type="email" name="email" value="{{ old('email') }}"
                                required autofocus autocomplete="username"
-                               placeholder="Enter your email"
+                               placeholder="{{ __('auth_pages.login.email_placeholder') }}"
                                class="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                     </div>
@@ -112,14 +118,14 @@
 
                 {{-- Password --}}
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Password</label>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{{ __('auth_pages.login.password_label') }}</label>
                     <div class="relative" x-data="{ show: false }">
                         <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm">
                             <i class="fa-solid fa-lock"></i>
                         </span>
                         <input id="password" :type="show ? 'text' : 'password'" name="password"
                                required autocomplete="current-password"
-                               placeholder="Enter your password"
+                               placeholder="{{ __('auth_pages.login.password_placeholder') }}"
                                class="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-10 py-3 text-sm text-gray-900 placeholder-gray-400
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                         <button type="button" @click="show = !show"
@@ -134,7 +140,7 @@
                     @if(Route::has('password.request'))
                         <a href="{{ route('password.request') }}"
                            class="text-xs font-medium text-green-700 hover:text-green-600 hover:underline transition-colors">
-                            Forgot password?
+                            {{ __('auth_pages.login.forgot_password') }}
                         </a>
                     @endif
                 </div>
@@ -147,13 +153,13 @@
                         onmouseover="this.style.backgroundColor='#2d6a4f'"
                         onmouseout="this.style.backgroundColor='#1a4731'">
                     <i class="fa-solid fa-right-to-bracket text-xs"></i>
-                    Sign In
+                    {{ __('auth_pages.login.sign_in') }}
                 </button>
             </form>
 
             <p class="mt-5 text-center text-sm text-gray-500">
-                Are you a resident?
-                <a href="{{ route('register') }}" class="font-semibold text-green-700 hover:underline">Create an account</a>
+                {{ __('auth_pages.login.resident_question') }}
+                <a href="{{ route('register') }}" class="font-semibold text-green-700 hover:underline">{{ __('auth_pages.login.create_account') }}</a>
             </p>
 
             {{-- Public document verification --}}
@@ -162,20 +168,20 @@
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold text-gray-700">Verify a Barangay Document</p>
-                    <p class="text-[11px] text-gray-400 mt-0.5">Check if an issued document is authentic using its OR or tracking number.</p>
+                    <p class="text-xs font-semibold text-gray-700">{{ __('auth_pages.login.verify_title') }}</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">{{ __('auth_pages.login.verify_desc') }}</p>
                 </div>
                 <a href="{{ route('document.verify') }}"
                    class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                    style="background-color:#1a4731;"
                    onmouseover="this.style.backgroundColor='#2d6a4f'"
                    onmouseout="this.style.backgroundColor='#1a4731'">
-                    Verify
+                    {{ __('auth_pages.login.verify_button') }}
                 </a>
             </div>
 
             <p class="mt-4 text-center text-xs text-gray-400">
-                Authorized personnel only &mdash; Brgy. Caranas, Motiong, Samar
+                {{ __('auth_pages.login.authorized_only') }}
             </p>
         </div>
     </div>
