@@ -70,7 +70,7 @@
 
     /* ── Hide all ApexCharts, show print fallbacks ── */
     #blotterChart, #docPieChart, #purokChart,
-    #monthlyDocsChart, #welfareChart,
+    #monthlyDocsChart, #monthlyRevenueChart, #welfareChart,
     #civilStatusChart, #employmentChart { display: none !important; }
     .print-only  { display: table !important; }
     .print-block { display: block !important; }
@@ -338,6 +338,87 @@
     </div>
 </div>
 
+{{-- ── REVENUE ── --}}
+<div class="flex items-center justify-between mb-3">
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+        Revenue
+        @if($filterMonth)<span class="normal-case font-normal text-gray-400 ml-1">— {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }}</span>@endif
+    </p>
+    <a href="{{ route('documents.payments') }}" class="no-print text-xs font-semibold text-green-700 hover:text-green-800 transition-colors">
+        View Fee Collected <i class="fa-solid fa-arrow-right text-[10px] ml-0.5"></i>
+    </a>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
+    @php
+        $revenueCards = [
+            ['label'=>'Total Collected',  'value'=>'₱'.number_format($totalRevenue, 2),          'icon'=>'fa-sack-dollar',   'bg'=>'bg-green-50', 'color'=>'text-green-700'],
+            ['label'=>'Paid Requests',    'value'=>number_format($paidDocumentsCount),            'icon'=>'fa-file-invoice', 'bg'=>'bg-blue-50',  'color'=>'text-blue-600'],
+            ['label'=>'Avg. per Request', 'value'=>'₱'.number_format($avgRevenuePerDocument, 2), 'icon'=>'fa-calculator',   'bg'=>'bg-amber-50', 'color'=>'text-amber-600'],
+        ];
+    @endphp
+    @foreach($revenueCards as $r)
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl {{ $r['bg'] }} {{ $r['color'] }} text-sm mb-3">
+            <i class="fa-solid {{ $r['icon'] }}"></i>
+        </div>
+        <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $r['value'] }}</p>
+        <p class="text-xs text-gray-400 mt-0.5 leading-tight">{{ $r['label'] }}</p>
+    </div>
+    @endforeach
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+
+    {{-- Monthly Revenue --}}
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+        <p class="text-sm font-semibold text-gray-900 mb-1">Monthly Revenue</p>
+        <p class="text-xs text-gray-400 mb-4">Last 12 months, collected amounts</p>
+        <div id="monthlyRevenueChart"></div>
+        {{-- Print fallback --}}
+        <table class="print-only w-full text-xs" style="display:none;">
+            <thead><tr class="border-b border-gray-200">
+                @foreach($monthLabels as $m)<th class="text-center py-1 text-gray-500">{{ $m }}</th>@endforeach
+            </tr></thead>
+            <tbody><tr>
+                @foreach($monthlyRevenue as $val)
+                <td class="text-center py-1 font-semibold text-gray-900">₱{{ number_format($val, 0) }}</td>
+                @endforeach
+            </tr></tbody>
+        </table>
+    </div>
+
+    {{-- Revenue by Document Type --}}
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <p class="text-sm font-semibold text-gray-900">Revenue by Document Type</p>
+            <p class="text-xs text-gray-400 mt-0.5">Collected amount per document type</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-100 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">
+                        <th class="px-5 py-2.5">Document Type</th>
+                        <th class="px-5 py-2.5 text-right">Paid</th>
+                        <th class="px-5 py-2.5 text-right">Collected</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse(['Barangay Clearance','Certificate of Residency','Certificate of Indigency','Business Clearance'] as $type)
+                    @php $row = $revenueByType[$type] ?? null; @endphp
+                    <tr class="border-b border-gray-100 last:border-0">
+                        <td class="px-5 py-3 text-gray-700">{{ $type }}</td>
+                        <td class="px-5 py-3 text-right text-gray-600">{{ $row->count ?? 0 }}</td>
+                        <td class="px-5 py-3 text-right font-semibold text-gray-900">₱{{ number_format($row->total ?? 0, 2) }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="3" class="px-5 py-4 text-center text-gray-400">No data</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 {{-- ── WELFARE CLASSIFICATION ── --}}
 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Welfare Classification</p>
 
@@ -511,6 +592,7 @@
 @php
 $monthlyCasesJson        = json_encode($monthlyCases);
 $monthlyDocsJson         = json_encode($monthlyDocuments);
+$monthlyRevenueJson      = json_encode($monthlyRevenue);
 $monthLabelsJson         = json_encode($monthLabels);
 $docTypesValuesJson      = json_encode(array_values($documentTypes));
 $docTypesLabelsJson      = json_encode(array_keys($documentTypes));
@@ -619,6 +701,20 @@ new ApexCharts(document.getElementById('monthlyDocsChart'), {
     dataLabels: { enabled: false },
     stroke: { curve: 'smooth', width: 2 },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
+}).render();
+
+// Monthly Revenue Chart
+new ApexCharts(document.getElementById('monthlyRevenueChart'), {
+    chart: { type: 'area', height: 220, toolbar: { show: false } },
+    series: [{ name: 'Collected', data: {!! $monthlyRevenueJson !!} }],
+    xaxis: { categories: months, labels: { style: { fontSize: '10px', colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { fontSize: '10px', colors: '#9ca3af' }, formatter: (v) => '₱' + v.toFixed(0) } },
+    colors: ['#16a34a'],
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth', width: 2 },
+    grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
+    tooltip: { y: { formatter: (v) => '₱' + Number(v).toLocaleString() } },
 }).render();
 </script>
 

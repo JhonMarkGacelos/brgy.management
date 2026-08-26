@@ -113,6 +113,17 @@ class AnalyticsController extends Controller
             ->pluck('count', 'document_type')
             ->toArray();
 
+        // Revenue — "collected" = an OR number was generated (Approved or Issued)
+        $revenueBase           = (clone $docBase)->whereNotNull('or_number');
+        $totalRevenue          = (clone $revenueBase)->sum('fee');
+        $paidDocumentsCount    = (clone $revenueBase)->count();
+        $avgRevenuePerDocument = $paidDocumentsCount > 0 ? $totalRevenue / $paidDocumentsCount : 0;
+        $revenueByType         = (clone $revenueBase)
+            ->selectRaw('document_type, SUM(fee) as total, COUNT(*) as count')
+            ->groupBy('document_type')
+            ->get()
+            ->keyBy('document_type');
+
         // Age groups (sector-filtered)
         $ageGroups = [
             ['label' => 'Children (0–12)',   'min' => 0,  'max' => 12],
@@ -145,11 +156,15 @@ class AnalyticsController extends Controller
         // Monthly trend charts — always last 12 months, unfiltered (show full picture)
         $monthlyCases     = [];
         $monthlyDocuments = [];
+        $monthlyRevenue   = [];
         $monthLabels      = [];
         for ($i = 11; $i >= 0; $i--) {
             $m = now()->subMonths($i);
             $monthlyCases[]     = BlotterRecord::whereYear('created_at', $m->year)->whereMonth('created_at', $m->month)->count();
             $monthlyDocuments[] = DocumentRequest::whereYear('created_at', $m->year)->whereMonth('created_at', $m->month)->count();
+            $monthlyRevenue[]   = (float) DocumentRequest::whereNotNull('or_number')
+                ->whereYear('created_at', $m->year)->whereMonth('created_at', $m->month)
+                ->sum('fee');
             $monthLabels[]      = $m->format('M Y');  // e.g. "Jul 2025"
         }
 
@@ -195,8 +210,9 @@ class AnalyticsController extends Controller
             'voters', 'soloParents', 'fourPs', 'indigent', 'pregnant',
             'totalCases', 'pendingCases', 'resolvedCases', 'ongoingCases',
             'totalDocuments', 'pendingDocuments', 'issuedDocuments', 'rejectedDocuments',
+            'totalRevenue', 'paidDocumentsCount', 'avgRevenuePerDocument', 'revenueByType',
             'ageGroups', 'civilStatus', 'employmentStatus',
-            'monthlyCases', 'monthlyDocuments', 'monthLabels', 'documentTypes', 'populationByPurok',
+            'monthlyCases', 'monthlyDocuments', 'monthlyRevenue', 'monthLabels', 'documentTypes', 'populationByPurok',
             'classificationCounts', 'householdsClassified', 'avgPerCapita', 'belowPovertyLine',
             'filterMonth', 'filterSector', 'availableMonths'
         ));
