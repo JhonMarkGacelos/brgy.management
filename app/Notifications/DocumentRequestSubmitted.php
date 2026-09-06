@@ -15,7 +15,7 @@ class DocumentRequestSubmitted extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return $notifiable instanceof \App\Models\User ? ['mail', 'database'] : ['mail'];
     }
 
     public function toArray(object $notifiable): array

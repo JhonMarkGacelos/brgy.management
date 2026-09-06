@@ -206,17 +206,21 @@ class DocumentController extends Controller
 
         // Notify resident by email when status changes to Issued or Rejected
         if (in_array($status, ['Issued', 'Rejected'])) {
-            $residentEmail = $document->resident?->email;
-            $requester     = $document->requestedBy;
+            $residentEmail       = $document->resident?->email;
+            $requester           = $document->requestedBy;
+            $requesterIsResident = $requester && $requester->role === 'resident';
 
-            // Prefer the resident's portal account (gets mail + bell); fall back to plain email
-            if ($requester && $residentEmail && $requester->email === $residentEmail) {
+            // Prefer the resident's portal account (gets mail + bell); fall back to plain email.
+            // Only ever notify $requester when they ARE the resident — for walk-in requests filed
+            // by staff/admin on the resident's behalf, requested_by is the staff member's own
+            // account, and they should never receive the resident-facing "document ready" notice.
+            if ($requesterIsResident && $residentEmail && $requester->email === $residentEmail) {
                 $this->safeNotify($requester, new DocumentStatusUpdated($document), ['document_id' => $document->id, 'user_id' => $requester->id]);
             } else {
                 if ($residentEmail) {
                     $this->safeNotify(Notification::route('mail', $residentEmail), new DocumentStatusUpdated($document), ['document_id' => $document->id, 'email' => $residentEmail]);
                 }
-                if ($requester) {
+                if ($requesterIsResident) {
                     $this->safeNotify($requester, new DocumentStatusUpdated($document), ['document_id' => $document->id, 'user_id' => $requester->id]);
                 }
             }
