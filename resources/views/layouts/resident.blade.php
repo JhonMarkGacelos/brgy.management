@@ -14,10 +14,10 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900" x-data="{ sidebarOpen: false }">
 
-<div class="flex h-dvh overflow-hidden">
+<div class="flex">
 
     {{-- ── SIDEBAR ── --}}
-    <aside class="fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col transition-transform duration-300 md:translate-x-0"
+    <aside class="no-print fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col transition-transform duration-300 md:translate-x-0"
            style="background-color:#1a4731;"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
@@ -100,14 +100,14 @@
     </aside>
 
     {{-- Mobile overlay --}}
-    <div class="fixed inset-0 z-30 bg-black/50 md:hidden"
+    <div class="no-print fixed inset-0 z-30 bg-black/50 md:hidden"
          x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"></div>
 
     {{-- ── MAIN ── --}}
-    <div class="flex flex-col flex-1 md:pl-[220px] h-full overflow-y-auto">
+    <div class="print-main flex flex-col flex-1 md:pl-[220px]">
 
         {{-- Topbar --}}
-        <div class="flex items-center justify-between px-4 pt-3 md:justify-end md:px-6">
+        <div class="no-print flex items-center justify-between px-4 pt-3 md:justify-end md:px-6">
             <button class="md:hidden rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 transition-colors"
                     @click="sidebarOpen = !sidebarOpen">
                 <i class="fa-solid fa-bars text-sm"></i>
