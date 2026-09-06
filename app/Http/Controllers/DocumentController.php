@@ -86,9 +86,27 @@ class DocumentController extends Controller
             $query->where('document_type', $type);
         }
 
+        $dateLabel = null;
         if ($date = $request->date) {
+            try {
+                $dateLabel = \Carbon\Carbon::parse($date)->format('F j, Y');
+            } catch (\Throwable $e) {
+                $date = null;
+            }
+        }
+
+        $monthLabel = null;
+        if ($month = $request->month) {
+            try {
+                $monthLabel = \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F Y');
+            } catch (\Throwable $e) {
+                $month = null;
+            }
+        }
+
+        if ($date) {
             $query->whereDate('paid_at', $date);
-        } elseif ($month = $request->month) {
+        } elseif ($month) {
             $query->whereYear('paid_at', substr($month, 0, 4))->whereMonth('paid_at', substr($month, 5, 2));
         }
 
@@ -101,7 +119,7 @@ class DocumentController extends Controller
             $availableMonths[$m->format('Y-m')] = $m->format('F Y');
         }
 
-        return view('documents.payments', compact('payments', 'totalAmount', 'availableMonths'));
+        return view('documents.payments', compact('payments', 'totalAmount', 'availableMonths', 'dateLabel', 'monthLabel'));
     }
 
     private function docFees(): array
@@ -128,6 +146,7 @@ class DocumentController extends Controller
             'document_type' => 'required|string',
             'purpose'       => 'required|string|max:255',
             'resident_id'   => 'nullable|exists:residents,id',
+            'fee'           => 'nullable|numeric|min:0',
         ]);
 
         $document = DocumentRequest::create([

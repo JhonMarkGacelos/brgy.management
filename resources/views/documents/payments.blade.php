@@ -64,8 +64,8 @@
         Filters:
         @if(request('search')) Search "{{ request('search') }}" @endif
         @if(request('type')) &nbsp;·&nbsp; Type: {{ request('type') }} @endif
-        @if(request('date')) &nbsp;·&nbsp; Date: {{ \Carbon\Carbon::parse(request('date'))->format('F j, Y') }} @endif
-        @if(request('month') && !request('date')) &nbsp;·&nbsp; Month: {{ \Carbon\Carbon::createFromFormat('Y-m', request('month'))->format('F Y') }} @endif
+        @if($dateLabel) &nbsp;·&nbsp; Date: {{ $dateLabel }} @endif
+        @if($monthLabel && !$dateLabel) &nbsp;·&nbsp; Month: {{ $monthLabel }} @endif
     </p>
     @endif
     <p class="text-xs text-gray-600 mt-1 font-semibold">Total Collected: ₱{{ number_format($totalAmount, 2) }} across {{ $payments->count() }} payment(s)</p>
@@ -130,8 +130,8 @@
     @endif
 </div>
 <p class="text-xs text-gray-400 mb-5">
-    @if(request('date'))
-        Showing payments for <span class="font-semibold text-gray-600">{{ \Carbon\Carbon::parse(request('date'))->format('F j, Y') }}</span> only — the month filter is ignored when a specific date is set.
+    @if($dateLabel)
+        Showing payments for <span class="font-semibold text-gray-600">{{ $dateLabel }}</span> only — the month filter is ignored when a specific date is set.
     @endif
 </p>
 </form>
