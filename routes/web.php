@@ -13,7 +13,6 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResidentPortalController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\LanguageController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -21,9 +20,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
-// ── LANGUAGE SWITCHER (no login required) ──────────────────────
-Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
 
 // ── PUBLIC DOCUMENT VERIFICATION (no login required) ──────────
 Route::get('/verify',  [DocumentVerifyController::class, 'index'])->name('document.verify');
@@ -59,6 +55,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::put('/residents/{id}/member/{memberId}',    [ResidentController::class, 'updateMember'])->name('residents.member.update');
     Route::delete('/residents/{id}/member/{memberId}', [ResidentController::class, 'destroyMember'])->name('residents.member.destroy');
     Route::resource('blotter',      BlotterController::class);
+    Route::get('/blotter/{id}/summon', [BlotterController::class, 'printSummon'])->name('blotter.summon');
     Route::get('/documents/payments', [DocumentController::class, 'payments'])->name('documents.payments');
     Route::resource('documents',    DocumentController::class);
     Route::get('/documents/{id}/print',    [DocumentController::class, 'print'])->name('documents.print');
@@ -103,6 +100,7 @@ Route::middleware(['auth', 'verified', 'role:staff'])->prefix('staff')->name('st
     Route::get('/blotter/{id}/edit',    [BlotterController::class, 'edit'])->name('blotter.edit');
     Route::put('/blotter/{id}',         [BlotterController::class, 'update'])->name('blotter.update');
     Route::delete('/blotter/{id}',      [BlotterController::class, 'destroy'])->name('blotter.destroy');
+    Route::get('/blotter/{id}/summon',  [BlotterController::class, 'printSummon'])->name('blotter.summon');
 
     // Documents
     Route::get('/documents',        [DocumentController::class, 'index'])->name('documents.index');

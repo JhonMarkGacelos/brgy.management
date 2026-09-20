@@ -94,7 +94,7 @@
                     <td class="px-4 py-3 text-gray-600 text-xs">{{ $record->created_at->format('M d, Y') }}</td>
                     <td class="px-4 py-3 text-gray-800">{{ $record->complainant_name }}</td>
                     <td class="px-4 py-3 text-gray-800">{{ $record->respondent_name }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ $record->incident_type }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ $record->incident_type }}@if($record->incident_type === 'Others' && $record->incident_type_other) — {{ $record->incident_type_other }}@endif</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $record->status === 'Open' ? 'bg-red-100 text-red-700' : ($record->status === 'Under Mediation' ? 'bg-yellow-100 text-yellow-700' : ($record->status === 'Settled' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700')) }}">
                             {{ $record->status }}

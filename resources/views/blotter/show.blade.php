@@ -52,7 +52,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Incident Type</label>
-                    <p class="text-sm text-gray-900">{{ $record->incident_type }}</p>
+                    <p class="text-sm text-gray-900">{{ $record->incident_type }}@if($record->incident_type === 'Others' && $record->incident_type_other) — {{ $record->incident_type_other }}@endif</p>
                 </div>
                 <div class="sm:col-span-3">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Location</label>
@@ -201,6 +201,18 @@
                 <p class="text-sm font-semibold text-gray-800">Actions</p>
             </div>
             <div class="p-5 space-y-3">
+                @if($record->hearing_date && $record->hearing_time)
+                <a href="{{ route($isStaff ? 'staff.blotter.summon' : 'blotter.summon', $record->id) }}" target="_blank"
+                   class="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                   style="background-color:#1a4731;" onmouseover="this.style.backgroundColor='#2d6a4f'" onmouseout="this.style.backgroundColor='#1a4731'">
+                    <i class="fa-solid fa-print text-xs"></i> Print Summon
+                </a>
+                @else
+                <div class="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5 text-xs text-gray-500">
+                    <i class="fa-solid fa-circle-info mr-1 text-gray-400"></i>
+                    Set the hearing date and time (via Edit Case) to enable Print Summon.
+                </div>
+                @endif
                 <a href="{{ route($isStaff ? 'staff.blotter.edit' : 'blotter.edit', $record->id) }}"
                    class="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
                     <i class="fa-solid fa-pen text-xs"></i> Edit Case

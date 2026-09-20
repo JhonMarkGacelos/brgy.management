@@ -16,7 +16,8 @@
     </div>
 </div>
 
-<form action="{{ isset($record) ? route($isStaff ? 'staff.blotter.update' : 'blotter.update', $record->id) : route($isStaff ? 'staff.blotter.store' : 'blotter.store') }}" method="POST">
+<form action="{{ isset($record) ? route($isStaff ? 'staff.blotter.update' : 'blotter.update', $record->id) : route($isStaff ? 'staff.blotter.store' : 'blotter.store') }}" method="POST"
+      x-data="{ incidentType: '{{ old('incident_type', $record->incident_type ?? '') }}' }">
 @csrf
 @if(isset($record))
 @method('PUT')
@@ -60,17 +61,27 @@
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Incident Type <span class="text-red-500 normal-case font-normal">*</span>
                     </label>
-                    <select name="incident_type"
+                    <select name="incident_type" x-model="incidentType"
                             class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                    focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                         <option value="">Select type</option>
                         <option value="Noise Complaint" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Noise Complaint' ? 'selected' : '' }}>Noise Complaint</option>
-                        <option value="Physical Altercation" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Physical Altercation' ? 'selected' : '' }}>Physical Altercation</option>
+                        <option value="Physical Fight" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Physical Fight' ? 'selected' : '' }}>Physical Fight</option>
                         <option value="Property Dispute" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Property Dispute' ? 'selected' : '' }}>Property Dispute</option>
                         <option value="Theft" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Theft' ? 'selected' : '' }}>Theft</option>
-                        <option value="Domestic" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Domestic' ? 'selected' : '' }}>Domestic</option>
+                        <option value="Family / Domestic Dispute" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Family / Domestic Dispute' ? 'selected' : '' }}>Family / Domestic Dispute</option>
                         <option value="Others" {{ (old('incident_type', isset($record) ? $record->incident_type : '')) === 'Others' ? 'selected' : '' }}>Others</option>
                     </select>
+                </div>
+                <div class="sm:col-span-2" x-show="incidentType === 'Others'" x-cloak>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        Please specify the type of complaint/case <span class="text-red-500 normal-case font-normal">*</span>
+                    </label>
+                    <input type="text" name="incident_type_other" :required="incidentType === 'Others'"
+                           value="{{ old('incident_type_other', $record->incident_type_other ?? '') }}"
+                           placeholder="e.g. Missing pet, boundary marker moved, etc."
+                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
@@ -120,7 +131,7 @@
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address <span class="normal-case font-normal text-gray-400">(for notifications)</span></label>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address <span class="text-gray-400 normal-case font-normal">(optional)</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm"><i class="fa-brands fa-google"></i></span>
                             <input type="email" name="complainant_email" value="{{ old('complainant_email', isset($record) ? $record->complainant_email : '') }}"
@@ -165,7 +176,7 @@
                                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all placeholder-gray-400">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address <span class="normal-case font-normal text-gray-400">(for notifications)</span></label>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Gmail Address <span class="text-gray-400 normal-case font-normal">(optional)</span></label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm"><i class="fa-brands fa-google"></i></span>
                             <input type="email" name="respondent_email" value="{{ old('respondent_email', isset($record) ? $record->respondent_email : '') }}"
@@ -269,6 +280,31 @@
                     <option value="Referred" {{ (old('status', isset($record) ? $record->status : '')) === 'Referred' ? 'selected' : '' }}>Referred to Higher Authority</option>
                 </select>
                 <p class="text-[11px] text-gray-400 mt-2">New cases are typically filed as <strong>Open</strong>.</p>
+
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        Hearing Date <span class="text-gray-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <input type="date" name="hearing_date" value="{{ old('hearing_date', isset($record) ? $record->hearing_date?->format('Y-m-d') : '') }}"
+                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                </div>
+                <div class="mt-3">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        Hearing Time <span class="text-gray-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <input type="time" name="hearing_time" value="{{ old('hearing_time', isset($record) ? $record->hearing_time : '') }}"
+                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                  focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                    <p class="text-[11px] text-gray-400 mt-2">Set both to enable printing the Summon for this case.</p>
+                    @if(isset($record) && $record->hearing_date && $record->hearing_time)
+                    <a href="{{ route($isStaff ? 'staff.blotter.summon' : 'blotter.summon', $record->id) }}" target="_blank"
+                       class="mt-3 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                       style="background-color:#1a4731;" onmouseover="this.style.backgroundColor='#2d6a4f'" onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-print text-xs"></i> Print Summon
+                    </a>
+                    @endif
+                </div>
             </div>
         </div>
 

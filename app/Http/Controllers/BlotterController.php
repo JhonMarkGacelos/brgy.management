@@ -4,15 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\BlotterRecord;
 use App\Notifications\BlotterStatusUpdated;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View as IlluminateView;
 
 class BlotterController extends Controller
 {
+    private const CATEGORIES = [
+        'Noise Complaint',
+        'Physical Fight',
+        'Property Dispute',
+        'Theft',
+        'Family / Domestic Dispute',
+        'Others',
+    ];
+
     /**
      * Send a notification without letting a mail/SMTP failure bubble up and
      * fail the controller action after the related DB write already succeeded.
@@ -86,19 +97,23 @@ class BlotterController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'incident_date'     => 'required|date',
-            'incident_type'     => 'required|string',
-            'complainant_name'  => 'required|string|max:150',
-            'respondent_name'   => 'required|string|max:150',
-            'narrative'         => 'required|string',
-            'action_taken'      => 'required|string',
-            'status'            => 'required|string',
+            'incident_date'       => 'required|date',
+            'incident_type'       => ['required', 'string', Rule::in(self::CATEGORIES)],
+            'incident_type_other' => 'required_if:incident_type,Others|nullable|string|max:255',
+            'complainant_name'    => 'required|string|max:150',
+            'respondent_name'     => 'required|string|max:150',
+            'narrative'           => 'required|string',
+            'action_taken'        => 'required|string',
+            'status'              => 'required|string',
+            'hearing_date'        => 'nullable|date',
+            'hearing_time'        => 'nullable|date_format:H:i',
         ]);
 
         $attributes = [
             'incident_date'        => $request->incident_date,
             'incident_time'        => $request->incident_time,
             'incident_type'        => $request->incident_type,
+            'incident_type_other'  => $request->incident_type === 'Others' ? $request->incident_type_other : null,
             'location'             => $request->location,
             'complainant_name'     => $request->complainant_name,
             'complainant_address'  => $request->complainant_address,
@@ -112,6 +127,8 @@ class BlotterController extends Controller
             'narrative'            => $request->narrative,
             'action_taken'         => $request->action_taken,
             'status'               => $request->status,
+            'hearing_date'         => $request->hearing_date,
+            'hearing_time'         => $request->hearing_time,
             'filed_by'             => Auth::id(),
         ];
 
@@ -149,12 +166,20 @@ class BlotterController extends Controller
     {
         $record = BlotterRecord::findOrFail($id);
 
+        $request->validate([
+            'incident_type'       => ['required', 'string', Rule::in(self::CATEGORIES)],
+            'incident_type_other' => 'required_if:incident_type,Others|nullable|string|max:255',
+            'hearing_date'        => 'nullable|date',
+            'hearing_time'        => 'nullable|date_format:H:i',
+        ]);
+
         $oldStatus = $record->status;
 
         $record->update([
             'incident_date'       => $request->incident_date,
             'incident_time'       => $request->incident_time,
             'incident_type'       => $request->incident_type,
+            'incident_type_other' => $request->incident_type === 'Others' ? $request->incident_type_other : null,
             'location'            => $request->location,
             'complainant_name'    => $request->complainant_name,
             'complainant_address' => $request->complainant_address,
@@ -168,6 +193,8 @@ class BlotterController extends Controller
             'narrative'           => $request->narrative,
             'action_taken'        => $request->action_taken,
             'status'              => $request->status,
+            'hearing_date'        => $request->hearing_date,
+            'hearing_time'        => $request->hearing_time,
             'remarks'             => $request->remarks,
             'resolved_at'         => in_array($request->status, ['Settled', 'Referred']) ? now() : null,
         ]);
@@ -195,5 +222,25 @@ class BlotterController extends Controller
         BlotterRecord::findOrFail($id)->delete();
         return redirect()->to($this->r('blotter.index'))
             ->with('success', 'Blotter record deleted.');
+    }
+
+    /**
+     * Generate a single PDF containing both the Complainant and Respondent
+     * summon letters (one page each) for a case, once its hearing schedule
+     * has been set via the edit form.
+     */
+    public function printSummon(string $id)
+    {
+        $record = BlotterRecord::findOrFail($id);
+
+        if (! $record->hearing_date || ! $record->hearing_time) {
+            return redirect()->to($this->r('blotter.show', $record->id))
+                ->with('error', 'Please set the hearing date and time (via Edit Case) before printing the summon.');
+        }
+
+        $pdf = Pdf::loadView('blotter.print.summon', compact('record'))
+            ->setPaper('letter', 'portrait');
+
+        return $pdf->stream("Summon-{$record->case_number}.pdf");
     }
 }
