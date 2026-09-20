@@ -84,7 +84,7 @@ $statusBreakdown   = $statusBreakdown   ?? [];
     <div class="lg:col-span-2 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <p class="text-sm font-semibold text-gray-900">Recent Activity</p>
-            <span class="text-xs font-medium text-green-700 hover:underline cursor-pointer">View all</span>
+            <a href="{{ route('audit.index') }}" class="text-xs font-medium text-green-700 hover:underline cursor-pointer">View all</a>
         </div>
         <div class="divide-y divide-gray-50">
             @php
@@ -225,12 +225,13 @@ const statusBreakdownValues = {!! $statusValuesJson !!};
 const statusBreakdownLabels = {!! $statusLabelsJson !!};
 
 const trendChart = new ApexCharts(document.getElementById('trendChart'), {
-    chart: { type: 'line', height: 200, toolbar: { show: false } },
+    chart: { type: 'bar', height: 200, toolbar: { show: false } },
     series: [
         { name: 'Documents Issued', data: monthlyTrends.documentsIssued },
         { name: 'Complaints',       data: monthlyTrends.complaints },
         { name: 'New Residents',    data: monthlyTrends.newResidents },
     ],
+    plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
     xaxis: {
         categories: monthlyTrends.labels,
         title: { text: 'Month', style: { fontSize: '11px', color: '#9ca3af' } },
@@ -243,10 +244,24 @@ const trendChart = new ApexCharts(document.getElementById('trendChart'), {
     },
     colors: ['#3b82f6', '#ef4444', '#1a4731'],
     legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#6b7280' } },
-    stroke: { curve: 'smooth', width: 2.5 },
     dataLabels: { enabled: false },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
-    tooltip: { theme: 'light', shared: true },
+    tooltip: { theme: 'light', shared: true, intersect: false },
+    responsive: [{
+        breakpoint: 640,
+        options: {
+            chart: { height: 240 },
+            xaxis: {
+                title: { text: undefined },
+                labels: { style: { fontSize: '9px' }, rotate: -45, rotateAlways: true },
+            },
+            yaxis: {
+                title: { text: undefined },
+                labels: { style: { fontSize: '9px' } },
+            },
+            legend: { fontSize: '10px' },
+        },
+    }],
 });
 trendChart.render();
 
