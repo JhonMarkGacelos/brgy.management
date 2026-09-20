@@ -103,7 +103,6 @@
                 <i class="fa-solid fa-bars text-sm"></i>
             </button>
             <div class="flex items-center gap-3">
-                <x-language-switcher />
                 @include('partials.notification-bell')
             </div>
         </div>
