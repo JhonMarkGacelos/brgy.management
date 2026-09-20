@@ -6,11 +6,45 @@ use App\Models\Household;
 use App\Models\IncomeSource;
 use App\Models\Resident;
 use App\Services\ClassificationService;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ResidentController extends Controller
 {
+    private const ID_DOC_RULE          = 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120';
+    private const ID_DOC_REQUIRED_RULE = 'required|image|mimes:jpg,jpeg,png,webp|max:5120';
+
+    /**
+     * Upload/keep/clear a PWD or Solo Parent ID document for one resident.
+     * Returns ['url' => ?string, 'public_id' => ?string] or ['error' => string] on upload failure.
+     */
+    private function resolveIdDocument(Request $request, string $fileKey, bool $wants, ?string $existingUrl, ?string $existingPublicId, string $folder, string $label): array
+    {
+        $url      = $existingUrl;
+        $publicId = $existingPublicId;
+
+        if ($request->hasFile($fileKey)) {
+            try {
+                if ($publicId) {
+                    (new CloudinaryService)->delete($publicId);
+                }
+                $uploaded = (new CloudinaryService)->uploadIdPhoto($request->file($fileKey), $folder);
+                $url      = $uploaded['url'];
+                $publicId = $uploaded['public_id'];
+            } catch (\Throwable $e) {
+                return ['error' => "{$label} upload failed. Please try again or contact barangay staff."];
+            }
+        }
+
+        if (!$wants) {
+            $url      = null;
+            $publicId = null;
+        }
+
+        return ['url' => $url, 'public_id' => $publicId];
+    }
+
     private function isStaff(): bool
     {
         return Auth::user()->role === 'staff';
@@ -141,7 +175,7 @@ class ResidentController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'purok'                               => 'required|string',
             'families.*.head.first_name'          => 'required|string|max:100',
             'families.*.head.last_name'           => 'required|string|max:100',
@@ -153,7 +187,20 @@ class ResidentController extends Controller
             'families.*.members.*.date_of_birth'  => 'required|date',
             'families.*.members.*.gender'         => 'required|string',
             'families.*.members.*.relationship'   => 'required|string',
-        ], [
+        ];
+
+        foreach ($request->input('families', []) as $fi => $familyData) {
+            $head = $familyData['head'] ?? [];
+            $rules["families.$fi.head.pwd_id_document"]         = !empty($head['is_pwd']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.$fi.head.solo_parent_id_document"] = !empty($head['is_solo_parent']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+
+            foreach ($familyData['members'] ?? [] as $mi => $member) {
+                $rules["families.$fi.members.$mi.pwd_id_document"]         = !empty($member['is_pwd']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+                $rules["families.$fi.members.$mi.solo_parent_id_document"] = !empty($member['is_solo_parent']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            }
+        }
+
+        $request->validate($rules, [
             'families.*.head.date_of_birth.required'      => 'Date of birth is required for the head of family.',
             'families.*.head.civil_status.required'       => 'Civil status is required for the head of family.',
             'families.*.members.*.first_name.required'    => 'First name is required for all members.',
@@ -161,11 +208,24 @@ class ResidentController extends Controller
             'families.*.members.*.date_of_birth.required' => 'Date of birth is required for all members.',
             'families.*.members.*.gender.required'        => 'Gender is required for all members.',
             'families.*.members.*.relationship.required'  => 'Relationship is required for all members.',
+            'families.*.head.pwd_id_document.required'              => 'A PWD ID photo is required for the head of family when tagged as PWD.',
+            'families.*.head.solo_parent_id_document.required'      => 'A Solo Parent ID photo is required for the head of family when tagged as Solo Parent.',
+            'families.*.members.*.pwd_id_document.required'         => 'A PWD ID photo is required for this member.',
+            'families.*.members.*.solo_parent_id_document.required' => 'A Solo Parent ID photo is required for this member.',
         ]);
 
-        foreach ($request->input('families', []) as $familyData) {
+        foreach ($request->input('families', []) as $fi => $familyData) {
             $head = $familyData['head'] ?? [];
             if (empty($head['first_name'])) continue;
+
+            $headPwd = $this->resolveIdDocument($request, "families.$fi.head.pwd_id_document", !empty($head['is_pwd']), null, null, 'PWD IDs', 'PWD ID');
+            if (isset($headPwd['error'])) {
+                return back()->withInput()->withErrors(["families.$fi.head.pwd_id_document" => $headPwd['error']]);
+            }
+            $headSp = $this->resolveIdDocument($request, "families.$fi.head.solo_parent_id_document", !empty($head['is_solo_parent']), null, null, 'Solo Parent IDs', 'Solo Parent ID');
+            if (isset($headSp['error'])) {
+                return back()->withInput()->withErrors(["families.$fi.head.solo_parent_id_document" => $headSp['error']]);
+            }
 
             $household = Household::create([
                 'house_no' => $request->house_no,
@@ -196,10 +256,24 @@ class ResidentController extends Controller
                 'is_indigent'          => !empty($head['is_indigent']),
                 'is_pregnant'          => !empty($head['is_pregnant']),
                 'pregnant_due_date'    => !empty($head['is_pregnant']) ? ($head['pregnant_due_date'] ?: null) : null,
+                'pwd_id_url'               => $headPwd['url'],
+                'pwd_id_public_id'         => $headPwd['public_id'],
+                'solo_parent_id_url'       => $headSp['url'],
+                'solo_parent_id_public_id' => $headSp['public_id'],
             ]);
 
-            foreach ($familyData['members'] ?? [] as $member) {
+            foreach ($familyData['members'] ?? [] as $mi => $member) {
                 if (empty($member['first_name']) && empty($member['last_name'])) continue;
+
+                $mPwd = $this->resolveIdDocument($request, "families.$fi.members.$mi.pwd_id_document", !empty($member['is_pwd']), null, null, 'PWD IDs', 'PWD ID');
+                if (isset($mPwd['error'])) {
+                    return back()->withInput()->withErrors(["families.$fi.members.$mi.pwd_id_document" => $mPwd['error']]);
+                }
+                $mSp = $this->resolveIdDocument($request, "families.$fi.members.$mi.solo_parent_id_document", !empty($member['is_solo_parent']), null, null, 'Solo Parent IDs', 'Solo Parent ID');
+                if (isset($mSp['error'])) {
+                    return back()->withInput()->withErrors(["families.$fi.members.$mi.solo_parent_id_document" => $mSp['error']]);
+                }
+
                 $household->residents()->create([
                     'first_name'           => $member['first_name'] ?? '',
                     'middle_name'          => $member['middle_name'] ?? null,
@@ -221,6 +295,10 @@ class ResidentController extends Controller
                     'is_indigent'          => !empty($member['is_indigent']),
                     'is_pregnant'          => !empty($member['is_pregnant']),
                     'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
+                    'pwd_id_url'               => $mPwd['url'],
+                    'pwd_id_public_id'         => $mPwd['public_id'],
+                    'solo_parent_id_url'       => $mSp['url'],
+                    'solo_parent_id_public_id' => $mSp['public_id'],
                 ]);
             }
 
@@ -245,7 +323,10 @@ class ResidentController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $request->validate([
+        $headIn    = $request->input('families.0.head', []);
+        $membersIn = $request->input('families.0.members', []);
+
+        $rules = [
             'purok'                              => 'required|string',
             'families.0.head.first_name'         => 'required|string|max:100',
             'families.0.head.last_name'          => 'required|string|max:100',
@@ -257,7 +338,21 @@ class ResidentController extends Controller
             'families.0.members.*.date_of_birth' => 'required|date',
             'families.0.members.*.gender'        => 'required|string',
             'families.0.members.*.relationship'  => 'required|string',
-        ], [
+        ];
+
+        $rules['families.0.head.pwd_id_document'] = (!empty($headIn['is_pwd']) && empty($headIn['existing_pwd_id_url']))
+            ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+        $rules['families.0.head.solo_parent_id_document'] = (!empty($headIn['is_solo_parent']) && empty($headIn['existing_solo_parent_id_url']))
+            ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+
+        foreach ($membersIn as $mi => $member) {
+            $rules["families.0.members.$mi.pwd_id_document"] = (!empty($member['is_pwd']) && empty($member['existing_pwd_id_url']))
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.0.members.$mi.solo_parent_id_document"] = (!empty($member['is_solo_parent']) && empty($member['existing_solo_parent_id_url']))
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+        }
+
+        $request->validate($rules, [
             'families.0.head.date_of_birth.required'      => 'Date of birth is required.',
             'families.0.head.civil_status.required'       => 'Civil status is required.',
             'families.0.members.*.first_name.required'    => 'First name is required for all members.',
@@ -265,6 +360,10 @@ class ResidentController extends Controller
             'families.0.members.*.date_of_birth.required' => 'Date of birth is required for all members.',
             'families.0.members.*.gender.required'        => 'Gender is required for all members.',
             'families.0.members.*.relationship.required'  => 'Relationship is required for all members.',
+            'families.0.head.pwd_id_document.required'              => 'A PWD ID photo is required for the head of family when tagged as PWD.',
+            'families.0.head.solo_parent_id_document.required'      => 'A Solo Parent ID photo is required for the head of family when tagged as Solo Parent.',
+            'families.0.members.*.pwd_id_document.required'         => 'A PWD ID photo is required for this member.',
+            'families.0.members.*.solo_parent_id_document.required' => 'A Solo Parent ID photo is required for this member.',
         ]);
 
         $household = Household::with('residents')->findOrFail($id);
@@ -282,6 +381,23 @@ class ResidentController extends Controller
         // Update head of household
         $head = $household->residents()->where('is_head', true)->first();
         if ($head && !empty($headData['first_name'])) {
+            $headPwd = $this->resolveIdDocument(
+                $request, 'families.0.head.pwd_id_document', !empty($headData['is_pwd']),
+                $headData['existing_pwd_id_url'] ?? null, $headData['existing_pwd_id_public_id'] ?? null,
+                'PWD IDs', 'PWD ID'
+            );
+            if (isset($headPwd['error'])) {
+                return back()->withInput()->withErrors(['families.0.head.pwd_id_document' => $headPwd['error']]);
+            }
+            $headSp = $this->resolveIdDocument(
+                $request, 'families.0.head.solo_parent_id_document', !empty($headData['is_solo_parent']),
+                $headData['existing_solo_parent_id_url'] ?? null, $headData['existing_solo_parent_id_public_id'] ?? null,
+                'Solo Parent IDs', 'Solo Parent ID'
+            );
+            if (isset($headSp['error'])) {
+                return back()->withInput()->withErrors(['families.0.head.solo_parent_id_document' => $headSp['error']]);
+            }
+
             $head->update([
                 'first_name'           => $headData['first_name'],
                 'middle_name'          => $headData['middle_name'] ?? null,
@@ -302,13 +418,35 @@ class ResidentController extends Controller
                 'is_indigent'          => !empty($headData['is_indigent']),
                 'is_pregnant'          => !empty($headData['is_pregnant']),
                 'pregnant_due_date'    => !empty($headData['is_pregnant']) ? ($headData['pregnant_due_date'] ?: null) : null,
+                'pwd_id_url'               => $headPwd['url'],
+                'pwd_id_public_id'         => $headPwd['public_id'],
+                'solo_parent_id_url'       => $headSp['url'],
+                'solo_parent_id_public_id' => $headSp['public_id'],
             ]);
         }
 
         // Replace members (delete old, insert new)
         $household->residents()->where('is_head', false)->delete();
-        foreach ($membersData as $member) {
+        foreach ($membersData as $mi => $member) {
             if (empty($member['first_name']) && empty($member['last_name'])) continue;
+
+            $mPwd = $this->resolveIdDocument(
+                $request, "families.0.members.$mi.pwd_id_document", !empty($member['is_pwd']),
+                $member['existing_pwd_id_url'] ?? null, $member['existing_pwd_id_public_id'] ?? null,
+                'PWD IDs', 'PWD ID'
+            );
+            if (isset($mPwd['error'])) {
+                return back()->withInput()->withErrors(["families.0.members.$mi.pwd_id_document" => $mPwd['error']]);
+            }
+            $mSp = $this->resolveIdDocument(
+                $request, "families.0.members.$mi.solo_parent_id_document", !empty($member['is_solo_parent']),
+                $member['existing_solo_parent_id_url'] ?? null, $member['existing_solo_parent_id_public_id'] ?? null,
+                'Solo Parent IDs', 'Solo Parent ID'
+            );
+            if (isset($mSp['error'])) {
+                return back()->withInput()->withErrors(["families.0.members.$mi.solo_parent_id_document" => $mSp['error']]);
+            }
+
             $household->residents()->create([
                 'first_name'           => $member['first_name'] ?? '',
                 'middle_name'          => $member['middle_name'] ?? null,
@@ -329,6 +467,10 @@ class ResidentController extends Controller
                 'is_indigent'          => !empty($member['is_indigent']),
                 'is_pregnant'          => !empty($member['is_pregnant']),
                 'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
+                'pwd_id_url'               => $mPwd['url'],
+                'pwd_id_public_id'         => $mPwd['public_id'],
+                'solo_parent_id_url'       => $mSp['url'],
+                'solo_parent_id_public_id' => $mSp['public_id'],
             ]);
         }
 
@@ -360,6 +502,31 @@ class ResidentController extends Controller
     {
         $member = Resident::where('household_id', $householdId)->findOrFail($memberId);
 
+        $request->validate([
+            'pwd_id_document' => ($request->boolean('is_pwd') && !$member->pwd_id_url)
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
+            'solo_parent_id_document' => ($request->boolean('is_solo_parent') && !$member->solo_parent_id_url)
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
+        ], [
+            'pwd_id_document.required'         => 'A PWD ID photo is required for this member.',
+            'solo_parent_id_document.required' => 'A Solo Parent ID photo is required for this member.',
+        ]);
+
+        $pwd = $this->resolveIdDocument(
+            $request, 'pwd_id_document', $request->boolean('is_pwd'),
+            $member->pwd_id_url, $member->pwd_id_public_id, 'PWD IDs', 'PWD ID'
+        );
+        if (isset($pwd['error'])) {
+            return back()->withErrors(['pwd_id_document' => $pwd['error']]);
+        }
+        $sp = $this->resolveIdDocument(
+            $request, 'solo_parent_id_document', $request->boolean('is_solo_parent'),
+            $member->solo_parent_id_url, $member->solo_parent_id_public_id, 'Solo Parent IDs', 'Solo Parent ID'
+        );
+        if (isset($sp['error'])) {
+            return back()->withErrors(['solo_parent_id_document' => $sp['error']]);
+        }
+
         $member->update([
             'first_name'           => $request->first_name,
             'middle_name'          => $request->middle_name,
@@ -381,6 +548,10 @@ class ResidentController extends Controller
             'is_indigent'          => $request->boolean('is_indigent'),
             'is_pregnant'          => $request->boolean('is_pregnant'),
             'pregnant_due_date'    => $request->boolean('is_pregnant') ? ($request->pregnant_due_date ?: null) : null,
+            'pwd_id_url'               => $pwd['url'],
+            'pwd_id_public_id'         => $pwd['public_id'],
+            'solo_parent_id_url'       => $sp['url'],
+            'solo_parent_id_public_id' => $sp['public_id'],
         ]);
 
         return redirect()->to($this->route('residents.show', $householdId))

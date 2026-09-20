@@ -91,7 +91,21 @@ $isStaff = Auth::user()->role === 'staff';
                             <span><i class="fa-solid fa-ring mr-1 text-gray-400"></i>{{ $isDemo ? $head['civil'] : $head->civil_status }}</span>
                             @if($isDemo ? $head['sectors'] : $head->sectors)
                             @foreach(($isDemo ? $head['sectors'] : $head->sectors) as $sector)
+                            @php
+                                $sectorIdUrl = match(true) {
+                                    $sector === 'PWD' && !$isDemo && $head->pwd_id_url => $head->pwd_id_url,
+                                    $sector === 'Solo Parent' && !$isDemo && $head->solo_parent_id_url => $head->solo_parent_id_url,
+                                    default => null,
+                                };
+                            @endphp
+                            @if($sectorIdUrl)
+                            <button type="button" onclick="viewIdPhoto('{{ $sectorIdUrl }}', '{{ $sector }} ID — {{ addslashes($head->full_name) }}')" title="View {{ $sector }} ID"
+                               class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? '' }} hover:brightness-95 transition cursor-pointer">
+                                {{ $sector }} <i class="fa-solid fa-image text-[9px]"></i>
+                            </button>
+                            @else
                             <span class="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? '' }}">{{ $sector }}</span>
+                            @endif
                             @endforeach
                             @endif
                         </div>
@@ -199,7 +213,21 @@ $isStaff = Auth::user()->role === 'staff';
                             <td class="px-5 py-3.5">
                                 <div class="flex flex-wrap gap-1">
                                     @forelse($mSectors as $sector)
+                                        @php
+                                            $sectorIdUrl = match(true) {
+                                                $sector === 'PWD' && !$isDemo && $m->pwd_id_url => $m->pwd_id_url,
+                                                $sector === 'Solo Parent' && !$isDemo && $m->solo_parent_id_url => $m->solo_parent_id_url,
+                                                default => null,
+                                            };
+                                        @endphp
+                                        @if($sectorIdUrl)
+                                        <button type="button" onclick="viewIdPhoto('{{ $sectorIdUrl }}', '{{ $sector }} ID — {{ addslashes($m->full_name) }}')" title="View {{ $sector }} ID"
+                                           class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? 'bg-gray-50 text-gray-500' }} hover:brightness-95 transition cursor-pointer">
+                                            {{ $sector }} <i class="fa-solid fa-image text-[9px]"></i>
+                                        </button>
+                                        @else
                                         <span class="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? 'bg-gray-50 text-gray-500' }}">{{ $sector }}</span>
+                                        @endif
                                     @empty
                                         <span class="text-xs text-gray-300">—</span>
                                     @endforelse
@@ -238,6 +266,8 @@ $isStaff = Auth::user()->role === 'staff';
                                         'is_indigent'       => $m->is_indigent,
                                         'is_pregnant'       => $m->is_pregnant,
                                         'pregnant_due_date' => $m->pregnant_due_date?->format('Y-m-d'),
+                                        'pwd_id_url'         => $m->pwd_id_url,
+                                        'solo_parent_id_url' => $m->solo_parent_id_url,
                                     ]) }})"
                                     class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
                                         <i class="fa-solid fa-pen text-[11px]"></i> Edit
@@ -587,7 +617,7 @@ $isStaff = Auth::user()->role === 'staff';
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>
-        <form id="edit-member-form" method="POST" class="overflow-y-auto">
+        <form id="edit-member-form" method="POST" enctype="multipart/form-data" class="overflow-y-auto">
             @csrf @method('PUT')
             <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -675,13 +705,25 @@ $isStaff = Auth::user()->role === 'staff';
                                    class="rounded border-gray-300 text-green-600 focus:ring-green-500">
                             4Ps
                         </label>
-                        @foreach(['is_senior_citizen'=>'Senior Citizen','is_pwd'=>'PWD','is_solo_parent'=>'Solo Parent','is_voter'=>'Voter','is_indigent'=>'Indigent'] as $field => $label)
+                        @foreach(['is_senior_citizen'=>'Senior Citizen','is_voter'=>'Voter','is_indigent'=>'Indigent'] as $field => $label)
                         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                             <input type="checkbox" name="{{ $field }}" id="em_{{ $field }}" value="1"
                                    class="rounded border-gray-300 text-green-600 focus:ring-green-500">
                             {{ $label }}
                         </label>
                         @endforeach
+                        <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                            <input type="checkbox" name="is_pwd" id="em_is_pwd" value="1"
+                                   class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                   onchange="toggleIdUploadModal('pwd', this.checked)">
+                            PWD
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                            <input type="checkbox" name="is_solo_parent" id="em_is_solo_parent" value="1"
+                                   class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                   onchange="toggleIdUploadModal('solo_parent', this.checked)">
+                            Solo Parent
+                        </label>
                         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                             <input type="checkbox" name="is_pregnant" id="em_is_pregnant" value="1"
                                    class="rounded border-gray-300 text-rose-500 focus:ring-rose-400"
@@ -693,6 +735,62 @@ $isStaff = Auth::user()->role === 'staff';
                         <label class="block text-xs font-semibold text-gray-500 mb-1">Due Date / Expected Labor Date</label>
                         <input type="date" name="pregnant_due_date" id="em_pregnant_due_date"
                                class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
+                    </div>
+                    <div id="em_pwd_id_wrap" class="hidden mt-2">
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">
+                            PWD ID <span id="em_pwd_id_required_hint" class="text-red-500">*</span>
+                        </label>
+                        <div id="em_pwd_id_existing" class="hidden mb-2">
+                            <button type="button" onclick="viewIdPhoto(document.getElementById('em_pwd_id_existing_img').src, 'PWD ID')" class="block relative rounded-xl overflow-hidden border-2 border-gray-200 max-w-[200px]">
+                                <img id="em_pwd_id_existing_img" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 text-center">
+                                    <span class="text-[10px] text-white">On file &middot; click to view</span>
+                                </div>
+                            </button>
+                        </div>
+                        <label class="block w-full max-w-[200px] cursor-pointer">
+                            <input type="file" name="pwd_id_document" id="em_pwd_id_document" accept="image/*" class="sr-only"
+                                   onchange="handleIdFileChange('pwd', this)">
+                            <div id="em_pwd_id_dropzone" class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/40 px-4 py-5 hover:border-purple-400 hover:bg-purple-50 transition-all">
+                                <i class="fa-solid fa-id-card text-purple-400 text-base"></i>
+                                <p class="text-[10px] text-purple-600 text-center">Click to upload &middot; JPG/PNG/WebP, max 5MB</p>
+                            </div>
+                            <div id="em_pwd_id_preview_wrap" class="hidden relative rounded-xl overflow-hidden border-2 border-green-400">
+                                <img id="em_pwd_id_preview" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 flex items-center justify-between gap-2">
+                                    <span id="em_pwd_id_filename" class="text-[10px] text-white truncate"></span>
+                                    <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="em_solo_parent_id_wrap" class="hidden mt-2">
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">
+                            Solo Parent ID <span id="em_solo_parent_id_required_hint" class="text-red-500">*</span>
+                        </label>
+                        <div id="em_solo_parent_id_existing" class="hidden mb-2">
+                            <button type="button" onclick="viewIdPhoto(document.getElementById('em_solo_parent_id_existing_img').src, 'Solo Parent ID')" class="block relative rounded-xl overflow-hidden border-2 border-gray-200 max-w-[200px]">
+                                <img id="em_solo_parent_id_existing_img" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 text-center">
+                                    <span class="text-[10px] text-white">On file &middot; click to view</span>
+                                </div>
+                            </button>
+                        </div>
+                        <label class="block w-full max-w-[200px] cursor-pointer">
+                            <input type="file" name="solo_parent_id_document" id="em_solo_parent_id_document" accept="image/*" class="sr-only"
+                                   onchange="handleIdFileChange('solo_parent', this)">
+                            <div id="em_solo_parent_id_dropzone" class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-pink-200 bg-pink-50/40 px-4 py-5 hover:border-pink-400 hover:bg-pink-50 transition-all">
+                                <i class="fa-solid fa-id-card text-pink-400 text-base"></i>
+                                <p class="text-[10px] text-pink-600 text-center">Click to upload &middot; JPG/PNG/WebP, max 5MB</p>
+                            </div>
+                            <div id="em_solo_parent_id_preview_wrap" class="hidden relative rounded-xl overflow-hidden border-2 border-green-400">
+                                <img id="em_solo_parent_id_preview" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 flex items-center justify-between gap-2">
+                                    <span id="em_solo_parent_id_filename" class="text-[10px] text-white truncate"></span>
+                                    <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                </div>
+                            </div>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -713,7 +811,37 @@ $isStaff = Auth::user()->role === 'staff';
     </div>
 </div>
 
+{{-- ── VIEW ID PHOTO LIGHTBOX ── --}}
+<div id="modal-view-id" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+     onclick="if (event.target === this) closeViewIdPhoto()">
+    <div class="relative w-full max-w-md">
+        <button type="button" onclick="closeViewIdPhoto()"
+                class="absolute -top-9 right-0 text-white/80 hover:text-white transition-colors">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+        <div class="rounded-2xl overflow-hidden bg-white shadow-xl">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <p id="view_id_title" class="text-sm font-semibold text-gray-800"></p>
+                <a id="view_id_original_link" href="#" target="_blank" class="text-[11px] text-gray-400 hover:text-gray-600 shrink-0">View original</a>
+            </div>
+            <img id="view_id_image" src="" class="w-full max-h-[70vh] object-contain bg-gray-100">
+        </div>
+    </div>
+</div>
+
 <script>
+function viewIdPhoto(url, title) {
+    document.getElementById('view_id_image').src = url;
+    document.getElementById('view_id_title').textContent = title;
+    document.getElementById('view_id_original_link').href = url;
+    document.getElementById('modal-view-id').classList.remove('hidden');
+}
+
+function closeViewIdPhoto() {
+    document.getElementById('modal-view-id').classList.add('hidden');
+    document.getElementById('view_id_image').src = '';
+}
+
 function openEditMember(data) {
     const isStaff = {{ $isStaff ? 'true' : 'false' }};
     const base    = isStaff ? '/staff/residents' : '/residents';
@@ -744,11 +872,60 @@ function openEditMember(data) {
     document.getElementById('em_pregnant_due_date').value = data.pregnant_due_date || '';
     togglePregnantDueDateModal(!!data.is_pregnant);
 
+    setIdDocumentState('pwd', !!data.is_pwd, data.pwd_id_url || null);
+    setIdDocumentState('solo_parent', !!data.is_solo_parent, data.solo_parent_id_url || null);
+
     document.getElementById('modal-edit-member').classList.remove('hidden');
 }
 
 function togglePregnantDueDateModal(show) {
     document.getElementById('em_pregnant_due_wrap').classList.toggle('hidden', !show);
+}
+
+const emIdState = { pwd: { existingUrl: null }, solo_parent: { existingUrl: null } };
+
+// Resets and (re)initializes an ID upload block for the resident currently being edited.
+function setIdDocumentState(prefix, checked, existingUrl) {
+    emIdState[prefix].existingUrl = existingUrl;
+
+    document.getElementById('em_' + prefix + '_id_document').value = '';
+    document.getElementById('em_' + prefix + '_id_preview').src = '';
+    document.getElementById('em_' + prefix + '_id_filename').textContent = '';
+    document.getElementById('em_' + prefix + '_id_preview_wrap').classList.add('hidden');
+    document.getElementById('em_' + prefix + '_id_dropzone').classList.remove('hidden');
+
+    const existingWrap = document.getElementById('em_' + prefix + '_id_existing');
+    if (existingUrl) {
+        document.getElementById('em_' + prefix + '_id_existing_img').src = existingUrl;
+        existingWrap.classList.remove('hidden');
+    } else {
+        existingWrap.classList.add('hidden');
+    }
+
+    toggleIdUploadModal(prefix, checked);
+}
+
+function toggleIdUploadModal(prefix, checked) {
+    document.getElementById('em_' + prefix + '_id_wrap').classList.toggle('hidden', !checked);
+
+    const fileInput = document.getElementById('em_' + prefix + '_id_document');
+    const requiresUpload = checked && !emIdState[prefix].existingUrl;
+    fileInput.required = requiresUpload;
+    document.getElementById('em_' + prefix + '_id_required_hint').style.display = requiresUpload ? '' : 'none';
+}
+
+function handleIdFileChange(prefix, inputEl) {
+    const f = inputEl.files[0];
+    if (!f) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        document.getElementById('em_' + prefix + '_id_preview').src = e.target.result;
+        document.getElementById('em_' + prefix + '_id_filename').textContent = f.name;
+        document.getElementById('em_' + prefix + '_id_preview_wrap').classList.remove('hidden');
+        document.getElementById('em_' + prefix + '_id_dropzone').classList.add('hidden');
+    };
+    reader.readAsDataURL(f);
 }
 </script>
 

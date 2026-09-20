@@ -35,6 +35,10 @@ if ($isEdit) {
                 'pregnant'       => (bool)($head?->is_pregnant),
             ],
             'pregnant_due_date' => $head?->pregnant_due_date?->format('Y-m-d') ?? '',
+            'existing_pwd_id_url'               => $head?->pwd_id_url ?? '',
+            'existing_pwd_id_public_id'         => $head?->pwd_id_public_id ?? '',
+            'existing_solo_parent_id_url'       => $head?->solo_parent_id_url ?? '',
+            'existing_solo_parent_id_public_id' => $head?->solo_parent_id_public_id ?? '',
         ],
         'members' => $members->map(fn($m) => [
             'first_name'     => $m->first_name ?? '',
@@ -57,6 +61,10 @@ if ($isEdit) {
                 'pregnant'       => (bool)($m->is_pregnant),
             ],
             'pregnant_due_date' => $m->pregnant_due_date?->format('Y-m-d') ?? '',
+            'existing_pwd_id_url'               => $m->pwd_id_url ?? '',
+            'existing_pwd_id_public_id'         => $m->pwd_id_public_id ?? '',
+            'existing_solo_parent_id_url'       => $m->solo_parent_id_url ?? '',
+            'existing_solo_parent_id_public_id' => $m->solo_parent_id_public_id ?? '',
         ])->values()->all(),
     ]]];
 }
@@ -74,7 +82,7 @@ if ($isEdit) {
 </div>
 
 <form action="{{ $isEdit ? route($isStaff ? 'staff.residents.update' : 'residents.update', $household->id) : route($isStaff ? 'staff.residents.store' : 'residents.store') }}"
-      method="POST" x-data="householdForm({{ $isEdit ? json_encode($initData) : 'null' }})">
+      method="POST" enctype="multipart/form-data" x-data="householdForm({{ $isEdit ? json_encode($initData) : 'null' }})">
 @csrf
 @if($isEdit) @method('PUT') @endif
 
@@ -278,6 +286,88 @@ if ($isEdit) {
                                                    class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm
                                                           focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-400/20 focus:outline-none transition-all">
                                         </div>
+                                        <div x-show="family.head.sectors.pwd" x-cloak class="mt-2" x-data="{ preview: null, fileName: null }">
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                PWD ID
+                                                <span x-show="!family.head.existing_pwd_id_url && !preview" class="text-red-500">*</span>
+                                                <span x-show="family.head.existing_pwd_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                            </label>
+                                            <input type="hidden" :name="'families['+fi+'][head][existing_pwd_id_url]'" x-model="family.head.existing_pwd_id_url">
+                                            <input type="hidden" :name="'families['+fi+'][head][existing_pwd_id_public_id]'" x-model="family.head.existing_pwd_id_public_id">
+                                            <label class="block w-full cursor-pointer">
+                                                <input type="file" :name="'families['+fi+'][head][pwd_id_document]'" accept="image/*" class="sr-only"
+                                                       :required="family.head.sectors.pwd && !family.head.existing_pwd_id_url"
+                                                       @change="
+                                                           const f = $event.target.files[0];
+                                                           if (f) {
+                                                               fileName = f.name;
+                                                               const r = new FileReader();
+                                                               r.onload = e => preview = e.target.result;
+                                                               r.readAsDataURL(f);
+                                                           }
+                                                       ">
+                                                <div x-show="!preview && !family.head.existing_pwd_id_url"
+                                                     class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/40 px-4 py-5 hover:border-purple-400 hover:bg-purple-50 transition-all">
+                                                    <i class="fa-solid fa-id-card text-purple-400 text-base"></i>
+                                                    <p class="text-[10px] text-purple-600 text-center">Click to upload PWD ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                </div>
+                                                <div x-show="!preview && family.head.existing_pwd_id_url" style="display:none"
+                                                     class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                    <img :src="family.head.existing_pwd_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                        <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                    </div>
+                                                </div>
+                                                <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                    <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                        <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                        <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div x-show="family.head.sectors.solo_parent" x-cloak class="mt-2" x-data="{ preview: null, fileName: null }">
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                Solo Parent ID
+                                                <span x-show="!family.head.existing_solo_parent_id_url && !preview" class="text-red-500">*</span>
+                                                <span x-show="family.head.existing_solo_parent_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                            </label>
+                                            <input type="hidden" :name="'families['+fi+'][head][existing_solo_parent_id_url]'" x-model="family.head.existing_solo_parent_id_url">
+                                            <input type="hidden" :name="'families['+fi+'][head][existing_solo_parent_id_public_id]'" x-model="family.head.existing_solo_parent_id_public_id">
+                                            <label class="block w-full cursor-pointer">
+                                                <input type="file" :name="'families['+fi+'][head][solo_parent_id_document]'" accept="image/*" class="sr-only"
+                                                       :required="family.head.sectors.solo_parent && !family.head.existing_solo_parent_id_url"
+                                                       @change="
+                                                           const f = $event.target.files[0];
+                                                           if (f) {
+                                                               fileName = f.name;
+                                                               const r = new FileReader();
+                                                               r.onload = e => preview = e.target.result;
+                                                               r.readAsDataURL(f);
+                                                           }
+                                                       ">
+                                                <div x-show="!preview && !family.head.existing_solo_parent_id_url"
+                                                     class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-pink-200 bg-pink-50/40 px-4 py-5 hover:border-pink-400 hover:bg-pink-50 transition-all">
+                                                    <i class="fa-solid fa-id-card text-pink-400 text-base"></i>
+                                                    <p class="text-[10px] text-pink-600 text-center">Click to upload Solo Parent ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                </div>
+                                                <div x-show="!preview && family.head.existing_solo_parent_id_url" style="display:none"
+                                                     class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                    <img :src="family.head.existing_solo_parent_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                        <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                    </div>
+                                                </div>
+                                                <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                    <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                        <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                        <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -415,6 +505,88 @@ if ($isEdit) {
                                                        class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm
                                                               focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-400/20 focus:outline-none transition-all">
                                             </div>
+                                            <div x-show="member.sectors.pwd" x-cloak class="mt-1.5" x-data="{ preview: null, fileName: null }">
+                                                <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                    PWD ID
+                                                    <span x-show="!member.existing_pwd_id_url && !preview" class="text-red-500">*</span>
+                                                    <span x-show="member.existing_pwd_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                                </label>
+                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_pwd_id_url]'" x-model="member.existing_pwd_id_url">
+                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_pwd_id_public_id]'" x-model="member.existing_pwd_id_public_id">
+                                                <label class="block w-full cursor-pointer">
+                                                    <input type="file" :name="'families['+fi+'][members]['+mi+'][pwd_id_document]'" accept="image/*" class="sr-only"
+                                                           :required="member.sectors.pwd && !member.existing_pwd_id_url"
+                                                           @change="
+                                                               const f = $event.target.files[0];
+                                                               if (f) {
+                                                                   fileName = f.name;
+                                                                   const r = new FileReader();
+                                                                   r.onload = e => preview = e.target.result;
+                                                                   r.readAsDataURL(f);
+                                                               }
+                                                           ">
+                                                    <div x-show="!preview && !member.existing_pwd_id_url"
+                                                         class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/40 px-4 py-5 hover:border-purple-400 hover:bg-purple-50 transition-all">
+                                                        <i class="fa-solid fa-id-card text-purple-400 text-base"></i>
+                                                        <p class="text-[10px] text-purple-600 text-center">Click to upload PWD ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                    </div>
+                                                    <div x-show="!preview && member.existing_pwd_id_url" style="display:none"
+                                                         class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                        <img :src="member.existing_pwd_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                            <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                        </div>
+                                                    </div>
+                                                    <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                        <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                            <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                            <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            <div x-show="member.sectors.solo_parent" x-cloak class="mt-1.5" x-data="{ preview: null, fileName: null }">
+                                                <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                    Solo Parent ID
+                                                    <span x-show="!member.existing_solo_parent_id_url && !preview" class="text-red-500">*</span>
+                                                    <span x-show="member.existing_solo_parent_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                                </label>
+                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_solo_parent_id_url]'" x-model="member.existing_solo_parent_id_url">
+                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_solo_parent_id_public_id]'" x-model="member.existing_solo_parent_id_public_id">
+                                                <label class="block w-full cursor-pointer">
+                                                    <input type="file" :name="'families['+fi+'][members]['+mi+'][solo_parent_id_document]'" accept="image/*" class="sr-only"
+                                                           :required="member.sectors.solo_parent && !member.existing_solo_parent_id_url"
+                                                           @change="
+                                                               const f = $event.target.files[0];
+                                                               if (f) {
+                                                                   fileName = f.name;
+                                                                   const r = new FileReader();
+                                                                   r.onload = e => preview = e.target.result;
+                                                                   r.readAsDataURL(f);
+                                                               }
+                                                           ">
+                                                    <div x-show="!preview && !member.existing_solo_parent_id_url"
+                                                         class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-pink-200 bg-pink-50/40 px-4 py-5 hover:border-pink-400 hover:bg-pink-50 transition-all">
+                                                        <i class="fa-solid fa-id-card text-pink-400 text-base"></i>
+                                                        <p class="text-[10px] text-pink-600 text-center">Click to upload Solo Parent ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                    </div>
+                                                    <div x-show="!preview && member.existing_solo_parent_id_url" style="display:none"
+                                                         class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                        <img :src="member.existing_solo_parent_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                            <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                        </div>
+                                                    </div>
+                                                    <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                        <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                            <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                            <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
@@ -505,8 +677,9 @@ if ($isEdit) {
 <script>
 function householdForm(initData) {
     const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false, 'pregnant':false });
-    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors() });
-    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', email:'', pregnant_due_date:'', sectors: emptySectors() });
+    const emptyIdDocs  = () => ({ existing_pwd_id_url:'', existing_pwd_id_public_id:'', existing_solo_parent_id_url:'', existing_solo_parent_id_public_id:'' });
+    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors(), ...emptyIdDocs() });
+    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', email:'', pregnant_due_date:'', sectors: emptySectors(), ...emptyIdDocs() });
     const COLORS = ['#1a4731','#1d4ed8','#7c3aed','#b45309','#be185d'];
     const BGS    = ['#f0faf4','#eff6ff','#f5f3ff','#fffbeb','#fdf2f8'];
 

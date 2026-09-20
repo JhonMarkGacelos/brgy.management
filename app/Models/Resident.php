@@ -38,6 +38,7 @@ class Resident extends Model
         'employment_status', 'monthly_income', 'occupation', 'education',
         'is_4ps', 'is_senior_citizen', 'is_pwd', 'is_solo_parent',
         'is_voter', 'is_indigent', 'is_pregnant', 'pregnant_due_date', 'status',
+        'pwd_id_url', 'pwd_id_public_id', 'solo_parent_id_url', 'solo_parent_id_public_id',
     ];
 
     protected $casts = [
