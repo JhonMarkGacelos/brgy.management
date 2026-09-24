@@ -34,7 +34,9 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Verify the request's credentials without starting a session — the
+     * caller still has to get the user through the OTP challenge before
+     * they're actually logged in.
      *
      * @throws ValidationException
      */
@@ -42,7 +44,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::validate($this->only('email', 'password'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\LoginOtp;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -20,15 +23,33 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Handle an incoming authentication request. Credentials are verified
+     * here, but the session isn't started yet — that only happens once the
+     * OTP challenge is passed, in TwoFactorChallengeController::store().
      */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
+        $user = User::where('email', $request->string('email'))->firstOrFail();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        try {
+            LoginOtp::issueFor($user);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send login OTP', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return back()->withErrors([
+                'email' => 'We could not send your verification code. Please try again in a moment.',
+            ]);
+        }
+
+        $request->session()->put('login.otp_user_id', $user->id);
+        $request->session()->put('login.otp_remember', $request->boolean('remember'));
+
+        return redirect()->route('two-factor.challenge');
     }
 
     /**
