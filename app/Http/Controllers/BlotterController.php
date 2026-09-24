@@ -80,7 +80,9 @@ class BlotterController extends Controller
             'open'            => BlotterRecord::where('status', 'Open')->count(),
             'pending'         => BlotterRecord::where('status', 'Pending Official')->count(),
             'mediation'       => BlotterRecord::where('status', 'Under Mediation')->count(),
-            'settled'         => BlotterRecord::whereMonth('created_at', now()->month)->where('status', 'Settled')->count(),
+            // Settled this month = closing date in the current month (not filing date, and not any year's same month).
+            'settled'         => BlotterRecord::where('status', 'Settled')
+                ->whereYear('resolved_at', now()->year)->whereMonth('resolved_at', now()->month)->count(),
             'referred'        => BlotterRecord::where('status', 'Referred')->count(),
             'returned'        => BlotterRecord::where('status', 'Returned w/ Remarks')->count(),
         ];
@@ -94,9 +96,10 @@ class BlotterController extends Controller
         return view('blotter.create', compact('nextCaseNo'));
     }
 
-    public function store(Request $request)
+    /** Same rules for filing and editing a case (editing used to skip them, so blanks could be saved). */
+    private function rules(): array
     {
-        $request->validate([
+        return [
             'incident_date'       => 'required|date',
             'incident_type'       => ['required', 'string', Rule::in(self::CATEGORIES)],
             'incident_type_other' => 'required_if:incident_type,Others|nullable|string|max:255',
@@ -104,10 +107,15 @@ class BlotterController extends Controller
             'respondent_name'     => 'required|string|max:150',
             'narrative'           => 'required|string',
             'action_taken'        => 'required|string',
-            'status'              => 'required|string',
+            'status'              => ['required', Rule::in(BlotterRecord::STATUSES)],
             'hearing_date'        => 'nullable|date',
             'hearing_time'        => 'nullable|date_format:H:i',
-        ]);
+        ];
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate($this->rules());
 
         $attributes = [
             'incident_date'        => $request->incident_date,
@@ -130,6 +138,7 @@ class BlotterController extends Controller
             'hearing_date'         => $request->hearing_date,
             'hearing_time'         => $request->hearing_time,
             'filed_by'             => Auth::id(),
+            'resolved_at'          => in_array($request->status, BlotterRecord::STATUS_RESOLVED) ? now() : null,
         ];
 
         // generateCaseNumber() isn't lock-protected, so two near-simultaneous
@@ -166,14 +175,14 @@ class BlotterController extends Controller
     {
         $record = BlotterRecord::findOrFail($id);
 
-        $request->validate([
-            'incident_type'       => ['required', 'string', Rule::in(self::CATEGORIES)],
-            'incident_type_other' => 'required_if:incident_type,Others|nullable|string|max:255',
-            'hearing_date'        => 'nullable|date',
-            'hearing_time'        => 'nullable|date_format:H:i',
-        ]);
+        $request->validate($this->rules());
 
         $oldStatus = $record->status;
+        $isClosed  = in_array($request->status, BlotterRecord::STATUS_RESOLVED);
+        // Keep the original closing date when a closed case is only being edited.
+        $resolvedAt = $isClosed
+            ? ($record->resolved_at && in_array($oldStatus, BlotterRecord::STATUS_RESOLVED) ? $record->resolved_at : now())
+            : null;
 
         $record->update([
             'incident_date'       => $request->incident_date,
@@ -196,7 +205,7 @@ class BlotterController extends Controller
             'hearing_date'        => $request->hearing_date,
             'hearing_time'        => $request->hearing_time,
             'remarks'             => $request->remarks,
-            'resolved_at'         => in_array($request->status, ['Settled', 'Referred']) ? now() : null,
+            'resolved_at'         => $resolvedAt,
         ]);
 
         // Notify both parties when status changes

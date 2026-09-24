@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -13,7 +14,7 @@ class Household extends Model
 {
     use LogsActivity;
 
-    protected $fillable = ['house_no', 'street', 'purok', 'classification', 'welfare_score', 'per_capita_income'];
+    protected $fillable = ['house_no', 'street', 'purok', 'classification', 'welfare_score', 'per_capita_income', 'psa_status'];
 
     protected $casts = [
         'welfare_score'    => 'decimal:2',
@@ -72,5 +73,45 @@ class Household extends Model
         return collect([$houseNo, $this->street, $this->purok])
             ->filter(fn($v) => !empty($v) && strtoupper(trim($v)) !== 'N/A')
             ->implode(', ');
+    }
+
+    /** PSA classes above the poverty line: a poverty-program tag on these households contradicts the recorded income. */
+    public const NOT_POOR_PSA = ['Lower Middle', 'Middle', 'Upper Middle', 'High Income'];
+
+    /**
+     * Advisory warnings for records that contradict each other (never blocks saving).
+     * Kept in step with scopeNeedsReview().
+     */
+    public function reviewFlags(): array
+    {
+        $flags = [];
+        $residents = $this->residents;
+
+        $tags = collect([
+            '4Ps'            => $residents->contains('is_4ps', true),
+            'Indigent'       => $residents->contains('is_indigent', true),
+            'Social Pension' => $residents->contains('is_social_pensioner', true),
+        ])->filter()->keys();
+        if ($tags->isNotEmpty() && in_array($this->psa_status, self::NOT_POOR_PSA, true)) {
+            $flags[] = "Tagged {$tags->implode(', ')}, but the recorded income puts this household at \"{$this->psa_status}\" "
+                . '(above the PSA poverty line). Check the monthly income or the tags.';
+        }
+
+        foreach ($residents->filter(fn ($r) => !in_array($r->gender, ['Male', 'Female'], true)) as $r) {
+            $flags[] = "{$r->full_name} has no gender recorded.";
+        }
+
+        return $flags;
+    }
+
+    public function scopeNeedsReview(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->where(fn (Builder $q) => $q
+                ->whereIn('psa_status', self::NOT_POOR_PSA)
+                ->whereHas('residents', fn (Builder $r) => $r->where(fn ($r) => $r
+                    ->where('is_4ps', true)->orWhere('is_indigent', true)->orWhere('is_social_pensioner', true))))
+            ->orWhereHas('residents', fn (Builder $r) => $r->where(fn ($r) => $r
+                ->whereNull('gender')->orWhereNotIn('gender', ['Male', 'Female']))));
     }
 }

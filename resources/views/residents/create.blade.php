@@ -12,6 +12,8 @@ $initData = null;
 if ($isEdit) {
     $head    = $household->residents->firstWhere('is_head', true);
     $members = $household->residents->where('is_head', false)->values();
+    // existing_*_id_url are only "on file" flags ('1' / ''): the server reads the stored ID photos from the
+    // database, and the *_id_view links go through the protected id-photo route.
     $initData = [
         'families' => [[
         'head' => [
@@ -35,12 +37,19 @@ if ($isEdit) {
                 'pregnant'       => (bool)($head?->is_pregnant),
             ],
             'pregnant_due_date' => $head?->pregnant_due_date?->format('Y-m-d') ?? '',
-            'existing_pwd_id_url'               => $head?->pwd_id_url ?? '',
-            'existing_pwd_id_public_id'         => $head?->pwd_id_public_id ?? '',
-            'existing_solo_parent_id_url'       => $head?->solo_parent_id_url ?? '',
-            'existing_solo_parent_id_public_id' => $head?->solo_parent_id_public_id ?? '',
+            'pension'           => $head?->pension ?? 'none',
+            'pension_amount'    => $head?->pension_amount ?? '',
+            'existing_senior_id_url'       => $head?->senior_id_url ? '1' : '',
+            'senior_id_view'            => \App\Http\Controllers\IdPhotoController::link('senior', $head),
+            'existing_pwd_id_url'               => $head?->pwd_id_url ? '1' : '',
+            'pwd_id_view'            => \App\Http\Controllers\IdPhotoController::link('pwd', $head),
+            'existing_solo_parent_id_url'       => $head?->solo_parent_id_url ? '1' : '',
+            'solo_parent_id_view'            => \App\Http\Controllers\IdPhotoController::link('solo_parent', $head),
+            'existing_fourps_id_url'            => $head?->fourps_id_url ? '1' : '',
+            'fourps_id_view'            => \App\Http\Controllers\IdPhotoController::link('fourps', $head),
         ],
         'members' => $members->map(fn($m) => [
+            'id'             => $m->id,
             'first_name'     => $m->first_name ?? '',
             'middle_name'    => $m->middle_name ?? '',
             'last_name'      => $m->last_name ?? '',
@@ -48,6 +57,7 @@ if ($isEdit) {
             'age'            => $m->age ?? '',
             'gender'         => $m->gender ?? '',
             'relationship'      => $m->relationship_to_head ?? '',
+            'civil_status'      => $m->civil_status ?? '',
             'employment_status' => $m->employment_status ?? '',
             'monthly_income'    => $m->monthly_income ?? '',
             'email'             => $m->email ?? '',
@@ -61,10 +71,14 @@ if ($isEdit) {
                 'pregnant'       => (bool)($m->is_pregnant),
             ],
             'pregnant_due_date' => $m->pregnant_due_date?->format('Y-m-d') ?? '',
-            'existing_pwd_id_url'               => $m->pwd_id_url ?? '',
-            'existing_pwd_id_public_id'         => $m->pwd_id_public_id ?? '',
-            'existing_solo_parent_id_url'       => $m->solo_parent_id_url ?? '',
-            'existing_solo_parent_id_public_id' => $m->solo_parent_id_public_id ?? '',
+            'pension'           => $m->pension,
+            'pension_amount'    => $m->pension_amount ?? '',
+            'existing_senior_id_url'       => $m->senior_id_url ? '1' : '',
+            'senior_id_view'            => \App\Http\Controllers\IdPhotoController::link('senior', $m),
+            'existing_pwd_id_url'               => $m->pwd_id_url ? '1' : '',
+            'pwd_id_view'            => \App\Http\Controllers\IdPhotoController::link('pwd', $m),
+            'existing_solo_parent_id_url'       => $m->solo_parent_id_url ? '1' : '',
+            'solo_parent_id_view'            => \App\Http\Controllers\IdPhotoController::link('solo_parent', $m),
         ])->values()->all(),
     ]]];
 }
@@ -279,6 +293,72 @@ if ($isEdit) {
                                                     <span x-text="sectorLabel(s)"></span>
                                                 </label>
                                             </template>
+                                            <span x-show="isSenior(family.head)" x-cloak title="Set automatically from date of birth (60+)"
+                                                  class="inline-flex items-center gap-1 rounded-xl border-2 border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 cursor-default">
+                                                <i class="fa-solid fa-person-cane text-[10px]"></i> Senior Citizen <span class="text-[10px] font-normal text-orange-500">&middot; auto</span>
+                                            </span>
+                                        </div>
+                                        <div x-show="isSenior(family.head)" x-cloak class="mt-2">
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Pension</label>
+                                            <div class="flex flex-wrap gap-2">
+                                                <template x-for="opt in pensionOptions" :key="opt.value">
+                                                    <label class="inline-flex items-center gap-1.5 rounded-xl border-2 px-2.5 py-1 cursor-pointer transition-all text-xs font-medium"
+                                                           :class="family.head.pension === opt.value ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'">
+                                                        <input type="radio" :name="'families['+fi+'][head][pension]'" :value="opt.value" x-model="family.head.pension" class="fixed opacity-0 w-0 h-0">
+                                                        <span x-text="opt.label"></span>
+                                                    </label>
+                                                </template>
+                                            </div>
+                                            <div x-show="family.head.pension !== 'none'" x-cloak class="mt-2">
+                                                <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                    Monthly Pension Amount (₱) <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="number" :name="'families['+fi+'][head][pension_amount]'" x-model="family.head.pension_amount"
+                                                       :required="isSenior(family.head) && family.head.pension !== 'none'"
+                                                       placeholder="0.00" min="0" step="0.01"
+                                                       class="w-40 rounded-xl border border-teal-200 bg-teal-50/40 px-3 py-2 text-sm placeholder-gray-400
+                                                              focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all">
+                                                <p class="mt-1 text-[10px] text-gray-400">Counted as household income. Don't include it in Monthly Income as well.</p>
+                                            </div>
+                                            <div x-show="family.head.pension === 'social'" x-cloak class="mt-2" x-data="{ preview: null, fileName: null }">
+                                                <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                    Senior Citizen (OSCA) ID
+                                                    <span x-show="!family.head.existing_senior_id_url && !preview" class="text-red-500">*</span>
+                                                    <span x-show="family.head.existing_senior_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                                </label>
+                                                <label class="block w-full cursor-pointer">
+                                                    <input type="file" :name="'families['+fi+'][head][senior_id_document]'" accept="image/*" class="sr-only"
+                                                           :required="isSenior(family.head) && family.head.pension === 'social' && !family.head.existing_senior_id_url"
+                                                           @change="
+                                                               const f = $event.target.files[0];
+                                                               if (f) {
+                                                                   fileName = f.name;
+                                                                   const r = new FileReader();
+                                                                   r.onload = e => preview = e.target.result;
+                                                                   r.readAsDataURL(f);
+                                                               }
+                                                           ">
+                                                    <div x-show="!preview && !family.head.existing_senior_id_url"
+                                                         class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/40 px-4 py-5 hover:border-teal-400 hover:bg-teal-50 transition-all">
+                                                        <i class="fa-solid fa-id-card text-teal-400 text-base"></i>
+                                                        <p class="text-[10px] text-teal-600 text-center">Click to upload Senior Citizen ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                    </div>
+                                                    <div x-show="!preview && family.head.existing_senior_id_url" style="display:none"
+                                                         class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                        <img :src="family.head.senior_id_view" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                            <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                        </div>
+                                                    </div>
+                                                    <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                        <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                            <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                            <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
                                         </div>
                                         <div x-show="family.head.sectors.pregnant" x-cloak class="mt-2">
                                             <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Due Date / Expected Labor Date</label>
@@ -286,14 +366,51 @@ if ($isEdit) {
                                                    class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm
                                                           focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-400/20 focus:outline-none transition-all">
                                         </div>
+                                        <div x-show="family.head.sectors['4ps']" x-cloak class="mt-2" x-data="{ preview: null, fileName: null }">
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                4Ps ID
+                                                <span x-show="!family.head.existing_fourps_id_url && !preview" class="text-red-500">*</span>
+                                                <span x-show="family.head.existing_fourps_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                            </label>
+                                            <label class="block w-full cursor-pointer">
+                                                <input type="file" :name="'families['+fi+'][head][fourps_id_document]'" accept="image/*" class="sr-only"
+                                                       :required="family.head.sectors['4ps'] && !family.head.existing_fourps_id_url"
+                                                       @change="
+                                                           const f = $event.target.files[0];
+                                                           if (f) {
+                                                               fileName = f.name;
+                                                               const r = new FileReader();
+                                                               r.onload = e => preview = e.target.result;
+                                                               r.readAsDataURL(f);
+                                                           }
+                                                       ">
+                                                <div x-show="!preview && !family.head.existing_fourps_id_url"
+                                                     class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 px-4 py-5 hover:border-blue-400 hover:bg-blue-50 transition-all">
+                                                    <i class="fa-solid fa-id-card text-blue-400 text-base"></i>
+                                                    <p class="text-[10px] text-blue-600 text-center">Click to upload 4Ps ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                </div>
+                                                <div x-show="!preview && family.head.existing_fourps_id_url" style="display:none"
+                                                     class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                    <img :src="family.head.fourps_id_view" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                        <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                    </div>
+                                                </div>
+                                                <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                    <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                        <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                        <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
                                         <div x-show="family.head.sectors.pwd" x-cloak class="mt-2" x-data="{ preview: null, fileName: null }">
                                             <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
                                                 PWD ID
                                                 <span x-show="!family.head.existing_pwd_id_url && !preview" class="text-red-500">*</span>
                                                 <span x-show="family.head.existing_pwd_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
                                             </label>
-                                            <input type="hidden" :name="'families['+fi+'][head][existing_pwd_id_url]'" x-model="family.head.existing_pwd_id_url">
-                                            <input type="hidden" :name="'families['+fi+'][head][existing_pwd_id_public_id]'" x-model="family.head.existing_pwd_id_public_id">
                                             <label class="block w-full cursor-pointer">
                                                 <input type="file" :name="'families['+fi+'][head][pwd_id_document]'" accept="image/*" class="sr-only"
                                                        :required="family.head.sectors.pwd && !family.head.existing_pwd_id_url"
@@ -313,7 +430,7 @@ if ($isEdit) {
                                                 </div>
                                                 <div x-show="!preview && family.head.existing_pwd_id_url" style="display:none"
                                                      class="relative rounded-xl overflow-hidden border-2 border-gray-200">
-                                                    <img :src="family.head.existing_pwd_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <img :src="family.head.pwd_id_view" class="w-full max-h-24 object-contain bg-gray-100">
                                                     <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
                                                         <span class="text-[10px] text-white">On file &middot; click to replace</span>
                                                     </div>
@@ -333,8 +450,6 @@ if ($isEdit) {
                                                 <span x-show="!family.head.existing_solo_parent_id_url && !preview" class="text-red-500">*</span>
                                                 <span x-show="family.head.existing_solo_parent_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
                                             </label>
-                                            <input type="hidden" :name="'families['+fi+'][head][existing_solo_parent_id_url]'" x-model="family.head.existing_solo_parent_id_url">
-                                            <input type="hidden" :name="'families['+fi+'][head][existing_solo_parent_id_public_id]'" x-model="family.head.existing_solo_parent_id_public_id">
                                             <label class="block w-full cursor-pointer">
                                                 <input type="file" :name="'families['+fi+'][head][solo_parent_id_document]'" accept="image/*" class="sr-only"
                                                        :required="family.head.sectors.solo_parent && !family.head.existing_solo_parent_id_url"
@@ -354,7 +469,7 @@ if ($isEdit) {
                                                 </div>
                                                 <div x-show="!preview && family.head.existing_solo_parent_id_url" style="display:none"
                                                      class="relative rounded-xl overflow-hidden border-2 border-gray-200">
-                                                    <img :src="family.head.existing_solo_parent_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                    <img :src="family.head.solo_parent_id_view" class="w-full max-h-24 object-contain bg-gray-100">
                                                     <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
                                                         <span class="text-[10px] text-white">On file &middot; click to replace</span>
                                                     </div>
@@ -409,6 +524,7 @@ if ($isEdit) {
                                                 </button>
                                             </div>
                                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][id]'" :value="member.id ?? ''">
                                                 <input type="text" :name="'families['+fi+'][members]['+mi+'][first_name]'" x-model="member.first_name"
                                                        placeholder="First name *" required
                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
@@ -429,6 +545,11 @@ if ($isEdit) {
                                                 <select :name="'families['+fi+'][members]['+mi+'][gender]'" x-model="member.gender" required
                                                         class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                     <option value="">Gender *</option><option>Male</option><option>Female</option>
+                                                </select>
+                                                <select :name="'families['+fi+'][members]['+mi+'][civil_status]'" x-model="member.civil_status"
+                                                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                                    <option value="">Civil status</option>
+                                                    <option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option>
                                                 </select>
                                                 <select :name="'families['+fi+'][members]['+mi+'][relationship]'" x-model="member.relationship" required
                                                         class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
@@ -498,6 +619,72 @@ if ($isEdit) {
                                                         <span x-text="sectorLabel(s)"></span>
                                                     </label>
                                                 </template>
+                                                <span x-show="isSenior(member)" x-cloak title="Set automatically from date of birth (60+)"
+                                                      class="inline-flex items-center gap-1 rounded-xl border-2 border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 cursor-default">
+                                                    <i class="fa-solid fa-person-cane text-[10px]"></i> Senior Citizen <span class="text-[10px] font-normal text-orange-500">&middot; auto</span>
+                                                </span>
+                                            </div>
+                                            <div x-show="isSenior(member)" x-cloak class="mt-2">
+                                                <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Pension</label>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <template x-for="opt in pensionOptions" :key="opt.value">
+                                                        <label class="inline-flex items-center gap-1.5 rounded-xl border-2 px-2.5 py-1 cursor-pointer transition-all text-xs font-medium"
+                                                               :class="member.pension === opt.value ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'">
+                                                            <input type="radio" :name="'families['+fi+'][members]['+mi+'][pension]'" :value="opt.value" x-model="member.pension" class="fixed opacity-0 w-0 h-0">
+                                                            <span x-text="opt.label"></span>
+                                                        </label>
+                                                    </template>
+                                                </div>
+                                                <div x-show="member.pension !== 'none'" x-cloak class="mt-2">
+                                                    <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                        Monthly Pension Amount (₱) <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="number" :name="'families['+fi+'][members]['+mi+'][pension_amount]'" x-model="member.pension_amount"
+                                                           :required="isSenior(member) && member.pension !== 'none'"
+                                                           placeholder="0.00" min="0" step="0.01"
+                                                           class="w-40 rounded-xl border border-teal-200 bg-teal-50/40 px-3 py-2 text-sm placeholder-gray-400
+                                                                  focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all">
+                                                    <p class="mt-1 text-[10px] text-gray-400">Counted as household income. Don't include it in Monthly Income as well.</p>
+                                                </div>
+                                                <div x-show="member.pension === 'social'" x-cloak class="mt-2" x-data="{ preview: null, fileName: null }">
+                                                    <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                                        Senior Citizen (OSCA) ID
+                                                        <span x-show="!member.existing_senior_id_url && !preview" class="text-red-500">*</span>
+                                                        <span x-show="member.existing_senior_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
+                                                    </label>
+                                                    <label class="block w-full cursor-pointer">
+                                                        <input type="file" :name="'families['+fi+'][members]['+mi+'][senior_id_document]'" accept="image/*" class="sr-only"
+                                                               :required="isSenior(member) && member.pension === 'social' && !member.existing_senior_id_url"
+                                                               @change="
+                                                                   const f = $event.target.files[0];
+                                                                   if (f) {
+                                                                       fileName = f.name;
+                                                                       const r = new FileReader();
+                                                                       r.onload = e => preview = e.target.result;
+                                                                       r.readAsDataURL(f);
+                                                                   }
+                                                               ">
+                                                        <div x-show="!preview && !member.existing_senior_id_url"
+                                                             class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/40 px-4 py-5 hover:border-teal-400 hover:bg-teal-50 transition-all">
+                                                            <i class="fa-solid fa-id-card text-teal-400 text-base"></i>
+                                                            <p class="text-[10px] text-teal-600 text-center">Click to upload Senior Citizen ID &middot; JPG/PNG/WebP, max 5MB</p>
+                                                        </div>
+                                                        <div x-show="!preview && member.existing_senior_id_url" style="display:none"
+                                                             class="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                                                            <img :src="member.senior_id_view" class="w-full max-h-24 object-contain bg-gray-100">
+                                                            <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
+                                                                <span class="text-[10px] text-white">On file &middot; click to replace</span>
+                                                            </div>
+                                                        </div>
+                                                        <div x-show="preview" style="display:none" class="relative rounded-xl overflow-hidden border-2 border-green-400">
+                                                            <img :src="preview" class="w-full max-h-24 object-contain bg-gray-100">
+                                                            <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 flex items-center justify-between gap-2">
+                                                                <span class="text-[10px] text-white truncate" x-text="fileName"></span>
+                                                                <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                </div>
                                             </div>
                                             <div x-show="member.sectors.pregnant" x-cloak class="mt-1.5">
                                                 <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Due Date / Expected Labor Date</label>
@@ -511,8 +698,6 @@ if ($isEdit) {
                                                     <span x-show="!member.existing_pwd_id_url && !preview" class="text-red-500">*</span>
                                                     <span x-show="member.existing_pwd_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
                                                 </label>
-                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_pwd_id_url]'" x-model="member.existing_pwd_id_url">
-                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_pwd_id_public_id]'" x-model="member.existing_pwd_id_public_id">
                                                 <label class="block w-full cursor-pointer">
                                                     <input type="file" :name="'families['+fi+'][members]['+mi+'][pwd_id_document]'" accept="image/*" class="sr-only"
                                                            :required="member.sectors.pwd && !member.existing_pwd_id_url"
@@ -532,7 +717,7 @@ if ($isEdit) {
                                                     </div>
                                                     <div x-show="!preview && member.existing_pwd_id_url" style="display:none"
                                                          class="relative rounded-xl overflow-hidden border-2 border-gray-200">
-                                                        <img :src="member.existing_pwd_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <img :src="member.pwd_id_view" class="w-full max-h-24 object-contain bg-gray-100">
                                                         <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
                                                             <span class="text-[10px] text-white">On file &middot; click to replace</span>
                                                         </div>
@@ -552,8 +737,6 @@ if ($isEdit) {
                                                     <span x-show="!member.existing_solo_parent_id_url && !preview" class="text-red-500">*</span>
                                                     <span x-show="member.existing_solo_parent_id_url && !preview" class="text-gray-400 font-normal normal-case lowercase">(on file — optional to replace)</span>
                                                 </label>
-                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_solo_parent_id_url]'" x-model="member.existing_solo_parent_id_url">
-                                                <input type="hidden" :name="'families['+fi+'][members]['+mi+'][existing_solo_parent_id_public_id]'" x-model="member.existing_solo_parent_id_public_id">
                                                 <label class="block w-full cursor-pointer">
                                                     <input type="file" :name="'families['+fi+'][members]['+mi+'][solo_parent_id_document]'" accept="image/*" class="sr-only"
                                                            :required="member.sectors.solo_parent && !member.existing_solo_parent_id_url"
@@ -573,7 +756,7 @@ if ($isEdit) {
                                                     </div>
                                                     <div x-show="!preview && member.existing_solo_parent_id_url" style="display:none"
                                                          class="relative rounded-xl overflow-hidden border-2 border-gray-200">
-                                                        <img :src="member.existing_solo_parent_id_url" class="w-full max-h-24 object-contain bg-gray-100">
+                                                        <img :src="member.solo_parent_id_view" class="w-full max-h-24 object-contain bg-gray-100">
                                                         <div class="absolute bottom-0 inset-x-0 bg-black/50 px-3 py-1 text-center">
                                                             <span class="text-[10px] text-white">On file &middot; click to replace</span>
                                                         </div>
@@ -677,15 +860,22 @@ if ($isEdit) {
 <script>
 function householdForm(initData) {
     const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false, 'pregnant':false });
-    const emptyIdDocs  = () => ({ existing_pwd_id_url:'', existing_pwd_id_public_id:'', existing_solo_parent_id_url:'', existing_solo_parent_id_public_id:'' });
-    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', monthly_income:'', pregnant_due_date:'', sectors: emptySectors(), ...emptyIdDocs() });
-    const emptyMember  = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', relationship:'', employment_status:'', monthly_income:'', email:'', pregnant_due_date:'', sectors: emptySectors(), ...emptyIdDocs() });
+    const emptyIdDocs  = () => ({ existing_pwd_id_url:'', existing_pwd_id_public_id:'', existing_solo_parent_id_url:'', existing_solo_parent_id_public_id:'', existing_senior_id_url:'', existing_senior_id_public_id:'' });
+    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', monthly_income:'', pregnant_due_date:'', pension:'none', pension_amount:'', sectors: emptySectors(), ...emptyIdDocs(), existing_fourps_id_url:'', existing_fourps_id_public_id:'' });
+    const emptyMember  = () => ({ id:null, first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', relationship:'', employment_status:'', monthly_income:'', email:'', pregnant_due_date:'', pension:'none', pension_amount:'', sectors: emptySectors(), ...emptyIdDocs() });
     const COLORS = ['#1a4731','#1d4ed8','#7c3aed','#b45309','#be185d'];
     const BGS    = ['#f0faf4','#eff6ff','#f5f3ff','#fffbeb','#fdf2f8'];
 
     return {
         families:  initData?.families ?? [{ head: emptyHead(), members: [] }],
-        sectorList: ['4ps','senior_citizen','pwd','solo_parent','voter','indigent','pregnant'],
+        // Senior Citizen is not selectable: it is derived from date of birth (see isSenior / Resident::booted).
+        sectorList: ['4ps','pwd','solo_parent','voter','indigent','pregnant'],
+        // Pension is a single choice shown only for seniors (Resident::booted clears it otherwise).
+        pensionOptions: [
+            { value: 'none',   label: 'None' },
+            { value: 'social', label: 'DSWD Social Pension' },
+            { value: 'other',  label: 'SSS / GSIS / Other pension' },
+        ],
 
         sectorLabel(s) {
             return { '4ps':'4Ps', 'senior_citizen':'Senior Citizen', 'pwd':'PWD', 'solo_parent':'Solo Parent', 'voter':'Voter', 'indigent':'Indigent', 'pregnant':'Pregnant' }[s] || s;
@@ -707,9 +897,15 @@ function householdForm(initData) {
         totalMembers() {
             return this.families.reduce((sum, f) => sum + 1 + f.members.length, 0);
         },
+        isSenior(person) {
+            return Number(person.age) >= 60;
+        },
         autoAge(person) {
             if (!person.date_of_birth) return;
-            const age = Math.floor((new Date() - new Date(person.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000));
+            const [y, m, d] = person.date_of_birth.split('-').map(Number);
+            const today = new Date();
+            let age = today.getFullYear() - y;
+            if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
             if (age > 0 && age < 150) person.age = age;
         }
     };

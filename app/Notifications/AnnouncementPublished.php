@@ -4,14 +4,22 @@ namespace App\Notifications;
 
 use App\Models\Announcement;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AnnouncementPublished extends Notification
+class AnnouncementPublished extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Announcement $announcement) {}
+    /** Sent by the queue worker so SMTP never slows down or breaks the page that triggered it. */
+    public int $tries = 3;
+
+    public function __construct(public Announcement $announcement)
+    {
+        // Wait for the surrounding DB transaction so the job never runs against unsaved data.
+        $this->afterCommit();
+    }
 
     public function via(object $notifiable): array
     {

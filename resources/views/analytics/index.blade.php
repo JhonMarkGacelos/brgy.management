@@ -138,7 +138,7 @@
                     class="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                            focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                 <option value="">All Sectors</option>
-                @foreach(['4Ps','Senior Citizen','PWD','Solo Parent','Voter','Indigent','Pregnant'] as $s)
+                @foreach(['4Ps','Senior Citizen','Social Pension','PWD','Solo Parent','Voter','Indigent','Pregnant'] as $s)
                 <option value="{{ $s }}" {{ $filterSector === $s ? 'selected' : '' }}>{{ $s }}</option>
                 @endforeach
             </select>
@@ -179,14 +179,15 @@
 {{-- ── POPULATION OVERVIEW ── --}}
 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
     Population Overview
+    @if($filterMonth)<span class="normal-case font-normal text-gray-400 ml-1">— as of {{ $asOf->format('F j, Y') }}</span>@endif
     @if($filterSector)<span class="normal-case font-normal text-gray-400 ml-1">— {{ $filterSector }} only</span>@endif
 </p>
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     @php
         $popCards = [
-            ['label'=>'Total Population', 'value'=>$totalResidents,  'icon'=>'fa-people-group',       'bg'=>'bg-indigo-50',  'color'=>'text-indigo-600'],
-            ['label'=>'Total Families',   'value'=>$totalHouseholds, 'icon'=>'fa-house-chimney-user',  'bg'=>'bg-green-50',   'color'=>'text-green-700'],
-            ['label'=>'Male',             'value'=>$maleResidents,   'icon'=>'fa-person',              'bg'=>'bg-blue-50',    'color'=>'text-blue-600'],
+            ['label'=>'Total Population', 'value'=>$totalResidents,  'icon'=>'fa-people-group',       'bg'=>'bg-indigo-50',  'color'=>'text-indigo-600', 'new'=>$newResidents],
+            ['label'=>'Total Families',   'value'=>$totalHouseholds, 'icon'=>'fa-house-chimney-user',  'bg'=>'bg-green-50',   'color'=>'text-green-700', 'new'=>$newHouseholds],
+            ['label'=>'Male',             'value'=>$maleResidents,   'icon'=>'fa-person',              'bg'=>'bg-blue-50',    'color'=>'text-blue-600', 'note'=>$genderUnknown ? $genderUnknown.' gender not specified' : null],
             ['label'=>'Female',           'value'=>$femaleResidents, 'icon'=>'fa-person-dress',        'bg'=>'bg-pink-50',    'color'=>'text-pink-600'],
             ['label'=>'Senior Citizens',  'value'=>$seniorCitizens,  'icon'=>'fa-person-cane',         'bg'=>'bg-orange-50',  'color'=>'text-orange-600'],
             ['label'=>'PWDs',             'value'=>$pwds,            'icon'=>'fa-wheelchair',          'bg'=>'bg-purple-50',  'color'=>'text-purple-600'],
@@ -199,6 +200,12 @@
         </div>
         <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ number_format($s['value']) }}</p>
         <p class="text-xs text-gray-400 mt-0.5 leading-tight">{{ $s['label'] }}</p>
+        @if(isset($s['new']) && $s['new'] !== null)
+        <p class="text-[11px] text-green-600 mt-1">+{{ number_format($s['new']) }} registered this month</p>
+        @endif
+        @if(!empty($s['note']))
+        <p class="text-[11px] text-amber-600 mt-1">{{ $s['note'] }}</p>
+        @endif
     </div>
     @endforeach
 </div>
@@ -210,6 +217,7 @@
         $sectorCards = [
             ['label'=>'Registered Voters', 'value'=>$voters,     'icon'=>'fa-check-to-slot',       'bg'=>'bg-teal-50',  'color'=>'text-teal-600'],
             ['label'=>'4Ps Beneficiaries', 'value'=>$fourPs,     'icon'=>'fa-hand-holding-heart',  'bg'=>'bg-sky-50',   'color'=>'text-sky-600'],
+            ['label'=>'Social Pension',     'value'=>$socialPensioners, 'icon'=>'fa-person-cane',   'bg'=>'bg-teal-50',  'color'=>'text-teal-700'],
             ['label'=>'Solo Parents',       'value'=>$soloParents,'icon'=>'fa-person-breastfeeding','bg'=>'bg-rose-50',  'color'=>'text-rose-600'],
             ['label'=>'Indigent',           'value'=>$indigent,  'icon'=>'fa-people-roof',          'bg'=>'bg-amber-50', 'color'=>'text-amber-600'],
             ['label'=>'Pregnant',           'value'=>$pregnant,  'icon'=>'fa-baby',                 'bg'=>'bg-pink-50',  'color'=>'text-pink-600'],
@@ -239,13 +247,14 @@
                 @if($filterMonth)<span class="text-xs font-normal text-gray-400 ml-1">— {{ \Carbon\Carbon::createFromFormat('Y-m', $filterMonth)->format('F Y') }}</span>@endif
             </p>
         </div>
-        <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="p-5 grid grid-cols-3 sm:grid-cols-5 gap-4">
             @php
                 $blotterStats = [
-                    ['label'=>'Total',    'value'=>$totalCases,    'color'=>'text-gray-900'],
-                    ['label'=>'Pending',  'value'=>$pendingCases,  'color'=>'text-yellow-600'],
-                    ['label'=>'Ongoing',  'value'=>$ongoingCases,  'color'=>'text-blue-600'],
-                    ['label'=>'Resolved', 'value'=>$resolvedCases, 'color'=>'text-green-600'],
+                    ['label'=>'Total',           'value'=>$totalCases,    'color'=>'text-gray-900'],
+                    ['label'=>'Pending',         'value'=>$pendingCases,  'color'=>'text-yellow-600'],
+                    ['label'=>'Under Mediation', 'value'=>$ongoingCases,  'color'=>'text-blue-600'],
+                    ['label'=>'Settled',         'value'=>$settledCases,  'color'=>'text-green-600'],
+                    ['label'=>'Referred',        'value'=>$referredCases, 'color'=>'text-purple-600'],
                 ];
             @endphp
             @foreach($blotterStats as $b)
@@ -255,6 +264,12 @@
             </div>
             @endforeach
         </div>
+        @if($settlementRate !== null)
+        <p class="px-5 -mt-2 pb-3 text-xs text-gray-500">
+            Settlement rate: <span class="font-semibold text-green-700">{{ $settlementRate }}%</span>
+            <span class="text-gray-400">&middot; settled ÷ (settled + referred) at barangay level</span>
+        </p>
+        @endif
         <div class="px-5 pb-5">
             <div id="blotterChart"></div>
         </div>
@@ -274,7 +289,7 @@
             @php
                 $docStats = [
                     ['label'=>'Total',    'value'=>$totalDocuments,    'color'=>'text-gray-900'],
-                    ['label'=>'Pending',  'value'=>$pendingDocuments,  'color'=>'text-yellow-600'],
+                    ['label'=>'In Progress', 'value'=>$pendingDocuments, 'color'=>'text-yellow-600'],
                     ['label'=>'Issued',   'value'=>$issuedDocuments,   'color'=>'text-green-600'],
                     ['label'=>'Rejected', 'value'=>$rejectedDocuments, 'color'=>'text-red-600'],
                 ];
@@ -420,7 +435,9 @@
 </div>
 
 {{-- ── WELFARE CLASSIFICATION ── --}}
-<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Welfare Classification</p>
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+    Barangay Welfare Score <span class="normal-case font-normal">— barangay's own scoring, not PSA</span>
+</p>
 
 {{-- Summary cards --}}
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
@@ -428,7 +445,7 @@
         $welfareSummary = [
             ['label'=>'Families Assessed',   'value'=> number_format($householdsClassified), 'icon'=>'fa-clipboard-check', 'bg'=>'bg-gray-50',   'color'=>'text-gray-600'],
             ['label'=>'Avg. Per Capita / mo', 'value'=>'₱'.number_format($avgPerCapita, 0),  'icon'=>'fa-peso-sign',       'bg'=>'bg-green-50',  'color'=>'text-green-700'],
-            ['label'=>'Below Poverty Line',   'value'=> number_format($belowPovertyLine),     'icon'=>'fa-circle-exclamation','bg'=>'bg-red-50',  'color'=>'text-red-600'],
+            ['label'=>'Poor tiers (score)',   'value'=> number_format($belowPovertyLine),     'icon'=>'fa-circle-exclamation','bg'=>'bg-red-50',  'color'=>'text-red-600'],
             ['label'=>'Non-Poor / Vulnerable','value'=> number_format(($classificationCounts['Non-Poor'] ?? 0) + ($classificationCounts['Vulnerable'] ?? 0)), 'icon'=>'fa-circle-check', 'bg'=>'bg-teal-50', 'color'=>'text-teal-600'],
         ];
     @endphp
@@ -449,7 +466,7 @@
         <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
             <i class="fa-solid fa-scale-balanced"></i>
         </div>
-        <p class="text-sm font-semibold text-gray-800">Household Classification Distribution</p>
+        <p class="text-sm font-semibold text-gray-800">Welfare Score Distribution</p>
         @if($householdsClassified < $totalHouseholds)
         <span class="ml-auto text-[11px] text-gray-400">{{ $totalHouseholds - $householdsClassified }} household(s) not yet assessed</span>
         @endif
@@ -475,6 +492,61 @@
     </table>
 </div>
 
+
+{{-- ── PSA POVERTY STATUS ── --}}
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+    PSA Poverty Status <span class="normal-case font-normal">— per capita income vs. PSA thresholds</span>
+</p>
+<div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
+    @if(!$psaThresholds['poverty'])
+    <div class="p-5 text-center text-xs text-amber-700">
+        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+        PSA thresholds haven't been set yet. Enter them in Settings to see PSA Poverty Status.
+    </div>
+    @else
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 border-b border-gray-100">
+        <div>
+            <p class="text-2xl font-bold text-red-600 tracking-tight">{{ number_format($psaBelowLine) }}</p>
+            <p class="text-xs text-gray-400">Households below the PSA poverty line</p>
+        </div>
+        <div class="flex gap-6">
+            <div>
+                <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $psaFamilyIncidence }}%</p>
+                <p class="text-xs text-gray-400">Poverty incidence among families</p>
+                <p class="text-[11px] text-gray-300">{{ number_format($psaBelowLine) }} of {{ number_format($psaAssessed) }} households</p>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $psaPopulationIncidence }}%</p>
+                <p class="text-xs text-gray-400">Poverty incidence among population</p>
+                <p class="text-[11px] text-gray-300">{{ number_format($psaPeopleBelow) }} of {{ number_format($psaPeopleAssessed) }} people</p>
+            </div>
+        </div>
+        <div class="text-xs text-gray-500 space-y-0.5">
+            @if($psaThresholds['food'])
+            <p>Food threshold: <span class="font-semibold text-gray-700">₱{{ number_format($psaThresholds['food'], 2) }}</span></p>
+            @endif
+            <p>Poverty threshold: <span class="font-semibold text-gray-700">₱{{ number_format($psaThresholds['poverty'], 2) }}</span></p>
+            <p class="text-gray-400">{{ $psaThresholds['source'] }}</p>
+        </div>
+    </div>
+    <div class="px-5 py-4 space-y-2">
+        @php $psaMax = max(1, max($psaCounts)); @endphp
+        @foreach($psaCounts as $status => $cnt)
+        <div class="flex items-center gap-3 text-xs">
+            <span class="w-28 shrink-0 inline-flex justify-center rounded-md px-2 py-0.5 font-medium {{ \App\Services\ClassificationService::PSA_STYLES[$status] }}">{{ $status }}</span>
+            <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                <div class="h-2 rounded-full bg-sky-500" style="width: {{ $cnt / $psaMax * 100 }}%"></div>
+            </div>
+            <span class="w-20 text-right text-gray-700 font-semibold">{{ $cnt }}
+                <span class="font-normal text-gray-400">({{ $psaAssessed > 0 ? round($cnt / $psaAssessed * 100, 1) : 0 }}%)</span>
+            </span>
+        </div>
+        @endforeach
+        <p class="pt-2 text-[11px] text-gray-400">Food Poor and Poor follow PSA. Classes above the poverty line follow the PIDS income classes (multiples of the poverty line).</p>
+    </div>
+    @endif
+</div>
+
 {{-- ── AGE GROUP TABLE (PAGE 2) ── --}}
 <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6 print-page-2">
     <div class="px-5 py-4 border-b border-gray-100">
@@ -488,22 +560,27 @@
                     <th class="px-5 py-3.5">Age Group</th>
                     <th class="px-5 py-3.5">Male</th>
                     <th class="px-5 py-3.5">Female</th>
+                    @if($genderUnknown)<th class="px-5 py-3.5">Not specified</th>@endif
                     <th class="px-5 py-3.5">Total</th>
                     <th class="px-5 py-3.5">% of Population</th>
                 </tr>
             </thead>
             <tbody>
-                @php $totalMale = 0; $totalFemale = 0; @endphp
+                @php $totalMale = 0; $totalFemale = 0; $totalUnspecified = 0; @endphp
+                @if($ageUnknown)
+                    @php $ageGroups[] = ['label' => 'Age not recorded', 'male' => 0, 'female' => 0, 'unspecified' => 0, 'all' => $ageUnknown]; @endphp
+                @endif
                 @foreach($ageGroups as $g)
                 @php
-                    $total = $g['male'] + $g['female'];
-                    $totalMale += $g['male']; $totalFemale += $g['female'];
+                    $total = $g['all'] ?? ($g['male'] + $g['female'] + $g['unspecified']);
+                    $totalMale += $g['male']; $totalFemale += $g['female']; $totalUnspecified += $g['unspecified'];
                     $pct = $totalResidents > 0 ? round($total / $totalResidents * 100, 1) : 0;
                 @endphp
                 <tr class="odd:bg-white even:bg-gray-50/70 border-b border-gray-100">
                     <td class="px-5 py-4 font-medium text-gray-800">{{ $g['label'] }}</td>
                     <td class="px-5 py-4 font-semibold text-blue-600">{{ number_format($g['male']) }}</td>
                     <td class="px-5 py-4 font-semibold text-pink-600">{{ number_format($g['female']) }}</td>
+                    @if($genderUnknown)<td class="px-5 py-4 font-semibold text-gray-500">{{ number_format($g['unspecified']) }}</td>@endif
                     <td class="px-5 py-4 font-bold text-gray-900">{{ number_format($total) }}</td>
                     <td class="px-5 py-4">
                         <div class="flex items-center gap-3">
@@ -519,6 +596,7 @@
                     <td class="px-5 py-4 text-gray-900">Total</td>
                     <td class="px-5 py-4 text-blue-600">{{ number_format($totalMale) }}</td>
                     <td class="px-5 py-4 text-pink-600">{{ number_format($totalFemale) }}</td>
+                    @if($genderUnknown)<td class="px-5 py-4 text-gray-500">{{ number_format($totalUnspecified) }}</td>@endif
                     <td class="px-5 py-4 text-gray-900">{{ number_format($totalResidents) }}</td>
                     <td class="px-5 py-4 text-xs text-gray-500">100%</td>
                 </tr>
@@ -534,7 +612,7 @@
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100">
             <p class="text-sm font-semibold text-gray-900">Civil Status Breakdown</p>
-            <p class="text-xs text-gray-400 mt-0.5">Distribution across all residents</p>
+            <p class="text-xs text-gray-400 mt-0.5">All residents &middot; civil status is recorded for household heads; others show as Not recorded</p>
         </div>
         <div id="civilStatusChart" class="px-5 py-4"></div>
         {{-- Print fallback --}}
@@ -563,7 +641,7 @@
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100">
             <p class="text-sm font-semibold text-gray-900">Employment Status Breakdown</p>
-            <p class="text-xs text-gray-400 mt-0.5">Number of residents per employment category</p>
+            <p class="text-xs text-gray-400 mt-0.5">All residents per employment category, including Not recorded</p>
         </div>
         <div id="employmentChart" class="px-5 py-4"></div>
         {{-- Print fallback --}}
@@ -603,6 +681,11 @@ $welfareValuesJson       = json_encode(array_values($classificationCounts));
 $civilLabelsJson         = json_encode(array_keys($civilStatus));
 $civilValuesJson         = json_encode(array_values($civilStatus));
 $empLabelsJson           = json_encode(array_keys($employmentStatus));
+$civilPalette            = ['#6366f1','#ec4899','#f59e0b','#10b981','#0ea5e9'];
+$civilColorsJson         = json_encode(array_values(array_map(
+    fn ($label, $i) => $label === 'Not recorded' ? '#d1d5db' : $civilPalette[$i % count($civilPalette)],
+    array_keys($civilStatus), array_keys(array_keys($civilStatus)))));
+$empColorsJson           = json_encode(array_map(fn ($label) => $label === 'Not recorded' ? '#d1d5db' : '#10b981', array_keys($employmentStatus)));
 $empValuesJson           = json_encode(array_values($employmentStatus));
 @endphp
 
@@ -665,7 +748,7 @@ new ApexCharts(document.getElementById('civilStatusChart'), {
     chart: { type: 'donut', height: 260 },
     series: {!! $civilValuesJson !!},
     labels: {!! $civilLabelsJson !!},
-    colors: ['#6366f1','#ec4899','#f59e0b','#10b981'],
+    colors: {!! $civilColorsJson !!},
     legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#6b7280' } },
     dataLabels: { style: { fontSize: '11px' }, dropShadow: { enabled: false } },
     plotOptions: { pie: { donut: { size: '55%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '11px', color: '#9ca3af', formatter: (w) => w.globals.seriesTotals.reduce((a,b) => a+b, 0) } } } } },
@@ -681,8 +764,9 @@ new ApexCharts(document.getElementById('employmentChart'), {
     series: [{ name: 'Residents', data: {!! $empValuesJson !!} }],
     xaxis: { categories: {!! $empLabelsJson !!}, labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
     yaxis: { labels: { style: { fontSize: '11px', colors: '#9ca3af' } } },
-    colors: ['#10b981'],
-    plotOptions: { bar: { borderRadius: 5, horizontal: true, barHeight: '50%',
+    colors: {!! $empColorsJson !!},
+    legend: { show: false },
+    plotOptions: { bar: { borderRadius: 5, horizontal: true, barHeight: '50%', distributed: true,
         dataLabels: { position: 'center' } } },
     dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#fff'] }, formatter: (v) => v > 0 ? v : '' },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },

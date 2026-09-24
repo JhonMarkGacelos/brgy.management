@@ -17,13 +17,22 @@ use Illuminate\Validation\Rule;
 
 class ResidentPortalController extends Controller
 {
+    /** The resident profile linked to the logged-in portal account (matched by email). */
+    private function myResident(): ?Resident
+    {
+        $email = Auth::user()->email;
+
+        return $email ? Resident::where('email', $email)->where('status', 'Active')->first() : null;
+    }
+
+    private function myAnnouncements()
+    {
+        return Announcement::live()->whereIn('audience', Announcement::audiencesFor($this->myResident()));
+    }
+
     public function dashboard()
     {
-        $announcements = Announcement::published()
-            ->where(function ($q) {
-                $q->where('audience', 'All Residents')
-                  ->orWhere('audience', 'All');
-            })
+        $announcements = $this->myAnnouncements()
             ->latest('published_at')
             ->take(3)
             ->get();
@@ -46,11 +55,7 @@ class ResidentPortalController extends Controller
 
     public function announcementsIndex()
     {
-        $announcements = Announcement::published()
-            ->where(function ($q) {
-                $q->where('audience', 'All Residents')
-                  ->orWhere('audience', 'All');
-            })
+        $announcements = $this->myAnnouncements()
             ->latest('published_at')
             ->paginate(9);
 
@@ -59,7 +64,13 @@ class ResidentPortalController extends Controller
 
     public function announcementsShow(string $id)
     {
-        $announcement = Announcement::published()->findOrFail($id);
+        $announcement = $this->myAnnouncements()->find($id);
+
+        // Links in older notifications can point to an announcement that has since expired or been removed.
+        if (!$announcement) {
+            return redirect()->route('resident.announcements.index')
+                ->with('info', 'That announcement is no longer available.');
+        }
 
         return view('resident.announcements.show', compact('announcement'));
     }
@@ -112,8 +123,10 @@ class ResidentPortalController extends Controller
         }
         $request->validate($rules);
 
-        $resident = Resident::where('last_name', 'like', $request->last_name)
-            ->where('first_name', 'like', $request->first_name)
+        // Exact (case-insensitive) match — LIKE would treat "%" or "_" typed into the form as wildcards
+        // and could match someone else's record.
+        $resident = Resident::whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($request->last_name))])
+            ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($request->first_name))])
             ->where('status', 'Active')
             ->first();
 
@@ -121,13 +134,12 @@ class ResidentPortalController extends Controller
             return back()->withInput()->with('resident_not_found', true);
         }
 
-        // Use the requesting account's email for notifications if the resident profile has none yet
-        if (empty($resident->email)) {
-            $resident->update(['email' => Auth::user()->email]);
-        }
+        // The resident profile's email is not touched here: matching is by name only, so writing the
+        // requester's email would let anyone attach their address to another person's record. The requester
+        // is notified through requested_by when the request is issued or rejected.
 
         try {
-            $upload = (new CloudinaryService)->uploadIdPhoto($request->file('id_photo'));
+            $upload = app(CloudinaryService::class)->uploadIdPhoto($request->file('id_photo'));
             $photoUrl      = $upload['url'];
             $photoPublicId = $upload['public_id'];
         } catch (\Throwable $e) {
@@ -137,7 +149,7 @@ class ResidentPortalController extends Controller
         $receiptUrl = $receiptPublicId = null;
         if ($selectedFee > 0 && $gcashConfigured) {
             try {
-                $receiptUpload   = (new CloudinaryService)->uploadIdPhoto($request->file('payment_receipt'), 'Payment Receipts');
+                $receiptUpload   = app(CloudinaryService::class)->uploadIdPhoto($request->file('payment_receipt'), 'Payment Receipts');
                 $receiptUrl      = $receiptUpload['url'];
                 $receiptPublicId = $receiptUpload['public_id'];
             } catch (\Throwable $e) {
@@ -185,7 +197,9 @@ class ResidentPortalController extends Controller
     {
         $request->validate(['tracking_number' => 'required|string']);
 
-        $document = DocumentRequest::where('tracking_number', $request->tracking_number)
+        // Only the account that filed the request can track it (tracking numbers are sequential).
+        $document = DocumentRequest::where('tracking_number', strtoupper(trim($request->tracking_number)))
+            ->where('requested_by', Auth::id())
             ->with(['resident'])
             ->first();
 

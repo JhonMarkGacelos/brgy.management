@@ -60,6 +60,37 @@ class DocumentRequest extends Model
         return $this->belongsTo(User::class, 'processed_by');
     }
 
+    public const TYPES    = ['Barangay Clearance', 'Certificate of Indigency', 'Certificate of Residency', 'Business Clearance'];
+    public const STATUSES = ['Pending', 'Pending Official', 'Approved', 'Issued', 'Rejected'];
+
+    /** Current fee per document type (Settings), shared by staff and portal request forms. */
+    public static function currentFees(): array
+    {
+        return [
+            'Barangay Clearance'       => (float) Setting::get('fee_barangay_clearance', 50),
+            'Certificate of Residency' => (float) Setting::get('fee_certificate_of_residency', 50),
+            'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
+            'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
+        ];
+    }
+
+    /** Paid document types recorded with an OR number but a ₱0 fee — usually a missed fee. Advisory only. */
+    public function scopeNeedsReview($query)
+    {
+        $paidTypes = array_keys(array_filter(self::currentFees(), fn ($fee) => $fee > 0));
+
+        return $query->whereNotNull('or_number')->where('fee', '<=', 0)->whereIn('document_type', $paidTypes);
+    }
+
+    public function getReviewFlagAttribute(): ?string
+    {
+        $fee = self::currentFees()[$this->document_type] ?? 0;
+
+        return $this->or_number && (float) $this->fee <= 0 && $fee > 0
+            ? "Recorded with OR {$this->or_number} but a ₱0 fee, although a {$this->document_type} currently costs ₱" . number_format($fee, 2) . '. Check whether the fee was waived or missed.'
+            : null;
+    }
+
     public static function generateTrackingNumber(): string
     {
         $year = date('Y');

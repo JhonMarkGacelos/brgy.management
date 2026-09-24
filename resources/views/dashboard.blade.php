@@ -39,10 +39,10 @@ $statusBreakdown   = $statusBreakdown   ?? [];
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
     @php
         $cards = [
-            ['label'=>'Total Residents',   'value'=>$totalResidents, 'sub'=>'All time records',    'icon'=>'fa-users',              'iconBg'=>'bg-teal-100',   'iconColor'=>'text-teal-600'],
+            ['label'=>'Total Residents',   'value'=>$totalResidents, 'sub'=>'Active residents',    'icon'=>'fa-users',              'iconBg'=>'bg-teal-100',   'iconColor'=>'text-teal-600'],
             ['label'=>'This Month',        'value'=>$thisMonthResidents,    'sub'=>'New registrations',   'icon'=>'fa-calendar-days',      'iconBg'=>'bg-blue-100',   'iconColor'=>'text-blue-600'],
             ['label'=>'Pending',           'value'=>$pendingDocuments,     'sub'=>'Awaiting action',     'icon'=>'fa-clock',              'iconBg'=>'bg-amber-100',  'iconColor'=>'text-amber-600'],
-            ['label'=>'Resolved',          'value'=>$resolvedCases,     'sub'=>'Cases closed',        'icon'=>'fa-circle-check',       'iconBg'=>'bg-green-100',  'iconColor'=>'text-green-600'],
+            ['label'=>'Settled',           'value'=>$resolvedCases,     'sub'=>'Cases settled',        'icon'=>'fa-circle-check',       'iconBg'=>'bg-green-100',  'iconColor'=>'text-green-600'],
         ];
     @endphp
     @foreach($cards as $card)
@@ -195,7 +195,7 @@ $statusBreakdown   = $statusBreakdown   ?? [];
             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Sector Summary</p>
             <div class="space-y-3">
                 @foreach($sectorSummary as $s)
-                @php $pct = $totalResidents > 0 ? round($s['count'] / $totalResidents * 100) : 0; @endphp
+                @php $pct = $s['base'] > 0 ? round($s['count'] / $s['base'] * 100) : 0; @endphp
                 <div>
                     <div class="flex justify-between mb-1">
                         <span class="text-xs text-gray-500">{{ $s['label'] }}</span>
@@ -208,6 +208,24 @@ $statusBreakdown   = $statusBreakdown   ?? [];
                 </div>
                 @endforeach
             </div>
+        </div>
+
+        <div class="mt-5 pt-5 border-t border-gray-100">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">PSA Poverty Status</p>
+            @if($psaSummary['configured'])
+            <a href="{{ route('residents.index', ['psa_status' => 'below']) }}" class="flex items-center justify-between rounded-xl bg-red-50 px-4 py-3 hover:bg-red-100 transition-colors">
+                <div>
+                    <p class="text-2xl font-bold text-red-600 tracking-tight">{{ number_format($psaSummary['below']) }}</p>
+                    <p class="text-[11px] text-red-500">Households below the PSA poverty line</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-semibold text-gray-700">{{ $psaSummary['incidence'] }}%</p>
+                    <p class="text-[11px] text-gray-400">of {{ number_format($psaSummary['assessed']) }} assessed families</p>
+                </div>
+            </a>
+            @else
+            <p class="text-xs text-amber-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Set the PSA thresholds in Settings to see this.</p>
+            @endif
         </div>
     </div>
 </div>

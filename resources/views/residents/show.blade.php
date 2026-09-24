@@ -23,13 +23,15 @@ $isStaff = Auth::user()->role === 'staff';
     $sectorColors = [
         '4Ps'        => 'bg-blue-50 text-blue-600 ring-1 ring-blue-100',
         'Senior'     => 'bg-orange-50 text-orange-600 ring-1 ring-orange-100',
+        'Social Pension' => 'bg-teal-50 text-teal-700 ring-1 ring-teal-100',
         'PWD'        => 'bg-purple-50 text-purple-600 ring-1 ring-purple-100',
         'Solo Parent'=> 'bg-pink-50 text-pink-600 ring-1 ring-pink-100',
         'Voter'      => 'bg-brand-50 text-brand-700 ring-1 ring-brand-100',
+        'Indigent'   => 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
         'Pregnant'   => 'bg-rose-50 text-rose-600 ring-1 ring-rose-100',
     ];
     $avatarColors = ['bg-brand-100 text-brand-700','bg-blue-100 text-blue-700','bg-orange-100 text-orange-700','bg-purple-100 text-purple-700','bg-pink-100 text-pink-700','bg-teal-100 text-teal-700'];
-    $hasMemberIncome = !$isDemo && $household->residents->sum('monthly_income') > 0;
+    $hasMemberIncome = !$isDemo && \App\Services\ClassificationService::isAssessed($household);
     $classification  = $hasMemberIncome
         ? \App\Services\ClassificationService::classify($household)
         : null;
@@ -59,6 +61,16 @@ $isStaff = Auth::user()->role === 'staff';
         </a>
     </div>
 </div>
+
+{{-- Needs review: contradictory records (advisory only) --}}
+@if(!$isDemo && ($reviewFlags = $household->reviewFlags()))
+<div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+    <p class="font-semibold flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Needs review</p>
+    <ul class="mt-1.5 list-disc pl-6 space-y-0.5 text-xs">
+        @foreach($reviewFlags as $flag)<li>{{ $flag }}</li>@endforeach
+    </ul>
+</div>
+@endif
 
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
@@ -93,13 +105,16 @@ $isStaff = Auth::user()->role === 'staff';
                             @foreach(($isDemo ? $head['sectors'] : $head->sectors) as $sector)
                             @php
                                 $sectorIdUrl = match(true) {
-                                    $sector === 'PWD' && !$isDemo && $head->pwd_id_url => $head->pwd_id_url,
-                                    $sector === 'Solo Parent' && !$isDemo && $head->solo_parent_id_url => $head->solo_parent_id_url,
+                                    $sector === '4Ps' && !$isDemo && $head->fourps_id_url => \App\Http\Controllers\IdPhotoController::link('fourps', $head),
+                                    $sector === 'Social Pension' && !$isDemo && $head->senior_id_url => \App\Http\Controllers\IdPhotoController::link('senior', $head),
+                                    $sector === 'PWD' && !$isDemo && $head->pwd_id_url => \App\Http\Controllers\IdPhotoController::link('pwd', $head),
+                                    $sector === 'Solo Parent' && !$isDemo && $head->solo_parent_id_url => \App\Http\Controllers\IdPhotoController::link('solo_parent', $head),
                                     default => null,
                                 };
+                                $idLabel = $sector === 'Social Pension' ? 'Senior Citizen ID' : $sector . ' ID';
                             @endphp
                             @if($sectorIdUrl)
-                            <button type="button" onclick="viewIdPhoto('{{ $sectorIdUrl }}', '{{ $sector }} ID — {{ addslashes($head->full_name) }}')" title="View {{ $sector }} ID"
+                            <button type="button" onclick="viewIdPhoto('{{ $sectorIdUrl }}', '{{ $idLabel }} — {{ addslashes($head->full_name) }}')" title="View {{ $idLabel }}"
                                class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? '' }} hover:brightness-95 transition cursor-pointer">
                                 {{ $sector }} <i class="fa-solid fa-image text-[9px]"></i>
                             </button>
@@ -206,8 +221,11 @@ $isStaff = Auth::user()->role === 'staff';
                                     @if($m->monthly_income <= $pcPoverty)
                                     <span class="block text-[10px] text-red-500 font-medium">Below poverty line</span>
                                     @endif
-                                @else
+                                @elseif($isDemo || $m->pension_amount === null)
                                     <span class="text-gray-300">—</span>
+                                @endif
+                                @if(!$isDemo && $m->pension_amount !== null)
+                                    <span class="block text-[10px] text-teal-700 font-medium">+ ₱{{ number_format($m->pension_amount, 2) }} pension</span>
                                 @endif
                             </td>
                             <td class="px-5 py-3.5">
@@ -215,13 +233,16 @@ $isStaff = Auth::user()->role === 'staff';
                                     @forelse($mSectors as $sector)
                                         @php
                                             $sectorIdUrl = match(true) {
-                                                $sector === 'PWD' && !$isDemo && $m->pwd_id_url => $m->pwd_id_url,
-                                                $sector === 'Solo Parent' && !$isDemo && $m->solo_parent_id_url => $m->solo_parent_id_url,
+                                                $sector === '4Ps' && !$isDemo && $m->fourps_id_url => \App\Http\Controllers\IdPhotoController::link('fourps', $m),
+                                                $sector === 'Social Pension' && !$isDemo && $m->senior_id_url => \App\Http\Controllers\IdPhotoController::link('senior', $m),
+                                                $sector === 'PWD' && !$isDemo && $m->pwd_id_url => \App\Http\Controllers\IdPhotoController::link('pwd', $m),
+                                                $sector === 'Solo Parent' && !$isDemo && $m->solo_parent_id_url => \App\Http\Controllers\IdPhotoController::link('solo_parent', $m),
                                                 default => null,
                                             };
+                                            $idLabel = $sector === 'Social Pension' ? 'Senior Citizen ID' : $sector . ' ID';
                                         @endphp
                                         @if($sectorIdUrl)
-                                        <button type="button" onclick="viewIdPhoto('{{ $sectorIdUrl }}', '{{ $sector }} ID — {{ addslashes($m->full_name) }}')" title="View {{ $sector }} ID"
+                                        <button type="button" onclick="viewIdPhoto('{{ $sectorIdUrl }}', '{{ $idLabel }} — {{ addslashes($m->full_name) }}')" title="View {{ $idLabel }}"
                                            class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? 'bg-gray-50 text-gray-500' }} hover:brightness-95 transition cursor-pointer">
                                             {{ $sector }} <i class="fa-solid fa-image text-[9px]"></i>
                                         </button>
@@ -231,6 +252,12 @@ $isStaff = Auth::user()->role === 'staff';
                                     @empty
                                         <span class="text-xs text-gray-300">—</span>
                                     @endforelse
+                                    @if(!$isDemo && $m->is_social_pension_candidate)
+                                        <span title="Senior, indigent and without a pension — may qualify for DSWD Social Pension"
+                                              class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium bg-white text-teal-700 border border-dashed border-teal-300">
+                                            <i class="fa-solid fa-hand-holding-heart text-[9px]"></i> Possible Social Pension candidate
+                                        </span>
+                                    @endif
                                 </div>
                             </td>
                             <td class="px-5 py-3.5">
@@ -260,14 +287,18 @@ $isStaff = Auth::user()->role === 'staff';
                                         'is_head'           => $m->is_head,
                                         'is_4ps'            => $m->is_4ps,
                                         'is_senior_citizen' => $m->is_senior_citizen,
+                                        'pension'           => $m->pension,
+                                        'pension_amount'    => $m->pension_amount,
+                                        'senior_id_url'     => \App\Http\Controllers\IdPhotoController::link('senior', $m),
                                         'is_pwd'            => $m->is_pwd,
                                         'is_solo_parent'    => $m->is_solo_parent,
                                         'is_voter'          => $m->is_voter,
                                         'is_indigent'       => $m->is_indigent,
                                         'is_pregnant'       => $m->is_pregnant,
                                         'pregnant_due_date' => $m->pregnant_due_date?->format('Y-m-d'),
-                                        'pwd_id_url'         => $m->pwd_id_url,
-                                        'solo_parent_id_url' => $m->solo_parent_id_url,
+                                        'pwd_id_url'         => \App\Http\Controllers\IdPhotoController::link('pwd', $m),
+                                        'solo_parent_id_url' => \App\Http\Controllers\IdPhotoController::link('solo_parent', $m),
+                                        'fourps_id_url'      => \App\Http\Controllers\IdPhotoController::link('fourps', $m),
                                     ]) }})"
                                     class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">
                                         <i class="fa-solid fa-pen text-[11px]"></i> Edit
@@ -365,16 +396,99 @@ $isStaff = Auth::user()->role === 'staff';
             </div>
         </div>
 
-        {{-- Welfare Classification --}}
+        {{-- Household welfare: PSA Poverty Status (default, PSA standard) / Barangay Welfare Score (barangay-defined) --}}
         @if(!$isDemo)
-        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        @php $psa = \App\Services\ClassificationService::psa($household); @endphp
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden" x-data="{ view: 'psa' }">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
-                    <i class="fa-solid fa-scale-balanced"></i>
+                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs"
+                     :class="view === 'psa' ? 'bg-sky-50 text-sky-600' : 'bg-orange-50 text-orange-500'">
+                    <i class="fa-solid" :class="view === 'psa' ? 'fa-landmark' : 'fa-scale-balanced'"></i>
                 </div>
-                <p class="text-sm font-semibold text-gray-800">Welfare Classification</p>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800" x-text="view === 'psa' ? 'PSA Poverty Status' : 'Barangay Welfare Score'">PSA Poverty Status</p>
+                    <p class="text-[11px] text-gray-400" x-show="view === 'psa'">Per capita income vs. PSA thresholds &middot; income only</p>
+                    <p class="text-[11px] text-gray-400" x-show="view === 'score'" x-cloak>Barangay's own scoring for assistance priority &middot; not PSA</p>
+                </div>
+                <div class="ml-auto flex shrink-0 rounded-lg bg-gray-100 p-0.5 text-[11px] font-semibold" role="tablist">
+                    <button type="button" role="tab" @click="view = 'psa'" :aria-selected="view === 'psa'"
+                            class="rounded-md px-2.5 py-1 transition-colors"
+                            :class="view === 'psa' ? 'bg-white text-sky-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'">PSA Status</button>
+                    <button type="button" role="tab" @click="view = 'score'" :aria-selected="view === 'score'"
+                            class="rounded-md px-2.5 py-1 transition-colors"
+                            :class="view === 'score' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">Welfare Score</button>
+                </div>
             </div>
-            <div class="p-5 space-y-4">
+
+            {{-- PSA Poverty Status --}}
+            <div class="p-5 space-y-4" x-show="view === 'psa'">
+                @if(!$psa['configured'])
+                <div class="rounded-xl bg-amber-50 border border-dashed border-amber-200 p-4 text-center text-xs text-amber-800">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg mb-2 block"></i>
+                    PSA thresholds haven't been set yet.
+                    @if(!$isStaff)
+                    <a href="{{ route('settings.index') }}" class="mt-1 block font-semibold text-amber-900 hover:underline">Set them in Settings →</a>
+                    @else
+                    <span class="mt-1 block text-amber-600">Ask an administrator to set them in Settings.</span>
+                    @endif
+                </div>
+                @elseif(!$psa['assessed'])
+                <div class="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400">
+                    <i class="fa-solid fa-circle-info text-gray-300 text-lg mb-2 block"></i>
+                    Not assessed &mdash; no income or pension recorded for any member.
+                </div>
+                @else
+                @php $psaStyle = \App\Services\ClassificationService::PSA_STYLES[$psa['status']]; @endphp
+                <div class="rounded-xl p-4 text-center {{ $psaStyle }}">
+                    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-60 mb-1">PSA Status</p>
+                    <p class="text-xl font-bold">{{ $psa['status'] }}</p>
+                    <p class="text-xs opacity-70 mt-0.5">
+                        {{ in_array($psa['status'], \App\Services\ClassificationService::PSA_POOR, true) ? 'Below the PSA poverty line' : 'Not poor' }}
+                        &middot; {{ $psa['multiple'] }}&times; poverty line
+                    </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-100 overflow-hidden">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-gray-50 text-[10px] uppercase tracking-wide text-gray-400">
+                                <th class="px-3 py-1.5 text-left font-semibold">Class</th>
+                                <th class="px-3 py-1.5 text-right font-semibold">Per capita / month</th>
+                            </tr>
+                        </thead>
+                        @foreach($psa['bands'] as $band)
+                        @php $isActive = $band['status'] === $psa['status']; @endphp
+                        <tr class="border-t border-gray-50 {{ $isActive ? 'bg-sky-50/60 font-semibold text-gray-900' : 'text-gray-500' }}">
+                            <td class="px-3 py-1.5">
+                                @if($isActive)<i class="fa-solid fa-arrow-right text-sky-500 mr-1 text-[10px]"></i>@endif
+                                {{ $band['status'] }}
+                            </td>
+                            <td class="px-3 py-1.5 text-right font-mono">
+                                @if($band['max'] === null) ₱{{ number_format($band['min']) }}+
+                                @elseif($band['min'] == 0) &lt; ₱{{ number_format($band['max']) }}
+                                @else ₱{{ number_format($band['min']) }} – &lt; ₱{{ number_format($band['max']) }}
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </table>
+                </div>
+
+                <div class="text-[11px] text-gray-500 space-y-1">
+                    <p class="flex justify-between"><span>Per capita income</span><span class="font-semibold text-gray-800">₱{{ number_format($psa['per_capita'], 2) }}</span></p>
+                    @if($psa['food'])
+                    <p class="flex justify-between"><span>Food threshold</span><span>₱{{ number_format($psa['food'], 2) }}</span></p>
+                    @endif
+                    <p class="flex justify-between"><span>Poverty threshold</span><span>₱{{ number_format($psa['poverty'], 2) }}</span></p>
+                    <p class="pt-1 border-t border-gray-100 text-gray-400">
+                        Source: {{ $psa['source'] }}. Classes above the poverty line follow the PIDS income classes (multiples of the poverty line).
+                    </p>
+                </div>
+                @endif
+            </div>
+
+            {{-- Barangay Welfare Score --}}
+            <div class="p-5 space-y-4" x-show="view === 'score'" x-cloak>
 
                 @if($classification)
                 {{-- Classification Badge --}}
@@ -390,6 +504,12 @@ $isStaff = Auth::user()->role === 'staff';
                         <span class="text-xs text-gray-500">Total Member Income</span>
                         <span class="text-xs font-bold text-gray-800">₱{{ number_format($classification['total_income'], 2) }}</span>
                     </div>
+                    @if($classification['pension_income'] > 0)
+                    <div class="flex items-center justify-between -mt-1">
+                        <span class="text-[11px] text-gray-400">incl. pension</span>
+                        <span class="text-[11px] font-semibold text-teal-700">₱{{ number_format($classification['pension_income'], 2) }}</span>
+                    </div>
+                    @endif
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-gray-500">Members</span>
                         <span class="text-xs font-semibold text-gray-700">{{ $classification['member_count'] }}</span>
@@ -454,7 +574,7 @@ $isStaff = Auth::user()->role === 'staff';
                         <div>
                             <p class="font-semibold text-gray-700 mb-1">Step 1 — Per Capita Income</p>
                             <p class="font-mono text-[11px] text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
-                                Per Capita = Total Income ÷ Members<br>
+                                Per Capita = (Monthly Income + Pension) ÷ Members<br>
                                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ₱{{ number_format($classification['total_income'], 2) }} ÷ {{ $classification['member_count'] }}<br>
                                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="font-bold text-gray-800">₱{{ number_format($classification['per_capita'], 2) }}</span>
                             </p>
@@ -642,7 +762,7 @@ $isStaff = Auth::user()->role === 'staff';
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 mb-1.5">Date of Birth</label>
-                    <input type="date" name="date_of_birth" id="em_dob"
+                    <input type="date" name="date_of_birth" id="em_dob" onchange="toggleSeniorPensionModal()"
                            class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
                 </div>
                 <div>
@@ -652,7 +772,7 @@ $isStaff = Auth::user()->role === 'staff';
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 mb-1.5">Gender</label>
-                    <select name="gender" id="em_gender"
+                    <select name="gender" id="em_gender" required
                             class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
                         <option value="">Select</option>
                         <option value="Male">Male</option>
@@ -702,10 +822,11 @@ $isStaff = Auth::user()->role === 'staff';
                     <div class="flex flex-wrap gap-3">
                         <label id="em_4ps_wrap" class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                             <input type="checkbox" name="is_4ps" id="em_is_4ps" value="1"
-                                   class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                                   class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                   onchange="toggleIdUploadModal('fourps', this.checked)">
                             4Ps
                         </label>
-                        @foreach(['is_senior_citizen'=>'Senior Citizen','is_voter'=>'Voter','is_indigent'=>'Indigent'] as $field => $label)
+                        @foreach(['is_voter'=>'Voter','is_indigent'=>'Indigent'] as $field => $label)
                         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                             <input type="checkbox" name="{{ $field }}" id="em_{{ $field }}" value="1"
                                    class="rounded border-gray-300 text-green-600 focus:ring-green-500">
@@ -731,10 +852,88 @@ $isStaff = Auth::user()->role === 'staff';
                             Pregnant
                         </label>
                     </div>
+                    <p class="mt-2 text-[11px] text-gray-400">
+                        <i class="fa-solid fa-person-cane mr-1 text-orange-400"></i>Senior Citizen is set automatically from date of birth (60+).
+                    </p>
+                    <div id="em_senior_pension_wrap" class="hidden mt-3">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Pension</label>
+                        <div class="flex flex-wrap gap-3">
+                            @foreach(['none' => 'None', 'social' => 'DSWD Social Pension', 'other' => 'SSS / GSIS / Other pension'] as $value => $label)
+                            <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                                <input type="radio" name="pension" id="em_pension_{{ $value }}" value="{{ $value }}"
+                                       class="border-gray-300 text-teal-600 focus:ring-teal-500"
+                                       onchange="toggleSeniorPensionModal()">
+                                {{ $label }}
+                            </label>
+                            @endforeach
+                        </div>
+                        <div id="em_pension_amount_wrap" class="hidden mt-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Monthly Pension Amount (₱) <span class="text-red-500">*</span></label>
+                            <input type="number" name="pension_amount" id="em_pension_amount" min="0" step="0.01" placeholder="0.00"
+                                   class="w-40 rounded-xl border border-teal-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <p class="mt-1 text-[10px] text-gray-400">Counted as household income. Don't include it in Monthly Income as well.</p>
+                        </div>
+                        <div id="em_senior_id_wrap" class="hidden mt-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">
+                                Senior Citizen (OSCA) ID <span id="em_senior_id_required_hint" class="text-red-500">*</span>
+                            </label>
+                            <div id="em_senior_id_existing" class="hidden mb-2">
+                                <button type="button" onclick="viewIdPhoto(document.getElementById('em_senior_id_existing_img').src, 'Senior Citizen ID')" class="block relative rounded-xl overflow-hidden border-2 border-gray-200 max-w-[200px]">
+                                    <img id="em_senior_id_existing_img" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 text-center">
+                                        <span class="text-[10px] text-white">On file &middot; click to view</span>
+                                    </div>
+                                </button>
+                            </div>
+                            <label class="block w-full max-w-[200px] cursor-pointer">
+                                <input type="file" name="senior_id_document" id="em_senior_id_document" accept="image/*" class="sr-only"
+                                       onchange="handleIdFileChange('senior', this)">
+                                <div id="em_senior_id_dropzone" class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/40 px-4 py-5 hover:border-teal-400 hover:bg-teal-50 transition-all">
+                                    <i class="fa-solid fa-id-card text-teal-400 text-base"></i>
+                                    <p class="text-[10px] text-teal-600 text-center">Click to upload &middot; JPG/PNG/WebP, max 5MB</p>
+                                </div>
+                                <div id="em_senior_id_preview_wrap" class="hidden relative rounded-xl overflow-hidden border-2 border-green-400">
+                                    <img id="em_senior_id_preview" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                    <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 flex items-center justify-between gap-2">
+                                        <span id="em_senior_id_filename" class="text-[10px] text-white truncate"></span>
+                                        <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                     <div id="em_pregnant_due_wrap" class="hidden mt-2">
                         <label class="block text-xs font-semibold text-gray-500 mb-1">Due Date / Expected Labor Date</label>
                         <input type="date" name="pregnant_due_date" id="em_pregnant_due_date"
                                class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
+                    </div>
+                    <div id="em_fourps_id_wrap" class="hidden mt-2">
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">
+                            4Ps ID <span id="em_fourps_id_required_hint" class="text-red-500">*</span>
+                        </label>
+                        <div id="em_fourps_id_existing" class="hidden mb-2">
+                            <button type="button" onclick="viewIdPhoto(document.getElementById('em_fourps_id_existing_img').src, '4Ps ID')" class="block relative rounded-xl overflow-hidden border-2 border-gray-200 max-w-[200px]">
+                                <img id="em_fourps_id_existing_img" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 text-center">
+                                    <span class="text-[10px] text-white">On file &middot; click to view</span>
+                                </div>
+                            </button>
+                        </div>
+                        <label class="block w-full max-w-[200px] cursor-pointer">
+                            <input type="file" name="fourps_id_document" id="em_fourps_id_document" accept="image/*" class="sr-only"
+                                   onchange="handleIdFileChange('fourps', this)">
+                            <div id="em_fourps_id_dropzone" class="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 px-4 py-5 hover:border-blue-400 hover:bg-blue-50 transition-all">
+                                <i class="fa-solid fa-id-card text-blue-400 text-base"></i>
+                                <p class="text-[10px] text-blue-600 text-center">Click to upload &middot; JPG/PNG/WebP, max 5MB</p>
+                            </div>
+                            <div id="em_fourps_id_preview_wrap" class="hidden relative rounded-xl overflow-hidden border-2 border-green-400">
+                                <img id="em_fourps_id_preview" src="" class="w-full max-h-24 object-contain bg-gray-100">
+                                <div class="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 flex items-center justify-between gap-2">
+                                    <span id="em_fourps_id_filename" class="text-[10px] text-white truncate"></span>
+                                    <span class="text-[10px] text-green-300 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Ready</span>
+                                </div>
+                            </div>
+                        </label>
                     </div>
                     <div id="em_pwd_id_wrap" class="hidden mt-2">
                         <label class="block text-[11px] font-semibold text-gray-500 mb-1">
@@ -865,24 +1064,50 @@ function openEditMember(data) {
     fourPsWrap.style.display = data.is_head ? '' : 'none';
     document.getElementById('em_is_4ps').checked = !!data.is_4ps;
 
-    ['is_senior_citizen','is_pwd','is_solo_parent','is_voter','is_indigent','is_pregnant'].forEach(function(f) {
+    ['is_pwd','is_solo_parent','is_voter','is_indigent','is_pregnant'].forEach(function(f) {
         document.getElementById('em_' + f).checked = !!data[f];
     });
 
     document.getElementById('em_pregnant_due_date').value = data.pregnant_due_date || '';
     togglePregnantDueDateModal(!!data.is_pregnant);
 
+    document.getElementById('em_pension_' + (data.pension || 'none')).checked = true;
+    document.getElementById('em_pension_amount').value = data.pension_amount != null ? data.pension_amount : '';
+    setIdDocumentState('senior', false, data.senior_id_url || null);
+    toggleSeniorPensionModal();
+
+    setIdDocumentState('fourps', !!data.is_head && !!data.is_4ps, data.fourps_id_url || null);
     setIdDocumentState('pwd', !!data.is_pwd, data.pwd_id_url || null);
     setIdDocumentState('solo_parent', !!data.is_solo_parent, data.solo_parent_id_url || null);
 
     document.getElementById('modal-edit-member').classList.remove('hidden');
 }
 
+// Pension options only apply to seniors (60+); the server clears them for anyone younger.
+function toggleSeniorPensionModal() {
+    const dob = document.getElementById('em_dob').value;
+    let isSenior = false;
+    if (dob) {
+        const [y, m, d] = dob.split('-').map(Number);
+        const today = new Date();
+        let age = today.getFullYear() - y;
+        if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
+        isSenior = age >= 60;
+    }
+    document.getElementById('em_senior_pension_wrap').classList.toggle('hidden', !isSenior);
+
+    const pension = (document.querySelector('input[name="pension"]:checked') || {}).value || 'none';
+    const hasPension = isSenior && pension !== 'none';
+    document.getElementById('em_pension_amount_wrap').classList.toggle('hidden', !hasPension);
+    document.getElementById('em_pension_amount').required = hasPension;
+    toggleIdUploadModal('senior', isSenior && pension === 'social');
+}
+
 function togglePregnantDueDateModal(show) {
     document.getElementById('em_pregnant_due_wrap').classList.toggle('hidden', !show);
 }
 
-const emIdState = { pwd: { existingUrl: null }, solo_parent: { existingUrl: null } };
+const emIdState = { senior: { existingUrl: null }, fourps: { existingUrl: null }, pwd: { existingUrl: null }, solo_parent: { existingUrl: null } };
 
 // Resets and (re)initializes an ID upload block for the resident currently being edited.
 function setIdDocumentState(prefix, checked, existingUrl) {

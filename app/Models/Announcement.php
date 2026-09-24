@@ -49,4 +49,48 @@ class Announcement extends Model
     {
         return $query->where('status', 'Published');
     }
+
+    public const AUDIENCES = ['All Residents', 'Senior Citizens', 'PWD', '4Ps', 'Voters'];
+
+    /** Published, already live and not yet expired — what residents should see. */
+    public function scopeLive($query)
+    {
+        $today = now()->toDateString();
+
+        return $query->published()
+            ->where(fn ($q) => $q->whereNull('published_at')->orWhereDate('published_at', '<=', $today))
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhereDate('expires_at', '>=', $today));
+    }
+
+    /** Audiences a resident belongs to ("All" is a legacy value treated like All Residents). */
+    public static function audiencesFor(?Resident $resident): array
+    {
+        $audiences = ['All Residents', 'All'];
+        if (!$resident) {
+            return $audiences;
+        }
+        if ($resident->is_senior_citizen) $audiences[] = 'Senior Citizens';
+        if ($resident->is_pwd)            $audiences[] = 'PWD';
+        if ($resident->is_voter)          $audiences[] = 'Voters';
+        // 4Ps is recorded on the household head and covers the whole household.
+        if ($resident->is_4ps || $resident->household?->residents()->where('is_head', true)->where('is_4ps', true)->exists()) {
+            $audiences[] = '4Ps';
+        }
+
+        return $audiences;
+    }
+
+    /** Active residents an announcement is meant for. */
+    public function audienceResidents()
+    {
+        $query = Resident::where('status', 'Active');
+
+        return match ($this->audience) {
+            'Senior Citizens' => $query->where('is_senior_citizen', true),
+            'PWD'             => $query->where('is_pwd', true),
+            'Voters'          => $query->where('is_voter', true),
+            '4Ps'             => $query->whereHas('household.residents', fn ($h) => $h->where('is_head', true)->where('is_4ps', true)),
+            default           => $query,
+        };
+    }
 }

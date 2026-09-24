@@ -9,6 +9,7 @@ use App\Services\ClassificationService;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ResidentController extends Controller
 {
@@ -27,9 +28,9 @@ class ResidentController extends Controller
         if ($request->hasFile($fileKey)) {
             try {
                 if ($publicId) {
-                    (new CloudinaryService)->delete($publicId);
+                    app(CloudinaryService::class)->delete($publicId);
                 }
-                $uploaded = (new CloudinaryService)->uploadIdPhoto($request->file($fileKey), $folder);
+                $uploaded = app(CloudinaryService::class)->uploadIdPhoto($request->file($fileKey), $folder);
                 $url      = $uploaded['url'];
                 $publicId = $uploaded['public_id'];
             } catch (\Throwable $e) {
@@ -45,15 +46,27 @@ class ResidentController extends Controller
         return ['url' => $url, 'public_id' => $publicId];
     }
 
+    private function isSeniorPerson(array $person): bool
+    {
+        return !empty($person['date_of_birth'])
+            && \Carbon\Carbon::parse($person['date_of_birth'])->age >= Resident::SENIOR_AGE;
+    }
+
+    /** A Senior (OSCA) ID photo is required for DSWD Social Pension beneficiaries. */
+    private function wantsSeniorId(array $person): bool
+    {
+        return ($person['pension'] ?? null) === 'social' && $this->isSeniorPerson($person);
+    }
+
+    private function pensionAmountRule(array $person): string
+    {
+        return in_array($person['pension'] ?? null, ['social', 'other'], true) && $this->isSeniorPerson($person)
+            ? 'required|numeric|min:0' : 'nullable|numeric|min:0';
+    }
+
     private function isStaff(): bool
     {
         return Auth::user()->role === 'staff';
-    }
-
-    private function view(string $name, array $data = []): \Illuminate\View\View
-    {
-        $prefix = $this->isStaff() ? 'staff.' : '';
-        return view($prefix . $name, $data);
     }
 
     private function route(string $name, mixed $params = []): string
@@ -84,17 +97,30 @@ class ResidentController extends Controller
             $sectorMap = [
                 '4Ps'           => 'is_4ps',
                 'Senior Citizen'=> 'is_senior_citizen',
+                'Social Pension'=> 'is_social_pensioner',
                 'PWD'           => 'is_pwd',
                 'Solo Parent'   => 'is_solo_parent',
                 'Pregnant'      => 'is_pregnant',
             ];
-            if ($col = $sectorMap[$sector] ?? null) {
+            if ($sector === 'Pregnant') {
+                $query->whereHas('residents', fn($r) => $r->currentlyPregnant());
+            } elseif ($col = $sectorMap[$sector] ?? null) {
                 $query->whereHas('residents', fn($r) => $r->where($col, true));
             }
         }
 
         if ($classification = $request->classification) {
             $query->where('classification', $classification);
+        }
+
+        if ($request->boolean('review')) {
+            $query->needsReview();
+        }
+
+        if ($psaStatus = $request->psa_status) {
+            $psaStatus === 'below'
+                ? $query->whereIn('psa_status', ClassificationService::PSA_POOR)
+                : $query->where('psa_status', $psaStatus);
         }
 
         if ($employmentStatus = $request->employment_status) {
@@ -151,13 +177,18 @@ class ResidentController extends Controller
             $sectorMap = [
                 '4Ps'            => 'is_4ps',
                 'Senior Citizen' => 'is_senior_citizen',
+                'Social Pension' => 'is_social_pensioner',
                 'PWD'            => 'is_pwd',
                 'Solo Parent'    => 'is_solo_parent',
                 'Voter'          => 'is_voter',
                 'Indigent'       => 'is_indigent',
                 'Pregnant'       => 'is_pregnant',
             ];
-            if ($col = $sectorMap[$sector] ?? null) {
+            if ($sector === 'Social Pension Candidates') {
+                $query->socialPensionCandidates();
+            } elseif ($sector === 'Pregnant') {
+                $query->currentlyPregnant();
+            } elseif ($col = $sectorMap[$sector] ?? null) {
                 $query->where($col, true);
             }
         }
@@ -187,16 +218,23 @@ class ResidentController extends Controller
             'families.*.members.*.date_of_birth'  => 'required|date',
             'families.*.members.*.gender'         => 'required|string',
             'families.*.members.*.relationship'   => 'required|string',
+            'families.*.head.pension'             => 'nullable|in:none,social,other',
+            'families.*.members.*.pension'        => 'nullable|in:none,social,other',
         ];
 
         foreach ($request->input('families', []) as $fi => $familyData) {
             $head = $familyData['head'] ?? [];
             $rules["families.$fi.head.pwd_id_document"]         = !empty($head['is_pwd']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
             $rules["families.$fi.head.solo_parent_id_document"] = !empty($head['is_solo_parent']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.$fi.head.fourps_id_document"]      = !empty($head['is_4ps']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.$fi.head.senior_id_document"]      = $this->wantsSeniorId($head) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.$fi.head.pension_amount"]          = $this->pensionAmountRule($head);
 
             foreach ($familyData['members'] ?? [] as $mi => $member) {
                 $rules["families.$fi.members.$mi.pwd_id_document"]         = !empty($member['is_pwd']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
                 $rules["families.$fi.members.$mi.solo_parent_id_document"] = !empty($member['is_solo_parent']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+                $rules["families.$fi.members.$mi.senior_id_document"]      = $this->wantsSeniorId($member) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+                $rules["families.$fi.members.$mi.pension_amount"]          = $this->pensionAmountRule($member);
             }
         }
 
@@ -210,99 +248,140 @@ class ResidentController extends Controller
             'families.*.members.*.relationship.required'  => 'Relationship is required for all members.',
             'families.*.head.pwd_id_document.required'              => 'A PWD ID photo is required for the head of family when tagged as PWD.',
             'families.*.head.solo_parent_id_document.required'      => 'A Solo Parent ID photo is required for the head of family when tagged as Solo Parent.',
+            'families.*.head.fourps_id_document.required'           => 'A 4Ps ID photo is required for the head of family when tagged as 4Ps.',
             'families.*.members.*.pwd_id_document.required'         => 'A PWD ID photo is required for this member.',
             'families.*.members.*.solo_parent_id_document.required' => 'A Solo Parent ID photo is required for this member.',
+            'families.*.head.senior_id_document.required'           => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
+            'families.*.members.*.senior_id_document.required'      => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
+            'families.*.head.pension_amount.required'               => 'Enter the monthly pension amount.',
+            'families.*.members.*.pension_amount.required'          => 'Enter the monthly pension amount.',
         ]);
 
-        foreach ($request->input('families', []) as $fi => $familyData) {
-            $head = $familyData['head'] ?? [];
-            if (empty($head['first_name'])) continue;
+        // All families are saved together: a failed upload or insert must not leave an empty household behind.
+        DB::beginTransaction();
+        try {
+            foreach ($request->input('families', []) as $fi => $familyData) {
+                $head = $familyData['head'] ?? [];
+                if (empty($head['first_name'])) continue;
 
-            $headPwd = $this->resolveIdDocument($request, "families.$fi.head.pwd_id_document", !empty($head['is_pwd']), null, null, 'PWD IDs', 'PWD ID');
-            if (isset($headPwd['error'])) {
-                return back()->withInput()->withErrors(["families.$fi.head.pwd_id_document" => $headPwd['error']]);
-            }
-            $headSp = $this->resolveIdDocument($request, "families.$fi.head.solo_parent_id_document", !empty($head['is_solo_parent']), null, null, 'Solo Parent IDs', 'Solo Parent ID');
-            if (isset($headSp['error'])) {
-                return back()->withInput()->withErrors(["families.$fi.head.solo_parent_id_document" => $headSp['error']]);
-            }
-
-            $household = Household::create([
-                'house_no' => $request->house_no,
-                'street'   => $request->street,
-                'purok'    => $request->purok,
-            ]);
-
-            $household->residents()->create([
-                'first_name'           => $head['first_name'],
-                'middle_name'          => $head['middle_name'] ?? null,
-                'last_name'            => $head['last_name'],
-                'date_of_birth'        => $head['date_of_birth'] ?? null,
-                'age'                  => $head['age'] ?? null,
-                'gender'               => $head['gender'],
-                'civil_status'         => $head['civil_status'] ?? null,
-                'nationality'          => 'Filipino',
-                'relationship_to_head' => 'Head',
-                'is_head'              => true,
-                'contact_number'       => $head['contact_number'] ?? null,
-                'email'                => $head['email'] ?? null,
-                'employment_status'    => $head['employment_status'] ?? null,
-                'monthly_income'       => $head['monthly_income'] ?? null,
-                'is_4ps'               => !empty($head['is_4ps']),
-                'is_senior_citizen'    => !empty($head['is_senior_citizen']),
-                'is_pwd'               => !empty($head['is_pwd']),
-                'is_solo_parent'       => !empty($head['is_solo_parent']),
-                'is_voter'             => !empty($head['is_voter']),
-                'is_indigent'          => !empty($head['is_indigent']),
-                'is_pregnant'          => !empty($head['is_pregnant']),
-                'pregnant_due_date'    => !empty($head['is_pregnant']) ? ($head['pregnant_due_date'] ?: null) : null,
-                'pwd_id_url'               => $headPwd['url'],
-                'pwd_id_public_id'         => $headPwd['public_id'],
-                'solo_parent_id_url'       => $headSp['url'],
-                'solo_parent_id_public_id' => $headSp['public_id'],
-            ]);
-
-            foreach ($familyData['members'] ?? [] as $mi => $member) {
-                if (empty($member['first_name']) && empty($member['last_name'])) continue;
-
-                $mPwd = $this->resolveIdDocument($request, "families.$fi.members.$mi.pwd_id_document", !empty($member['is_pwd']), null, null, 'PWD IDs', 'PWD ID');
-                if (isset($mPwd['error'])) {
-                    return back()->withInput()->withErrors(["families.$fi.members.$mi.pwd_id_document" => $mPwd['error']]);
+                $headPwd = $this->resolveIdDocument($request, "families.$fi.head.pwd_id_document", !empty($head['is_pwd']), null, null, 'PWD IDs', 'PWD ID');
+                if (isset($headPwd['error'])) {
+                    DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.head.pwd_id_document" => $headPwd['error']]);
                 }
-                $mSp = $this->resolveIdDocument($request, "families.$fi.members.$mi.solo_parent_id_document", !empty($member['is_solo_parent']), null, null, 'Solo Parent IDs', 'Solo Parent ID');
-                if (isset($mSp['error'])) {
-                    return back()->withInput()->withErrors(["families.$fi.members.$mi.solo_parent_id_document" => $mSp['error']]);
+                $headSp = $this->resolveIdDocument($request, "families.$fi.head.solo_parent_id_document", !empty($head['is_solo_parent']), null, null, 'Solo Parent IDs', 'Solo Parent ID');
+                if (isset($headSp['error'])) {
+                    DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.head.solo_parent_id_document" => $headSp['error']]);
                 }
+                $head4ps = $this->resolveIdDocument($request, "families.$fi.head.fourps_id_document", !empty($head['is_4ps']), null, null, '4Ps IDs', '4Ps ID');
+                if (isset($head4ps['error'])) {
+                    DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.head.fourps_id_document" => $head4ps['error']]);
+                }
+                $headSenior = $this->resolveIdDocument($request, "families.$fi.head.senior_id_document", $this->wantsSeniorId($head), null, null, 'Senior IDs', 'Senior Citizen ID');
+                if (isset($headSenior['error'])) {
+                    DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.head.senior_id_document" => $headSenior['error']]);
+                }
+
+                $household = Household::create([
+                    'house_no' => $request->house_no,
+                    'street'   => $request->street,
+                    'purok'    => $request->purok,
+                ]);
 
                 $household->residents()->create([
-                    'first_name'           => $member['first_name'] ?? '',
-                    'middle_name'          => $member['middle_name'] ?? null,
-                    'last_name'            => $member['last_name'] ?? '',
-                    'date_of_birth'        => $member['date_of_birth'] ?? null,
-                    'age'                  => $member['age'] ?? null,
-                    'gender'               => $member['gender'] ?? null,
+                    'first_name'           => $head['first_name'],
+                    'middle_name'          => $head['middle_name'] ?? null,
+                    'last_name'            => $head['last_name'],
+                    'date_of_birth'        => $head['date_of_birth'] ?? null,
+                    'age'                  => $head['age'] ?? null,
+                    'gender'               => $head['gender'],
+                    'civil_status'         => $head['civil_status'] ?? null,
                     'nationality'          => 'Filipino',
-                    'relationship_to_head' => $member['relationship'] ?? null,
-                    'is_head'              => false,
-                    'employment_status'    => $member['employment_status'] ?? null,
-                    'monthly_income'       => $member['monthly_income'] ?? null,
-                    'email'                => $member['email'] ?? null,
-                    'is_4ps'               => !empty($member['is_4ps']),
-                    'is_senior_citizen'    => !empty($member['is_senior_citizen']),
-                    'is_pwd'               => !empty($member['is_pwd']),
-                    'is_solo_parent'       => !empty($member['is_solo_parent']),
-                    'is_voter'             => !empty($member['is_voter']),
-                    'is_indigent'          => !empty($member['is_indigent']),
-                    'is_pregnant'          => !empty($member['is_pregnant']),
-                    'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
-                    'pwd_id_url'               => $mPwd['url'],
-                    'pwd_id_public_id'         => $mPwd['public_id'],
-                    'solo_parent_id_url'       => $mSp['url'],
-                    'solo_parent_id_public_id' => $mSp['public_id'],
+                    'relationship_to_head' => 'Head',
+                    'is_head'              => true,
+                    'contact_number'       => $head['contact_number'] ?? null,
+                    'email'                => $head['email'] ?? null,
+                    'employment_status'    => $head['employment_status'] ?? null,
+                    'monthly_income'       => $head['monthly_income'] ?? null,
+                    'is_4ps'               => !empty($head['is_4ps']),
+                    'is_senior_citizen'    => !empty($head['is_senior_citizen']),
+                    ...Resident::pensionFields($head['pension'] ?? null, $head['pension_amount'] ?? null),
+                    'senior_id_url'        => $headSenior['url'],
+                    'senior_id_public_id'  => $headSenior['public_id'],
+                    'is_pwd'               => !empty($head['is_pwd']),
+                    'is_solo_parent'       => !empty($head['is_solo_parent']),
+                    'is_voter'             => !empty($head['is_voter']),
+                    'is_indigent'          => !empty($head['is_indigent']),
+                    'is_pregnant'          => !empty($head['is_pregnant']),
+                    'pregnant_due_date'    => !empty($head['is_pregnant']) ? ($head['pregnant_due_date'] ?: null) : null,
+                    'pwd_id_url'               => $headPwd['url'],
+                    'pwd_id_public_id'         => $headPwd['public_id'],
+                    'solo_parent_id_url'       => $headSp['url'],
+                    'solo_parent_id_public_id' => $headSp['public_id'],
+                    'fourps_id_url'            => $head4ps['url'],
+                    'fourps_id_public_id'      => $head4ps['public_id'],
                 ]);
-            }
 
-            $this->recomputeClassification($household);
+                foreach ($familyData['members'] ?? [] as $mi => $member) {
+                    if (empty($member['first_name']) && empty($member['last_name'])) continue;
+
+                    $mPwd = $this->resolveIdDocument($request, "families.$fi.members.$mi.pwd_id_document", !empty($member['is_pwd']), null, null, 'PWD IDs', 'PWD ID');
+                    if (isset($mPwd['error'])) {
+                        DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.members.$mi.pwd_id_document" => $mPwd['error']]);
+                    }
+                    $mSp = $this->resolveIdDocument($request, "families.$fi.members.$mi.solo_parent_id_document", !empty($member['is_solo_parent']), null, null, 'Solo Parent IDs', 'Solo Parent ID');
+                    if (isset($mSp['error'])) {
+                        DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.members.$mi.solo_parent_id_document" => $mSp['error']]);
+                    }
+                    $mSenior = $this->resolveIdDocument($request, "families.$fi.members.$mi.senior_id_document", $this->wantsSeniorId($member), null, null, 'Senior IDs', 'Senior Citizen ID');
+                    if (isset($mSenior['error'])) {
+                        DB::rollBack();
+                    return back()->withInput()->withErrors(["families.$fi.members.$mi.senior_id_document" => $mSenior['error']]);
+                    }
+
+                    $household->residents()->create([
+                        'first_name'           => $member['first_name'] ?? '',
+                        'middle_name'          => $member['middle_name'] ?? null,
+                        'last_name'            => $member['last_name'] ?? '',
+                        'date_of_birth'        => $member['date_of_birth'] ?? null,
+                        'age'                  => $member['age'] ?? null,
+                        'gender'               => $member['gender'] ?? null,
+                        'civil_status'         => $member['civil_status'] ?? null,
+                        'nationality'          => 'Filipino',
+                        'relationship_to_head' => $member['relationship'] ?? null,
+                        'is_head'              => false,
+                        'employment_status'    => $member['employment_status'] ?? null,
+                        'monthly_income'       => $member['monthly_income'] ?? null,
+                        'email'                => $member['email'] ?? null,
+                        'is_4ps'               => !empty($member['is_4ps']),
+                        'is_senior_citizen'    => !empty($member['is_senior_citizen']),
+                        ...Resident::pensionFields($member['pension'] ?? null, $member['pension_amount'] ?? null),
+                        'senior_id_url'        => $mSenior['url'],
+                        'senior_id_public_id'  => $mSenior['public_id'],
+                        'is_pwd'               => !empty($member['is_pwd']),
+                        'is_solo_parent'       => !empty($member['is_solo_parent']),
+                        'is_voter'             => !empty($member['is_voter']),
+                        'is_indigent'          => !empty($member['is_indigent']),
+                        'is_pregnant'          => !empty($member['is_pregnant']),
+                        'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
+                        'pwd_id_url'               => $mPwd['url'],
+                        'pwd_id_public_id'         => $mPwd['public_id'],
+                        'solo_parent_id_url'       => $mSp['url'],
+                        'solo_parent_id_public_id' => $mSp['public_id'],
+                    ]);
+                }
+
+                ClassificationService::refresh($household);
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
 
         return redirect()->to($this->route('residents.index'))
@@ -326,6 +405,13 @@ class ResidentController extends Controller
         $headIn    = $request->input('families.0.head', []);
         $membersIn = $request->input('families.0.members', []);
 
+        // Which ID photos are already on file comes from the database, not from the form.
+        $household     = Household::with('residents')->findOrFail($id);
+        $currentHead   = $household->residents->firstWhere('is_head', true);
+        $currentMember = fn (array $m) => !empty($m['id'])
+            ? $household->residents->where('is_head', false)->firstWhere('id', (int) $m['id'])
+            : null;
+
         $rules = [
             'purok'                              => 'required|string',
             'families.0.head.first_name'         => 'required|string|max:100',
@@ -338,18 +424,28 @@ class ResidentController extends Controller
             'families.0.members.*.date_of_birth' => 'required|date',
             'families.0.members.*.gender'        => 'required|string',
             'families.0.members.*.relationship'  => 'required|string',
+            'families.0.head.pension'            => 'nullable|in:none,social,other',
+            'families.0.members.*.pension'       => 'nullable|in:none,social,other',
         ];
 
-        $rules['families.0.head.pwd_id_document'] = (!empty($headIn['is_pwd']) && empty($headIn['existing_pwd_id_url']))
+        $rules['families.0.head.pwd_id_document'] = (!empty($headIn['is_pwd']) && empty($currentHead?->pwd_id_url))
             ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
-        $rules['families.0.head.solo_parent_id_document'] = (!empty($headIn['is_solo_parent']) && empty($headIn['existing_solo_parent_id_url']))
+        $rules['families.0.head.solo_parent_id_document'] = (!empty($headIn['is_solo_parent']) && empty($currentHead?->solo_parent_id_url))
             ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+        $rules['families.0.head.fourps_id_document'] = (!empty($headIn['is_4ps']) && empty($currentHead?->fourps_id_url))
+            ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+        $rules['families.0.head.senior_id_document'] = ($this->wantsSeniorId($headIn) && empty($currentHead?->senior_id_url))
+            ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+        $rules['families.0.head.pension_amount'] = $this->pensionAmountRule($headIn);
 
         foreach ($membersIn as $mi => $member) {
-            $rules["families.0.members.$mi.pwd_id_document"] = (!empty($member['is_pwd']) && empty($member['existing_pwd_id_url']))
+            $rules["families.0.members.$mi.pwd_id_document"] = (!empty($member['is_pwd']) && empty($currentMember($member)?->pwd_id_url))
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
-            $rules["families.0.members.$mi.solo_parent_id_document"] = (!empty($member['is_solo_parent']) && empty($member['existing_solo_parent_id_url']))
+            $rules["families.0.members.$mi.solo_parent_id_document"] = (!empty($member['is_solo_parent']) && empty($currentMember($member)?->solo_parent_id_url))
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.0.members.$mi.senior_id_document"] = ($this->wantsSeniorId($member) && empty($currentMember($member)?->senior_id_url))
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
+            $rules["families.0.members.$mi.pension_amount"] = $this->pensionAmountRule($member);
         }
 
         $request->validate($rules, [
@@ -362,11 +458,14 @@ class ResidentController extends Controller
             'families.0.members.*.relationship.required'  => 'Relationship is required for all members.',
             'families.0.head.pwd_id_document.required'              => 'A PWD ID photo is required for the head of family when tagged as PWD.',
             'families.0.head.solo_parent_id_document.required'      => 'A Solo Parent ID photo is required for the head of family when tagged as Solo Parent.',
+            'families.0.head.fourps_id_document.required'           => 'A 4Ps ID photo is required for the head of family when tagged as 4Ps.',
             'families.0.members.*.pwd_id_document.required'         => 'A PWD ID photo is required for this member.',
             'families.0.members.*.solo_parent_id_document.required' => 'A Solo Parent ID photo is required for this member.',
+            'families.0.head.senior_id_document.required'           => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
+            'families.0.members.*.senior_id_document.required'      => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
+            'families.0.head.pension_amount.required'               => 'Enter the monthly pension amount.',
+            'families.0.members.*.pension_amount.required'          => 'Enter the monthly pension amount.',
         ]);
-
-        $household = Household::with('residents')->findOrFail($id);
 
         $household->update([
             'house_no' => $request->house_no,
@@ -383,7 +482,7 @@ class ResidentController extends Controller
         if ($head && !empty($headData['first_name'])) {
             $headPwd = $this->resolveIdDocument(
                 $request, 'families.0.head.pwd_id_document', !empty($headData['is_pwd']),
-                $headData['existing_pwd_id_url'] ?? null, $headData['existing_pwd_id_public_id'] ?? null,
+                $currentHead?->pwd_id_url, $currentHead?->pwd_id_public_id,
                 'PWD IDs', 'PWD ID'
             );
             if (isset($headPwd['error'])) {
@@ -391,11 +490,27 @@ class ResidentController extends Controller
             }
             $headSp = $this->resolveIdDocument(
                 $request, 'families.0.head.solo_parent_id_document', !empty($headData['is_solo_parent']),
-                $headData['existing_solo_parent_id_url'] ?? null, $headData['existing_solo_parent_id_public_id'] ?? null,
+                $currentHead?->solo_parent_id_url, $currentHead?->solo_parent_id_public_id,
                 'Solo Parent IDs', 'Solo Parent ID'
             );
             if (isset($headSp['error'])) {
                 return back()->withInput()->withErrors(['families.0.head.solo_parent_id_document' => $headSp['error']]);
+            }
+            $head4ps = $this->resolveIdDocument(
+                $request, 'families.0.head.fourps_id_document', !empty($headData['is_4ps']),
+                $currentHead?->fourps_id_url, $currentHead?->fourps_id_public_id,
+                '4Ps IDs', '4Ps ID'
+            );
+            if (isset($head4ps['error'])) {
+                return back()->withInput()->withErrors(['families.0.head.fourps_id_document' => $head4ps['error']]);
+            }
+            $headSenior = $this->resolveIdDocument(
+                $request, 'families.0.head.senior_id_document', $this->wantsSeniorId($headData),
+                $currentHead?->senior_id_url, $currentHead?->senior_id_public_id,
+                'Senior IDs', 'Senior Citizen ID'
+            );
+            if (isset($headSenior['error'])) {
+                return back()->withInput()->withErrors(['families.0.head.senior_id_document' => $headSenior['error']]);
             }
 
             $head->update([
@@ -412,6 +527,9 @@ class ResidentController extends Controller
                 'monthly_income'       => $headData['monthly_income'] ?? null,
                 'is_4ps'               => !empty($headData['is_4ps']),
                 'is_senior_citizen'    => !empty($headData['is_senior_citizen']),
+                ...Resident::pensionFields($headData['pension'] ?? null, $headData['pension_amount'] ?? null),
+                'senior_id_url'        => $headSenior['url'],
+                'senior_id_public_id'  => $headSenior['public_id'],
                 'is_pwd'               => !empty($headData['is_pwd']),
                 'is_solo_parent'       => !empty($headData['is_solo_parent']),
                 'is_voter'             => !empty($headData['is_voter']),
@@ -422,17 +540,20 @@ class ResidentController extends Controller
                 'pwd_id_public_id'         => $headPwd['public_id'],
                 'solo_parent_id_url'       => $headSp['url'],
                 'solo_parent_id_public_id' => $headSp['public_id'],
+                'fourps_id_url'            => $head4ps['url'],
+                'fourps_id_public_id'      => $head4ps['public_id'],
             ]);
         }
 
-        // Replace members (delete old, insert new)
-        $household->residents()->where('is_head', false)->delete();
+        // Members are updated in place (matched by id) so their document requests, blotter links, status
+        // and history survive an edit. All uploads run first, so a failed upload changes nothing.
+        $memberRows = [];
         foreach ($membersData as $mi => $member) {
             if (empty($member['first_name']) && empty($member['last_name'])) continue;
 
             $mPwd = $this->resolveIdDocument(
                 $request, "families.0.members.$mi.pwd_id_document", !empty($member['is_pwd']),
-                $member['existing_pwd_id_url'] ?? null, $member['existing_pwd_id_public_id'] ?? null,
+                $currentMember($member)?->pwd_id_url, $currentMember($member)?->pwd_id_public_id,
                 'PWD IDs', 'PWD ID'
             );
             if (isset($mPwd['error'])) {
@@ -440,55 +561,74 @@ class ResidentController extends Controller
             }
             $mSp = $this->resolveIdDocument(
                 $request, "families.0.members.$mi.solo_parent_id_document", !empty($member['is_solo_parent']),
-                $member['existing_solo_parent_id_url'] ?? null, $member['existing_solo_parent_id_public_id'] ?? null,
+                $currentMember($member)?->solo_parent_id_url, $currentMember($member)?->solo_parent_id_public_id,
                 'Solo Parent IDs', 'Solo Parent ID'
             );
             if (isset($mSp['error'])) {
                 return back()->withInput()->withErrors(["families.0.members.$mi.solo_parent_id_document" => $mSp['error']]);
             }
+            $mSenior = $this->resolveIdDocument(
+                $request, "families.0.members.$mi.senior_id_document", $this->wantsSeniorId($member),
+                $currentMember($member)?->senior_id_url, $currentMember($member)?->senior_id_public_id,
+                'Senior IDs', 'Senior Citizen ID'
+            );
+            if (isset($mSenior['error'])) {
+                return back()->withInput()->withErrors(["families.0.members.$mi.senior_id_document" => $mSenior['error']]);
+            }
 
-            $household->residents()->create([
-                'first_name'           => $member['first_name'] ?? '',
-                'middle_name'          => $member['middle_name'] ?? null,
-                'last_name'            => $member['last_name'] ?? '',
-                'date_of_birth'        => $member['date_of_birth'] ?: null,
-                'age'                  => $member['age'] ?? null,
-                'gender'               => $member['gender'] ?? null,
-                'nationality'          => 'Filipino',
-                'relationship_to_head' => $member['relationship'] ?? null,
-                'is_head'              => false,
-                'monthly_income'       => $member['monthly_income'] ?? null,
-                'email'               => $member['email'] ?? null,
-                'is_4ps'               => !empty($member['is_4ps']),
-                'is_senior_citizen'    => !empty($member['is_senior_citizen']),
-                'is_pwd'               => !empty($member['is_pwd']),
-                'is_solo_parent'       => !empty($member['is_solo_parent']),
-                'is_voter'             => !empty($member['is_voter']),
-                'is_indigent'          => !empty($member['is_indigent']),
-                'is_pregnant'          => !empty($member['is_pregnant']),
-                'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
-                'pwd_id_url'               => $mPwd['url'],
-                'pwd_id_public_id'         => $mPwd['public_id'],
-                'solo_parent_id_url'       => $mSp['url'],
-                'solo_parent_id_public_id' => $mSp['public_id'],
-            ]);
+            $memberRows[] = [
+                'id'    => !empty($member['id']) ? (int) $member['id'] : null,
+                'attrs' => [
+                    'first_name'           => $member['first_name'] ?? '',
+                    'middle_name'          => $member['middle_name'] ?? null,
+                    'last_name'            => $member['last_name'] ?? '',
+                    'date_of_birth'        => $member['date_of_birth'] ?: null,
+                    'age'                  => $member['age'] ?? null,
+                    'gender'               => $member['gender'] ?? null,
+                    'civil_status'         => $member['civil_status'] ?? null,
+                    'relationship_to_head' => $member['relationship'] ?? null,
+                    'is_head'              => false,
+                    'employment_status'    => $member['employment_status'] ?? null,
+                    'monthly_income'       => $member['monthly_income'] ?? null,
+                    'email'                => $member['email'] ?? null,
+                    'is_4ps'               => !empty($member['is_4ps']),
+                    'is_senior_citizen'    => !empty($member['is_senior_citizen']),
+                    ...Resident::pensionFields($member['pension'] ?? null, $member['pension_amount'] ?? null),
+                    'senior_id_url'        => $mSenior['url'],
+                    'senior_id_public_id'  => $mSenior['public_id'],
+                    'is_pwd'               => !empty($member['is_pwd']),
+                    'is_solo_parent'       => !empty($member['is_solo_parent']),
+                    'is_voter'             => !empty($member['is_voter']),
+                    'is_indigent'          => !empty($member['is_indigent']),
+                    'is_pregnant'          => !empty($member['is_pregnant']),
+                    'pregnant_due_date'    => !empty($member['is_pregnant']) ? ($member['pregnant_due_date'] ?: null) : null,
+                    'pwd_id_url'               => $mPwd['url'],
+                    'pwd_id_public_id'         => $mPwd['public_id'],
+                    'solo_parent_id_url'       => $mSp['url'],
+                    'solo_parent_id_public_id' => $mSp['public_id'],
+                ],
+            ];
         }
 
-        $this->recomputeClassification($household);
+        $keepIds = [];
+        foreach ($memberRows as $row) {
+            $existing = $row['id']
+                ? $household->residents()->where('is_head', false)->find($row['id'])
+                : null;
+            if ($existing) {
+                $existing->update($row['attrs']);
+                $keepIds[] = $existing->id;
+            } else {
+                $keepIds[] = $household->residents()->create($row['attrs'] + ['nationality' => 'Filipino'])->id;
+            }
+        }
+        // Members removed from the form
+        $household->residents()->where('is_head', false)->whereNotIn('id', $keepIds)->delete();
+
+        ClassificationService::refresh($household);
 
         return redirect()->to($this->route('residents.show', $household->id))
             ->with('success', 'Household updated successfully.');
-    }
-
-    private function recomputeClassification(Household $household): void
-    {
-        $household->load(['residents', 'incomeSources']);
-        $result = \App\Services\ClassificationService::classify($household);
-        $household->update([
-            'classification'  => $result['classification'],
-            'welfare_score'   => $result['final_score'],
-            'per_capita_income'=> $result['per_capita'],
-        ]);
     }
 
     public function destroy(string $id)
@@ -503,13 +643,25 @@ class ResidentController extends Controller
         $member = Resident::where('household_id', $householdId)->findOrFail($memberId);
 
         $request->validate([
+            'first_name'      => 'required|string|max:100',
+            'last_name'       => 'required|string|max:100',
+            'gender'          => 'required|in:Male,Female',
             'pwd_id_document' => ($request->boolean('is_pwd') && !$member->pwd_id_url)
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
             'solo_parent_id_document' => ($request->boolean('is_solo_parent') && !$member->solo_parent_id_url)
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
+            'fourps_id_document' => ($request->boolean('is_4ps') && !$member->fourps_id_url)
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
+            'pension' => 'nullable|in:none,social,other',
+            'pension_amount' => $this->pensionAmountRule($request->only('pension', 'date_of_birth')),
+            'senior_id_document' => ($this->wantsSeniorId($request->only('pension', 'date_of_birth')) && !$member->senior_id_url)
+                ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
         ], [
             'pwd_id_document.required'         => 'A PWD ID photo is required for this member.',
             'solo_parent_id_document.required' => 'A Solo Parent ID photo is required for this member.',
+            'fourps_id_document.required'      => 'A 4Ps ID photo is required for the head of family when tagged as 4Ps.',
+            'senior_id_document.required'      => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
+            'pension_amount.required'          => 'Enter the monthly pension amount.',
         ]);
 
         $pwd = $this->resolveIdDocument(
@@ -525,6 +677,20 @@ class ResidentController extends Controller
         );
         if (isset($sp['error'])) {
             return back()->withErrors(['solo_parent_id_document' => $sp['error']]);
+        }
+        $fourPs = $this->resolveIdDocument(
+            $request, 'fourps_id_document', $request->boolean('is_4ps'),
+            $member->fourps_id_url, $member->fourps_id_public_id, '4Ps IDs', '4Ps ID'
+        );
+        if (isset($fourPs['error'])) {
+            return back()->withErrors(['fourps_id_document' => $fourPs['error']]);
+        }
+        $senior = $this->resolveIdDocument(
+            $request, 'senior_id_document', $this->wantsSeniorId($request->only('pension', 'date_of_birth')),
+            $member->senior_id_url, $member->senior_id_public_id, 'Senior IDs', 'Senior Citizen ID'
+        );
+        if (isset($senior['error'])) {
+            return back()->withErrors(['senior_id_document' => $senior['error']]);
         }
 
         $member->update([
@@ -542,6 +708,9 @@ class ResidentController extends Controller
             'monthly_income'       => $request->monthly_income,
             'is_4ps'               => $request->boolean('is_4ps'),
             'is_senior_citizen'    => $request->boolean('is_senior_citizen'),
+            ...Resident::pensionFields($request->input('pension'), $request->input('pension_amount')),
+            'senior_id_url'            => $senior['url'],
+            'senior_id_public_id'      => $senior['public_id'],
             'is_pwd'               => $request->boolean('is_pwd'),
             'is_solo_parent'       => $request->boolean('is_solo_parent'),
             'is_voter'             => $request->boolean('is_voter'),
@@ -552,7 +721,11 @@ class ResidentController extends Controller
             'pwd_id_public_id'         => $pwd['public_id'],
             'solo_parent_id_url'       => $sp['url'],
             'solo_parent_id_public_id' => $sp['public_id'],
+            'fourps_id_url'            => $fourPs['url'],
+            'fourps_id_public_id'      => $fourPs['public_id'],
         ]);
+
+        ClassificationService::refresh($member->household);
 
         return redirect()->to($this->route('residents.show', $householdId))
             ->with('success', $member->full_name . ' updated successfully.');
@@ -562,6 +735,8 @@ class ResidentController extends Controller
     {
         $member = Resident::where('household_id', $householdId)->where('is_head', false)->findOrFail($memberId);
         $member->delete();
+
+        ClassificationService::refresh(Household::findOrFail($householdId));
 
         return redirect()->to($this->route('residents.show', $householdId))
             ->with('success', 'Member removed successfully.');

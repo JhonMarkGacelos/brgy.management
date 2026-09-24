@@ -16,6 +16,12 @@
     </div>
 </div>
 
+@if($document->review_flag)
+<div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-900">
+    <span class="font-semibold"><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i> Needs review:</span> {{ $document->review_flag }}
+</div>
+@endif
+
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
     {{-- Left Column --}}
@@ -82,8 +88,8 @@
                 </span>
             </div>
             <div class="p-4">
-                <a href="{{ $document->id_photo_url }}" target="_blank">
-                    <img src="{{ $document->id_photo_url }}" alt="ID Photo"
+                <a href="{{ \App\Http\Controllers\IdPhotoController::link('id_photo', $document) }}" target="_blank">
+                    <img src="{{ \App\Http\Controllers\IdPhotoController::link('id_photo', $document) }}" alt="ID Photo"
                          class="w-full rounded-xl border border-gray-200 object-contain max-h-56 bg-gray-50 hover:opacity-90 transition-opacity cursor-zoom-in">
                 </a>
                 <p class="text-[11px] text-gray-400 mt-2 text-center">Click image to view full size</p>
@@ -134,8 +140,8 @@
                 </span>
             </div>
             <div class="p-4">
-                <a href="{{ $document->payment_receipt_url }}" target="_blank">
-                    <img src="{{ $document->payment_receipt_url }}" alt="Payment Receipt"
+                <a href="{{ \App\Http\Controllers\IdPhotoController::link('payment_receipt', $document) }}" target="_blank">
+                    <img src="{{ \App\Http\Controllers\IdPhotoController::link('payment_receipt', $document) }}" alt="Payment Receipt"
                          class="w-full rounded-xl border border-gray-200 object-contain max-h-56 bg-gray-50 hover:opacity-90 transition-opacity cursor-zoom-in">
                 </a>
                 <p class="text-[11px] text-gray-400 mt-2 text-center">Click image to view full size</p>

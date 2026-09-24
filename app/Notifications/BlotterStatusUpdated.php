@@ -4,14 +4,22 @@ namespace App\Notifications;
 
 use App\Models\BlotterRecord;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class BlotterStatusUpdated extends Notification
+class BlotterStatusUpdated extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public BlotterRecord $record, public string $role = 'complainant') {}
+    /** Sent by the queue worker so SMTP never slows down or breaks the page that triggered it. */
+    public int $tries = 3;
+
+    public function __construct(public BlotterRecord $record, public string $role = 'complainant')
+    {
+        // Wait for the surrounding DB transaction so the job never runs against unsaved data.
+        $this->afterCommit();
+    }
 
     public function via(object $notifiable): array
     {

@@ -123,6 +123,11 @@
                 <i class="fa-solid fa-circle-check text-green-500 shrink-0"></i> {{ session('success') }}
             </div>
         @endif
+        @if(session('info'))
+            <div class="mx-5 mt-4 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                <i class="fa-solid fa-circle-info text-sky-500 shrink-0"></i> {{ session('info') }}
+            </div>
+        @endif
         @if(session('error'))
             <div class="mx-5 mt-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                 <i class="fa-solid fa-circle-exclamation text-red-500 shrink-0"></i> {{ session('error') }}

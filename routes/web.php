@@ -37,6 +37,10 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // ── NOTIFICATIONS (shared across roles) ──────────────────────
+// Private ID photos / payment receipts (staff & admin only; checked in the controller)
+Route::get('/id-photo/{kind}/{id}', [\App\Http\Controllers\IdPhotoController::class, 'show'])
+    ->middleware(['auth', 'verified'])->whereNumber('id')->name('id-photo.show');
+
 Route::middleware(['auth', 'verified'])->prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/',           [NotificationController::class, 'index'])->name('index');
     Route::get('/recent',     [NotificationController::class, 'recent'])->name('recent');

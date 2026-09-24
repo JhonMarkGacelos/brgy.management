@@ -222,47 +222,84 @@
             </form>
         </div>
 
-        {{-- Poverty Line --}}
+        {{-- PSA Poverty Thresholds --}}
+        @php
+            $psaPreview = ($psa['poverty'] > 0 && (!$psa['food'] || $psa['food'] < $psa['poverty']))
+                ? \App\Services\ClassificationService::psaBands($psa['food'], $psa['poverty']) : [];
+        @endphp
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
-                    <i class="fa-solid fa-people-roof"></i>
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600 text-xs">
+                    <i class="fa-solid fa-landmark"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-gray-800">Poverty Threshold</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Monthly income at or below this amount flags a family as below poverty line</p>
+                    <p class="text-sm font-semibold text-gray-800">PSA Poverty Thresholds</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Official PSA figures used for each household's PSA Poverty Status</p>
                 </div>
             </div>
             <form method="POST" action="{{ route('settings.update') }}">
                 @csrf
+                <input type="hidden" name="_psa" value="1">
                 <div class="p-5 space-y-4">
+                    @if($psa['is_default'])
+                    <div class="rounded-xl bg-sky-50 border border-sky-100 px-4 py-3 text-xs text-sky-800">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        Pre-filled with the PSA 2023 poverty and food thresholds for <strong>Samar</strong>. Update them from PSA RSSO VIII when a newer release is available.
+                    </div>
+                    @endif
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @foreach(['psa_food_threshold' => ['Food Threshold', 'food'], 'psa_poverty_threshold' => ['Poverty Threshold', 'poverty']] as $field => [$label, $key])
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                                Monthly Poverty Line (₱)
+                                {{ $label }} (₱ per person / month)
                             </label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm font-semibold">₱</span>
-                                <input type="number" name="poverty_line" value="{{ old('poverty_line', $povertyLine) }}"
+                                <input type="number" name="{{ $field }}" value="{{ old($field, $psa[$key]) }}"
                                        min="0" step="0.01" required
                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-3.5 py-2.5 text-sm text-gray-900
                                               focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all
-                                              @error('poverty_line') border-red-400 @enderror">
+                                              @error($field) border-red-400 @enderror">
                             </div>
-                            @error('poverty_line')
+                            @error($field)
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="flex flex-col justify-end">
-                            <div class="rounded-xl bg-orange-50 border border-orange-100 px-4 py-3 text-xs text-orange-700 space-y-1">
-                                <p class="font-semibold flex items-center gap-1.5">
-                                    <i class="fa-solid fa-circle-info"></i> PSA Reference
-                                </p>
-                                <p>2023 Eastern Visayas poverty threshold is around <span class="font-semibold">₱10,957/month</span> per family.</p>
-                                <p class="text-orange-500">Check <span class="font-semibold">psa.gov.ph</span> for the latest figures.</p>
-                            </div>
+                        @endforeach
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Source</label>
+                            <input type="text" name="psa_threshold_source" value="{{ old('psa_threshold_source', $psa['source']) }}"
+                                   placeholder="e.g. PSA 2023 Full-Year Official Poverty Statistics, Samar" maxlength="150" required
+                                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
+                                          focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all
+                                          @error('psa_threshold_source') border-red-400 @enderror">
+                            @error('psa_threshold_source')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
+                    <div class="rounded-xl bg-sky-50 border border-sky-100 px-4 py-3 text-xs text-sky-800 space-y-1">
+                        <p class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-circle-info"></i> Where to get these</p>
+                        <p>From PSA's official poverty statistics (<span class="font-semibold">psa.gov.ph</span>) for your province. PSA publishes <strong>annual per capita</strong> thresholds: divide by 12. If you only have the monthly figure for a family of five, divide it by 5.</p>
+                        <p>Food Poor = below the food threshold · Poor = below the poverty threshold · higher classes are multiples of the poverty threshold (PIDS income classes).</p>
+                    </div>
+                    @if($psaPreview)
+                    <div class="rounded-xl border border-gray-100 overflow-hidden">
+                        <table class="w-full text-xs">
+                            @foreach($psaPreview as $band)
+                            <tr class="border-b border-gray-50 last:border-0">
+                                <td class="px-3 py-1.5"><span class="inline-flex rounded-md px-2 py-0.5 font-medium {{ \App\Services\ClassificationService::PSA_STYLES[$band['status']] }}">{{ $band['status'] }}</span></td>
+                                <td class="px-3 py-1.5 text-right text-gray-600 font-mono">
+                                    @if($band['max'] === null) ₱{{ number_format($band['min']) }} and above
+                                    @elseif($band['min'] == 0) below ₱{{ number_format($band['max']) }}
+                                    @else ₱{{ number_format($band['min']) }} – below ₱{{ number_format($band['max']) }}
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </table>
+                    </div>
+                    @endif
                 </div>
                 <div class="px-5 pb-5">
                     <button type="submit"
@@ -270,7 +307,7 @@
                             style="background-color:#1a4731;"
                             onmouseover="this.style.backgroundColor='#2d6a4f'"
                             onmouseout="this.style.backgroundColor='#1a4731'">
-                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Poverty Line
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save PSA Thresholds
                     </button>
                 </div>
             </form>
@@ -283,8 +320,8 @@
                     <i class="fa-solid fa-scale-balanced"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-gray-800">Per Capita Income Thresholds</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Monthly per-person income ceiling for each welfare tier</p>
+                    <p class="text-sm font-semibold text-gray-800">Barangay Welfare Score Thresholds</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Monthly per-person income ceiling for each tier of the barangay's own welfare score (not PSA)</p>
                 </div>
             </div>
             <form method="POST" action="{{ route('settings.update') }}">

@@ -101,11 +101,26 @@
     <select name="classification" onchange="this.form.submit()"
             class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
                    focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All Classifications</option>
+        <option value="">All Welfare Scores</option>
         @foreach(['Extremely Poor','Poor','Near Poor','Vulnerable','Non-Poor'] as $c)
         <option value="{{ $c }}" {{ request('classification') == $c ? 'selected' : '' }}>{{ $c }}</option>
         @endforeach
     </select>
+    <select name="psa_status" onchange="this.form.submit()"
+            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+        <option value="">All PSA Status</option>
+        <option value="below" {{ request('psa_status') === 'below' ? 'selected' : '' }}>Below PSA poverty line</option>
+        @foreach(\App\Services\ClassificationService::PSA_STATUSES as $ps)
+        <option value="{{ $ps }}" {{ request('psa_status') === $ps ? 'selected' : '' }}>{{ $ps }}</option>
+        @endforeach
+    </select>
+    <label class="inline-flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm cursor-pointer
+                  {{ request('review') ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-gray-200 bg-white text-gray-600' }}">
+        <input type="checkbox" name="review" value="1" onchange="this.form.submit()" class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
+               {{ request('review') ? 'checked' : '' }}>
+        Needs review
+    </label>
     <select name="employment_status" onchange="this.form.submit()"
             class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
                    focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
@@ -117,7 +132,7 @@
     <button type="submit" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
         <i class="fa-solid fa-magnifying-glass text-xs"></i>
     </button>
-    @if(request('search') || request('purok') || request('sector') || request('classification') || request('employment_status'))
+    @if(request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status'))
     <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index') }}"
        class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
         <i class="fa-solid fa-xmark text-xs"></i>
@@ -137,7 +152,8 @@
                     <th class="px-5 py-3.5 text-green-100">Address</th>
                     <th class="px-5 py-3.5 text-green-100">Purok</th>
                     <th class="px-5 py-3.5 text-green-100">Members</th>
-                    <th class="px-5 py-3.5 text-green-100">Classification</th>
+                    <th class="px-5 py-3.5 text-green-100">Welfare Score</th>
+                    <th class="px-5 py-3.5 text-green-100">PSA Status</th>
                     <th class="px-5 py-3.5 text-green-100">Sectors</th>
                     <th class="px-5 py-3.5 text-green-100 text-right">Actions</th>
                 </tr>
@@ -147,9 +163,11 @@
                     $sectorColors = [
                         '4Ps'        => 'bg-blue-50 text-blue-600 ring-1 ring-blue-100',
                         'Senior'     => 'bg-orange-50 text-orange-600 ring-1 ring-orange-100',
+                        'Social Pension' => 'bg-teal-50 text-teal-700 ring-1 ring-teal-100',
                         'PWD'        => 'bg-purple-50 text-purple-600 ring-1 ring-purple-100',
                         'Solo Parent'=> 'bg-pink-50 text-pink-600 ring-1 ring-pink-100',
                         'Voter'      => 'bg-brand-50 text-brand-700 ring-1 ring-brand-100',
+                        'Indigent'   => 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
                     ];
                 @endphp
 
@@ -202,6 +220,13 @@
                             @endif
                         </td>
                         <td class="px-5 py-4">
+                            @if($h->psa_status)
+                                <span class="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold {{ \App\Services\ClassificationService::PSA_STYLES[$h->psa_status] ?? '' }}">{{ $h->psa_status }}</span>
+                            @else
+                                <span class="text-xs text-gray-300">—</span>
+                            @endif
+                        </td>
+                        <td class="px-5 py-4">
                             <div class="flex flex-wrap gap-1">
                                 @foreach($h->residents->pluck('sectors')->flatten()->unique() as $sector)
                                     <span class="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium {{ $sectorColors[$sector] ?? 'bg-gray-50 text-gray-600' }}">{{ $sector }}</span>
@@ -230,13 +255,13 @@
                     @endforeach
                 @else
                     <tr>
-                        <td colspan="7" class="px-5 py-12 text-center">
+                        <td colspan="8" class="px-5 py-12 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                                    <i class="fa-solid fa-{{ request('search') || request('purok') || request('sector') || request('classification') || request('employment_status') ? 'magnifying-glass' : 'house' }} text-lg"></i>
+                                    <i class="fa-solid fa-{{ request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status') ? 'magnifying-glass' : 'house' }} text-lg"></i>
                                 </div>
                                 <div>
-                                    @if(request('search') || request('purok') || request('sector') || request('classification') || request('employment_status'))
+                                    @if(request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status'))
                                     <p class="text-sm font-semibold text-gray-900">No households found</p>
                                     <p class="text-xs text-gray-400 mt-1">No results match your search or filter. Try different keywords.</p>
                                     @else

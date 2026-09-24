@@ -43,6 +43,10 @@ class UserController extends Controller
             'role'  => 'required|in:admin,staff,resident',
         ]);
 
+        if ($user->id === auth()->id() && $request->role !== 'admin') {
+            return redirect()->route('users.index')->with('error', 'You cannot remove your own admin role.');
+        }
+
         $user->update([
             'name'  => $request->name,
             'email' => $request->email,

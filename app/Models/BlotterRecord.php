@@ -11,6 +11,12 @@ class BlotterRecord extends Model
 {
     use LogsActivity;
 
+    /** Status groups for reporting. Settled and Referred both close the case at barangay level (resolved_at is set). */
+    public const STATUS_PENDING  = ['Open', 'Pending Official', 'Returned w/ Remarks'];
+    public const STATUS_ONGOING  = ['Under Mediation'];
+    public const STATUS_RESOLVED = ['Settled', 'Referred'];
+    public const STATUSES        = ['Open', 'Pending Official', 'Under Mediation', 'Settled', 'Referred', 'Returned w/ Remarks'];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

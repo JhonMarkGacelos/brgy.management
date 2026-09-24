@@ -52,6 +52,10 @@ class DocumentController extends Controller
             $query->where('status', $status);
         }
 
+        if ($request->boolean('review')) {
+            $query->needsReview();
+        }
+
         $documents = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
 
         $stats = [
@@ -115,7 +119,7 @@ class DocumentController extends Controller
 
         $availableMonths = [];
         for ($i = 0; $i <= 23; $i++) {
-            $m = now()->subMonths($i);
+            $m = now()->startOfMonth()->subMonthsNoOverflow($i);
             $availableMonths[$m->format('Y-m')] = $m->format('F Y');
         }
 
@@ -124,12 +128,7 @@ class DocumentController extends Controller
 
     private function docFees(): array
     {
-        return [
-            'Barangay Clearance'       => (float) Setting::get('fee_barangay_clearance', 50),
-            'Certificate of Residency' => (float) Setting::get('fee_certificate_of_residency', 50),
-            'Certificate of Indigency' => (float) Setting::get('fee_certificate_of_indigency', 0),
-            'Business Clearance'       => (float) Setting::get('fee_business_clearance', 200),
-        ];
+        return DocumentRequest::currentFees();
     }
 
     public function create()
@@ -143,7 +142,7 @@ class DocumentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'document_type' => 'required|string',
+            'document_type' => ['required', \Illuminate\Validation\Rule::in(DocumentRequest::TYPES)],
             'purpose'       => 'required|string|max:255',
             'resident_id'   => 'nullable|exists:residents,id',
             'fee'           => 'nullable|numeric|min:0',
@@ -195,7 +194,13 @@ class DocumentController extends Controller
     public function update(Request $request, string $id)
     {
         $document = DocumentRequest::findOrFail($id);
-        $status = $request->input('status', $document->status);
+        $request->validate([
+            'status'    => ['nullable', \Illuminate\Validation\Rule::in(DocumentRequest::STATUSES)],
+            'or_number' => 'nullable|string|max:50',
+            'purpose'   => 'nullable|string|max:255',
+        ]);
+        $oldStatus = $document->status;
+        $status    = $request->input('status') ?: $document->status;
 
         // Manual OR number entry takes priority; otherwise auto-generate when approving/issuing
         if ($request->has('or_number') && $request->filled('or_number')) {
@@ -213,7 +218,8 @@ class DocumentController extends Controller
             'remarks'      => $request->remarks,
             'or_number'    => $orNumber,
             'processed_by' => Auth::id(),
-            'issued_at'    => $status === 'Issued' ? now() : $document->issued_at,
+            // Keep the original issue date when an already-issued document is re-saved.
+            'issued_at'    => $status === 'Issued' ? ($document->issued_at ?? now()) : $document->issued_at,
             'paid_at'      => $document->paid_at ?? ($orNumber ? now() : null),
         ];
 
@@ -223,8 +229,8 @@ class DocumentController extends Controller
 
         $document->update($updateData);
 
-        // Notify resident by email when status changes to Issued or Rejected
-        if (in_array($status, ['Issued', 'Rejected'])) {
+        // Notify resident by email when status changes to Issued or Rejected (not on every re-save)
+        if ($status !== $oldStatus && in_array($status, ['Issued', 'Rejected'])) {
             $residentEmail       = $document->resident?->email;
             $requester           = $document->requestedBy;
             $requesterIsResident = $requester && $requester->role === 'resident';
@@ -248,7 +254,7 @@ class DocumentController extends Controller
         // Delete ID photo from Cloudinary once document is issued (privacy cleanup)
         if ($status === 'Issued' && $document->id_photo_public_id) {
             try {
-                (new \App\Services\CloudinaryService)->delete($document->id_photo_public_id);
+                app(\App\Services\CloudinaryService::class)->delete($document->id_photo_public_id);
                 $document->update(['id_photo_url' => null, 'id_photo_public_id' => null]);
             } catch (\Throwable) {}
         }
@@ -301,17 +307,32 @@ class DocumentController extends Controller
     {
         $document = DocumentRequest::with(['resident.household'])->findOrFail($id);
 
+        // A rejected request must never be printed (printing issues the document).
+        if ($document->status === 'Rejected') {
+            $showRoute = Auth::user()->role === 'staff' ? 'staff.documents.show' : 'documents.show';
+            return redirect()->route($showRoute, $document->id)
+                ->with('error', 'This request was rejected and cannot be printed. Change its status first if it should be issued.');
+        }
+
+        // Printing issues the document (walk-in flow). Record the OR/payment the same way update() does,
+        // so fee-bearing documents printed directly still show up in revenue.
         if ($document->status !== 'Issued') {
             $document->status       = 'Issued';
             $document->issued_at    = now();
             $document->processed_by = Auth::id();
+            if (!$document->or_number && $document->fee > 0) {
+                $document->or_number = DocumentRequest::generateOrNumber();
+            }
+            if ($document->or_number && !$document->paid_at) {
+                $document->paid_at = now();
+            }
+            $document->save();
         }
-        $document->save();
 
         // Delete ID photo from Cloudinary after issuing (privacy cleanup)
         if ($document->id_photo_public_id) {
             try {
-                (new \App\Services\CloudinaryService)->delete($document->id_photo_public_id);
+                app(\App\Services\CloudinaryService::class)->delete($document->id_photo_public_id);
                 $document->update(['id_photo_url' => null, 'id_photo_public_id' => null]);
             } catch (\Throwable) {}
         }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -41,7 +42,7 @@ class SettingsController extends Controller
 
     public function index()
     {
-        $povertyLine      = Setting::get('poverty_line', 10957);
+        $psa              = \App\Services\ClassificationService::psaThresholds();
         $captainName             = Setting::get('captain_name', 'HON. PUNONG BARANGAY');
         $captainGmail            = Setting::get('captain_gmail', '');
         $captainSignature        = Setting::get('captain_signature_url');
@@ -86,7 +87,7 @@ class SettingsController extends Controller
             ['label' => 'Last Updated',   'value' => \Carbon\Carbon::createFromTimestamp(filemtime(base_path('composer.lock')))->format('M d, Y')],
         ];
 
-        return view('settings.index', compact('povertyLine', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName'));
+        return view('settings.index', compact('psa', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName'));
     }
 
     public function update(Request $request, CloudinaryService $cloudinary)
@@ -110,7 +111,7 @@ class SettingsController extends Controller
                 if ($oldPublicId) {
                     $cloudinary->delete($oldPublicId);
                 }
-                $result = $cloudinary->uploadIdPhoto($request->file('signature_image'), 'signatures');
+                $result = $cloudinary->uploadIdPhoto($request->file('signature_image'), 'signatures', private: false);
                 $this->setAndTrack('captain_signature_url',       $result['url']);
                 $this->setAndTrack('captain_signature_public_id', $result['public_id']);
             }
@@ -126,7 +127,7 @@ class SettingsController extends Controller
                 if ($oldPublicId) {
                     $cloudinary->delete($oldPublicId);
                 }
-                $result = $cloudinary->uploadIdPhoto($request->file('gcash_qr_image'), 'gcash');
+                $result = $cloudinary->uploadIdPhoto($request->file('gcash_qr_image'), 'gcash', private: false);
                 $this->setAndTrack('gcash_qr_url',       $result['url']);
                 $this->setAndTrack('gcash_qr_public_id', $result['public_id']);
             }
@@ -145,20 +146,40 @@ class SettingsController extends Controller
             }
             $this->logSettingsChange('Document fees updated');
         } elseif ($request->has('_thresholds')) {
+            // The welfare score maps per capita linearly between thresholds, so they must strictly increase
+            // (equal or reversed values would divide by zero in ClassificationService).
+            $order = 'Thresholds must increase: Extremely Poor < Poor < Near Poor < Vulnerable.';
             $request->validate([
-                'per_capita_extremely_poor' => 'required|numeric|min:0',
-                'per_capita_poor'           => 'required|numeric|min:0',
-                'per_capita_near_poor'      => 'required|numeric|min:0',
-                'per_capita_vulnerable'     => 'required|numeric|min:0',
+                'per_capita_extremely_poor' => 'required|numeric|gt:0',
+                'per_capita_poor'           => 'required|numeric|gt:per_capita_extremely_poor',
+                'per_capita_near_poor'      => 'required|numeric|gt:per_capita_poor',
+                'per_capita_vulnerable'     => 'required|numeric|gt:per_capita_near_poor',
+            ], [
+                'per_capita_poor.gt'       => $order,
+                'per_capita_near_poor.gt'  => $order,
+                'per_capita_vulnerable.gt' => $order,
             ]);
             foreach (['per_capita_extremely_poor','per_capita_poor','per_capita_near_poor','per_capita_vulnerable'] as $key) {
                 $this->setAndTrack($key, $request->$key);
             }
             $this->logSettingsChange('Poverty thresholds updated');
-        } else {
-            $request->validate(['poverty_line' => 'required|numeric|min:0']);
-            $this->setAndTrack('poverty_line', $request->poverty_line);
-            $this->logSettingsChange('Poverty line updated');
+
+            // Stored classifications feed the dashboard and analytics, so bring them in line with the new thresholds.
+            Artisan::call('households:reclassify');
+        } elseif ($request->has('_psa')) {
+            $request->validate([
+                'psa_poverty_threshold' => 'required|numeric|gt:0',
+                'psa_food_threshold'    => 'required|numeric|gt:0|lt:psa_poverty_threshold',
+                'psa_threshold_source'  => 'required|string|max:150',
+            ], [
+                'psa_food_threshold.lt' => 'The food threshold must be lower than the poverty threshold.',
+            ]);
+            foreach (['psa_food_threshold', 'psa_poverty_threshold', 'psa_threshold_source'] as $key) {
+                $this->setAndTrack($key, $request->input($key) ?? '');
+            }
+            $this->logSettingsChange('PSA poverty thresholds updated');
+
+            Artisan::call('households:reclassify');
         }
 
         return redirect()->route('settings.index')

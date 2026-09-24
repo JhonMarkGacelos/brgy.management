@@ -51,11 +51,12 @@
 @php
     $isStaff = Auth::user()->role === 'staff';
     $hasFilters = request('search') || request('sector') || request('purok') || request('gender') || request('status') || request('employment_status');
-    $sectorOptions = ['4Ps','Senior Citizen','PWD','Solo Parent','Voter','Indigent','Pregnant'];
+    $sectorOptions = ['4Ps','Senior Citizen','Social Pension','Social Pension Candidates','PWD','Solo Parent','Voter','Indigent','Pregnant'];
     $employmentOptions = ['Employed','Self-Employed','Unemployed','Student','Retired'];
     $sectorColors = [
         '4Ps'        => 'bg-blue-50 text-blue-600 ring-1 ring-blue-100',
         'Senior'     => 'bg-orange-50 text-orange-600 ring-1 ring-orange-100',
+        'Social Pension' => 'bg-teal-50 text-teal-700 ring-1 ring-teal-100',
         'PWD'        => 'bg-purple-50 text-purple-600 ring-1 ring-purple-100',
         'Solo Parent'=> 'bg-pink-50 text-pink-600 ring-1 ring-pink-100',
         'Voter'      => 'bg-brand-50 text-brand-700 ring-1 ring-brand-100',

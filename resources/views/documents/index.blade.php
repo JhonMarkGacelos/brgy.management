@@ -71,14 +71,20 @@
             <select name="status" onchange="this.form.submit()"
                     class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-600">
                 <option value="">All Status</option>
-                @foreach(['Pending','Pending Official','Issued','Rejected'] as $s)
+                @foreach(['Pending','Pending Official','Approved','Issued','Rejected'] as $s)
                 <option value="{{ $s }}" {{ request('status') == $s ? 'selected' : '' }}>{{ $s }}</option>
                 @endforeach
             </select>
+            <label class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm cursor-pointer
+                          {{ request('review') ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-gray-300 text-gray-600' }}">
+                <input type="checkbox" name="review" value="1" onchange="this.form.submit()" class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
+                       {{ request('review') ? 'checked' : '' }}>
+                Needs review
+            </label>
             <button type="submit" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
                 <i class="fa-solid fa-magnifying-glass text-xs"></i>
             </button>
-            @if(request('search') || request('type') || request('status'))
+            @if(request('search') || request('type') || request('status') || request('review'))
             <a href="{{ route($isStaff ? 'staff.documents.index' : 'documents.index') }}"
                class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-400 hover:bg-gray-50">
                 <i class="fa-solid fa-xmark text-xs"></i>
@@ -142,10 +148,10 @@
                     <td colspan="8" class="px-4 py-12 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                                <i class="fa-solid fa-{{ request('search') || request('type') || request('status') ? 'magnifying-glass' : 'file-circle-xmark' }} text-lg"></i>
+                                <i class="fa-solid fa-{{ request('search') || request('type') || request('status') || request('review') ? 'magnifying-glass' : 'file-circle-xmark' }} text-lg"></i>
                             </div>
                             <div>
-                                @if(request('search') || request('type') || request('status'))
+                                @if(request('search') || request('type') || request('status') || request('review'))
                                 <p class="text-sm font-semibold text-gray-900">No documents found</p>
                                 <p class="text-xs text-gray-400 mt-1">No results match your search or filter. Try different keywords.</p>
                                 @else

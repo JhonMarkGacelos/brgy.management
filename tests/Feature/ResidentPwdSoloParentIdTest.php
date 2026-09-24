@@ -64,7 +64,7 @@ class ResidentPwdSoloParentIdTest extends TestCase
         $household->residents()->create(array_merge($this->baseHeadFields(), [
             'relationship_to_head' => 'Head', 'is_head' => true, 'nationality' => 'Filipino',
         ]));
-        $household->residents()->create([
+        $maria = $household->residents()->create([
             'first_name' => 'Maria', 'last_name' => 'Dela Cruz', 'date_of_birth' => '1995-01-01',
             'gender' => 'Female', 'relationship_to_head' => 'Daughter', 'is_head' => false,
             'nationality' => 'Filipino', 'is_pwd' => true,
@@ -78,9 +78,9 @@ class ResidentPwdSoloParentIdTest extends TestCase
                 'head' => $this->baseHeadFields(),
                 'members' => [[
                     'first_name' => 'Maria', 'last_name' => 'Dela Cruz', 'date_of_birth' => '1995-01-01',
+                    // The form sends the member's id; the stored ID photo is read from the database.
+                    'id' => $maria->id,
                     'gender' => 'Female', 'relationship' => 'Daughter', 'is_pwd' => '1',
-                    'existing_pwd_id_url' => 'https://example.com/existing-pwd.jpg',
-                    'existing_pwd_id_public_id' => 'existing-public-id',
                 ]],
             ]],
         ])->assertSessionDoesntHaveErrors()
@@ -136,7 +136,7 @@ class ResidentPwdSoloParentIdTest extends TestCase
 
         // No file, no existing ID -> blocked.
         $this->actingAs($admin)->put(route('residents.member.update', [$household->id, $member->id]), [
-            'first_name' => 'Maria', 'last_name' => 'Dela Cruz', 'is_pwd' => '1',
+            'first_name' => 'Maria', 'last_name' => 'Dela Cruz', 'gender' => 'Female', 'is_pwd' => '1',
         ])->assertSessionHasErrors('pwd_id_document');
 
         $this->assertFalse((bool) $member->fresh()->is_pwd);
@@ -145,7 +145,7 @@ class ResidentPwdSoloParentIdTest extends TestCase
         $member->update(['pwd_id_url' => 'https://example.com/on-file.jpg', 'pwd_id_public_id' => 'pub123']);
 
         $this->actingAs($admin)->put(route('residents.member.update', [$household->id, $member->id]), [
-            'first_name' => 'Maria', 'last_name' => 'Dela Cruz', 'is_pwd' => '1',
+            'first_name' => 'Maria', 'last_name' => 'Dela Cruz', 'gender' => 'Female', 'is_pwd' => '1',
         ])->assertSessionDoesntHaveErrors()
           ->assertRedirect(route('residents.show', $household->id));
 

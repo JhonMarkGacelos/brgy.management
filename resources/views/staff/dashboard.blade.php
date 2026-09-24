@@ -24,7 +24,7 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
     @php
         $cards = [
-            ['label'=>'Docs Processed Today', 'value'=>$docsProcessedToday,  'sub'=>'Issued this session',      'icon'=>'fa-file-circle-check', 'iconBg'=>'bg-blue-100',  'iconColor'=>'text-blue-600'],
+            ['label'=>'Docs Processed Today', 'value'=>$docsProcessedToday,  'sub'=>'Issued today',      'icon'=>'fa-file-circle-check', 'iconBg'=>'bg-blue-100',  'iconColor'=>'text-blue-600'],
             ['label'=>'Pending Approvals',    'value'=>$pendingApprovals,  'sub'=>'Awaiting official decision','icon'=>'fa-clock',             'iconBg'=>'bg-amber-100', 'iconColor'=>'text-amber-600'],
             ['label'=>'Active Complaint Cases', 'value'=>$activeBlotterCases,  'sub'=>'Open & under mediation',   'icon'=>'fa-shield-halved',     'iconBg'=>'bg-red-100',   'iconColor'=>'text-red-600'],
             ['label'=>'Residents This Month', 'value'=>$residentsThisMonth, 'sub'=>'New registrations',        'icon'=>'fa-user-plus',         'iconBg'=>'bg-teal-100',  'iconColor'=>'text-teal-600'],

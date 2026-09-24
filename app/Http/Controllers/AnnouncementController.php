@@ -55,12 +55,7 @@ class AnnouncementController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'title'    => 'required|string|max:255',
-            'content'  => 'required|string',
-            'category' => 'required|string',
-            'audience' => 'nullable|in:All Residents,Senior Citizens,PWD,4Ps,Voters',
-        ]);
+        $request->validate($this->rules());
 
         $status       = $request->status ?? 'Published';
         $announcement = Announcement::create([
@@ -98,6 +93,7 @@ class AnnouncementController extends Controller
     public function update(Request $request, string $id)
     {
         $announcement = Announcement::findOrFail($id);
+        $request->validate($this->rules());
 
         $wasPublished = $announcement->status === 'Published';
         $newStatus    = $request->status ?? $announcement->status;
@@ -127,11 +123,25 @@ class AnnouncementController extends Controller
         return redirect()->route('announcements.index')->with('success', 'Announcement deleted.');
     }
 
+    private function rules(): array
+    {
+        return [
+            'title'        => 'required|string|max:255',
+            'content'      => 'required|string',
+            'category'     => 'required|string|max:100',
+            'audience'     => 'nullable|in:' . implode(',', Announcement::AUDIENCES),
+            'status'       => 'nullable|in:Draft,Published,Archived',
+            'published_at' => 'nullable|date',
+            'expires_at'   => 'nullable|date',
+        ];
+    }
+
     private function notifyResidents(Announcement $announcement): void
     {
-        $emails = Resident::whereNotNull('email')
+        // Only the announcement's audience (e.g. a Senior Citizens notice goes to seniors, not everyone).
+        $emails = $announcement->audienceResidents()
+            ->whereNotNull('email')
             ->where('email', '!=', '')
-            ->where('status', 'Active')
             ->pluck('email')
             ->unique()
             ->values();

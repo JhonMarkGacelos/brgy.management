@@ -20,9 +20,11 @@ class DocumentVerifyController extends Controller
 
         $code = strtoupper(trim($request->code));
 
+        // This page is public: only issued documents are confirmed. Pending/rejected requests (and their
+        // requester's name and purpose) must not be viewable by anyone who types in a tracking number.
         $document = DocumentRequest::with(['resident', 'processedBy'])
-            ->where('or_number', $code)
-            ->orWhere('tracking_number', $code)
+            ->where('status', 'Issued')
+            ->where(fn ($q) => $q->where('or_number', $code)->orWhere('tracking_number', $code))
             ->first();
 
         return view('verify', compact('document', 'code'));
