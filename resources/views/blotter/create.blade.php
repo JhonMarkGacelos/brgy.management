@@ -53,7 +53,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Time of Incident</label>
-                    <input type="time" name="incident_time" value="{{ old('incident_time', isset($record) ? $record->incident_time : '') }}"
+                    <input type="time" name="incident_time" value="{{ old('incident_time', isset($record) && $record->incident_time ? substr($record->incident_time, 0, 5) : '') }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                 </div>
@@ -293,7 +293,7 @@
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                         Hearing Time <span class="text-gray-400 normal-case font-normal">(optional)</span>
                     </label>
-                    <input type="time" name="hearing_time" value="{{ old('hearing_time', isset($record) ? $record->hearing_time : '') }}"
+                    <input type="time" name="hearing_time" value="{{ old('hearing_time', isset($record) && $record->hearing_time ? substr($record->hearing_time, 0, 5) : '') }}"
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
                     <p class="text-[11px] text-gray-400 mt-2">Set both to enable printing the Summon for this case.</p>

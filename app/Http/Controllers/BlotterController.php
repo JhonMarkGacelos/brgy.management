@@ -109,7 +109,9 @@ class BlotterController extends Controller
             'action_taken'        => 'required|string',
             'status'              => ['required', Rule::in(BlotterRecord::STATUSES)],
             'hearing_date'        => 'nullable|date',
-            'hearing_time'        => 'nullable|date_format:H:i',
+            // Stored times come back as HH:MM:SS; accept both so an unchanged time never blocks a save.
+            'hearing_time'        => 'nullable|date_format:H:i,H:i:s',
+            'incident_time'       => 'nullable|date_format:H:i,H:i:s',
         ];
     }
 

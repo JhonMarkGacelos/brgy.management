@@ -108,6 +108,17 @@
         </div>
 
         {{-- Flash messages --}}
+        @if($errors->any())
+            {{-- Any failed validation is listed here, so a save never bounces back silently. --}}
+            <div class="mx-5 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <p class="flex items-center gap-2 font-semibold">
+                    <i class="fa-solid fa-circle-exclamation text-red-500 shrink-0"></i> Nothing was saved. Please fix the following:
+                </p>
+                <ul class="mt-1.5 list-disc pl-9 space-y-0.5 text-xs">
+                    @foreach($errors->all() as $message)<li>{{ $message }}</li>@endforeach
+                </ul>
+            </div>
+        @endif
         @if(session('success'))
             <div class="mx-5 mt-4 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
                 <i class="fa-solid fa-circle-check text-green-500 shrink-0"></i> {{ session('success') }}

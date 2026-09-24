@@ -86,6 +86,39 @@ class SystemBugFixesTest extends TestCase
         $this->assertTrue($record->fresh()->resolved_at->lt(now()->subMonth()));
     }
 
+    public function test_case_with_stored_hearing_time_can_change_status_and_notifies(): void
+    {
+        Notification::fake();
+        $this->actingAs($this->admin)->post(route('blotter.store'), $this->blotterPayload([
+            'complainant_email' => 'ana@example.com', 'hearing_date' => now()->addWeek()->toDateString(), 'hearing_time' => '13:00',
+        ]))->assertSessionDoesntHaveErrors();
+        $record = BlotterRecord::firstOrFail();
+
+        // The edit form shows the stored time without seconds…
+        $this->actingAs($this->admin)->get(route('blotter.edit', $record->id))->assertOk()->assertSee('value="13:00"', false);
+
+        // …and a time submitted with seconds (older browsers/forms) is accepted too.
+        $this->actingAs($this->admin)->put(route('blotter.update', $record->id), $this->blotterPayload([
+            'complainant_email' => 'ana@example.com', 'hearing_date' => now()->addWeek()->toDateString(),
+            'hearing_time' => '13:00:00', 'status' => 'Under Mediation',
+        ]))->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('Under Mediation', $record->fresh()->status);
+        Notification::assertSentOnDemand(\App\Notifications\BlotterStatusUpdated::class);
+    }
+
+    public function test_failed_validation_is_listed_on_the_page(): void
+    {
+        $this->actingAs($this->admin)->post(route('blotter.store'), $this->blotterPayload());
+        $record = BlotterRecord::firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->from(route('blotter.edit', $record->id))
+            ->followingRedirects()
+            ->put(route('blotter.update', $record->id), $this->blotterPayload(['hearing_time' => 'not-a-time']))
+            ->assertSee('Nothing was saved. Please fix the following:');
+    }
+
     // ── Documents ─────────────────────────────────────────────
 
     public function test_rejected_document_cannot_be_printed(): void
