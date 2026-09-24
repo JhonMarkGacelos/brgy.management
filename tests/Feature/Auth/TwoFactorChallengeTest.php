@@ -24,6 +24,18 @@ class TwoFactorChallengeTest extends TestCase
         $this->get(route('two-factor.challenge'))->assertRedirect(route('login'));
     }
 
+    public function test_challenge_page_renders_after_password_login(): void
+    {
+        // Regression: the page referenced a removed <x-language-switcher> component and 500'd in production.
+        $user = User::factory()->create(['role' => 'admin', 'email' => 'captain@example.com']);
+        $this->startChallenge($user);
+
+        $this->get(route('two-factor.challenge'))
+            ->assertOk()
+            ->assertSee('ca*****@example.com', false)
+            ->assertDontSee('auth_pages.', false);
+    }
+
     public function test_correct_code_logs_the_user_in_and_redirects_to_their_dashboard(): void
     {
         $user = User::factory()->create(['role' => 'admin']);

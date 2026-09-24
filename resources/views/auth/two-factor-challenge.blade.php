@@ -61,10 +61,6 @@
                         <p class="text-xs text-gray-400">Motiong, Samar</p>
                     </div>
                 </div>
-                <x-language-switcher />
-            </div>
-            <div class="hidden lg:flex justify-end mb-4">
-                <x-language-switcher />
             </div>
 
             {{-- Icon --}}
