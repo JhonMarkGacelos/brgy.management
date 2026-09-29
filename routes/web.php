@@ -9,6 +9,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResidentPortalController;
@@ -77,6 +78,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
     Route::get('/settings',  [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/backups',                     [BackupController::class, 'store'])->name('settings.backups.store');
+    Route::get('/settings/backups/{backup}/download',    [BackupController::class, 'download'])->name('settings.backups.download');
+    Route::delete('/settings/backups/{backup}',          [BackupController::class, 'destroy'])->name('settings.backups.destroy');
 });
 
 // ── STAFF / CLERK ROUTES ──────────────────────────────────────

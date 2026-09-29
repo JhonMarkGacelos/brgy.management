@@ -553,7 +553,12 @@
         </div>
 
         {{-- Database Backup --}}
-        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        @php
+            $inputCls = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all';
+            $labelCls = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5';
+            $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        @endphp
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden" id="backup">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 text-xs">
                     <i class="fa-solid fa-database"></i>
@@ -561,37 +566,148 @@
                 <p class="text-sm font-semibold text-gray-800">Database Backup</p>
             </div>
             <div class="p-5 space-y-4">
-                <div class="rounded-xl bg-gray-50 border border-gray-200 p-4">
-                    <p class="text-xs text-gray-500 mb-0.5">Last Backup</p>
-                    <p class="text-sm font-semibold text-gray-800">April 14, 2025</p>
-                    <p class="text-xs text-gray-400">11:59 PM</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-gray-50 border border-gray-200 p-3">
+                        <p class="text-[11px] text-gray-500 mb-0.5">Last Backup</p>
+                        @if($lastBackup)
+                        <p class="text-sm font-semibold text-gray-800">{{ $lastBackup->created_at->format('M d, Y') }}</p>
+                        <p class="text-xs text-gray-400">{{ $lastBackup->created_at->format('g:i A') }}</p>
+                        @else
+                        <p class="text-sm font-semibold text-gray-400">None yet</p>
+                        @endif
+                    </div>
+                    <div class="rounded-xl bg-gray-50 border border-gray-200 p-3">
+                        <p class="text-[11px] text-gray-500 mb-0.5">Next Scheduled</p>
+                        @if(!$nextBackupAt)
+                        <p class="text-sm font-semibold text-gray-400">Off</p>
+                        @elseif($nextBackupAt->lte(now()))
+                        <p class="text-sm font-semibold text-amber-600">Due now</p>
+                        <p class="text-xs text-gray-400">runs within 15 min</p>
+                        @else
+                        <p class="text-sm font-semibold text-gray-800">{{ $nextBackupAt->format('M d, Y') }}</p>
+                        <p class="text-xs text-gray-400">{{ $nextBackupAt->format('g:i A') }}</p>
+                        @endif
+                    </div>
                 </div>
-                <button class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                    <i class="fa-solid fa-download text-xs"></i> Download Backup
-                </button>
+
+                <form method="POST" action="{{ route('settings.backups.store') }}" x-data="{ busy: false }" @submit="busy = true">
+                    @csrf
+                    <button type="submit" :disabled="busy"
+                            class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition-colors">
+                        <i class="fa-solid text-xs" :class="busy ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-up'"></i>
+                        <span x-text="busy ? 'Backing up…' : 'Back Up Now'">Back Up Now</span>
+                    </button>
+                </form>
+
+                {{-- Schedule --}}
+                <form method="POST" action="{{ route('settings.update') }}" class="rounded-xl border border-gray-200 p-4 space-y-3"
+                      x-data="{ freq: '{{ old('backup_frequency', $backupSettings['backup_frequency']) }}', email: {{ old('backup_email_enabled', $backupSettings['backup_email_enabled']) ? 'true' : 'false' }} }">
+                    @csrf
+                    <input type="hidden" name="_backup" value="1">
+                    <p class="text-xs font-semibold text-gray-700"><i class="fa-regular fa-clock mr-1 text-gray-400"></i> Automatic Backup Schedule</p>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="{{ $labelCls }}">Frequency</label>
+                            <select name="backup_frequency" x-model="freq" class="{{ $inputCls }}">
+                                @foreach(['off' => 'Off', 'daily' => 'Daily', 'weekly' => 'Weekly', 'monthly' => 'Monthly'] as $val => $lbl)
+                                <option value="{{ $val }}">{{ $lbl }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div x-show="freq !== 'off'">
+                            <label class="{{ $labelCls }}">Time</label>
+                            <input type="time" name="backup_time" value="{{ old('backup_time', $backupSettings['backup_time']) }}" required
+                                   class="{{ $inputCls }} @error('backup_time') border-red-400 @enderror">
+                        </div>
+                        <div x-show="freq === 'weekly'" x-cloak class="col-span-2">
+                            <label class="{{ $labelCls }}">Day of the Week</label>
+                            <select name="backup_day_of_week" class="{{ $inputCls }}">
+                                @foreach($days as $i => $day)
+                                <option value="{{ $i }}" {{ (int) old('backup_day_of_week', $backupSettings['backup_day_of_week']) === $i ? 'selected' : '' }}>{{ $day }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div x-show="freq === 'monthly'" x-cloak class="col-span-2">
+                            <label class="{{ $labelCls }}">Day of the Month</label>
+                            <select name="backup_day_of_month" class="{{ $inputCls }}">
+                                @for($d = 1; $d <= 28; $d++)
+                                <option value="{{ $d }}" {{ (int) old('backup_day_of_month', $backupSettings['backup_day_of_month']) === $d ? 'selected' : '' }}>{{ $d }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="{{ $labelCls }}">Keep the Last</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="backup_keep" min="1" max="30" required
+                                       value="{{ old('backup_keep', $backupSettings['backup_keep']) }}"
+                                       class="{{ $inputCls }} w-20 @error('backup_keep') border-red-400 @enderror">
+                                <span class="text-xs text-gray-500">backups (older ones are deleted)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" name="backup_email_enabled" value="1" x-model="email" class="rounded border-gray-300 text-green-600 focus:ring-green-600">
+                        Email a copy of each backup
+                    </label>
+                    <div x-show="email" x-cloak>
+                        <input type="email" name="backup_email" value="{{ old('backup_email', $backupSettings['backup_email']) }}" placeholder="name@gmail.com"
+                               class="{{ $inputCls }} @error('backup_email') border-red-400 @enderror">
+                    </div>
+
+                    @foreach(['backup_frequency', 'backup_time', 'backup_day_of_week', 'backup_day_of_month', 'backup_keep', 'backup_email'] as $field)
+                    @error($field)<p class="text-xs text-red-500">{{ $message }}</p>@enderror
+                    @endforeach
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Schedule
+                    </button>
+                </form>
+
+                {{-- History --}}
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Backups</p>
+                    @forelse($backups as $b)
+                    <div class="flex items-center gap-2 py-2 border-b border-gray-100 last:border-0">
+                        <i class="fa-solid {{ $b->isSuccessful() ? 'fa-circle-check text-green-500' : 'fa-circle-xmark text-red-500' }} text-xs shrink-0"
+                           @if($b->error) title="{{ $b->error }}" @endif></i>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-medium text-gray-800">{{ $b->created_at->format('M d, Y g:i A') }}</p>
+                            <p class="text-[11px] text-gray-400 truncate">
+                                {{ $b->trigger === 'scheduled' ? 'Scheduled' : 'Manual' }}
+                                @if($b->isSuccessful()) · {{ $b->human_size }}@if($b->emailed_to) · emailed @endif
+                                @else · <span class="text-red-500">Failed</span>
+                                @endif
+                            </p>
+                        </div>
+                        @if($b->isSuccessful())
+                        <a href="{{ route('settings.backups.download', $b) }}" title="Download"
+                           class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
+                            <i class="fa-solid fa-download text-[11px]"></i>
+                        </a>
+                        @endif
+                        <form method="POST" action="{{ route('settings.backups.destroy', $b) }}" onsubmit="return confirm('Delete this backup? This cannot be undone.')">
+                            @csrf @method('DELETE')
+                            <button type="submit" title="Delete"
+                                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
+                                <i class="fa-solid fa-trash text-[11px]"></i>
+                            </button>
+                        </form>
+                    </div>
+                    @empty
+                    <p class="text-xs text-gray-400">No backups yet. Click <strong>Back Up Now</strong> or set a schedule.</p>
+                    @endforelse
+                </div>
+
                 <p class="text-[11px] text-gray-400 flex items-start gap-1.5">
                     <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
-                    Regular backups are recommended. Keep copies in a secure location.
+                    Backups are stored privately on Cloudinary. Each file is a .sql.gz that can be restored with MySQL. It contains residents' personal information, so keep downloaded copies secure.
                 </p>
-            </div>
-        </div>
-
-        {{-- Danger Zone --}}
-        <div class="rounded-2xl border border-red-200 bg-red-50 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-4 border-b border-red-200">
-                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-500 text-xs">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <p class="text-sm font-semibold text-red-700">Danger Zone</p>
-            </div>
-            <div class="p-5 space-y-3">
-                <p class="text-xs text-red-500">These actions are irreversible. Proceed with caution.</p>
-                <button class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 border border-red-300 bg-white hover:bg-red-100 transition-colors">
-                    <i class="fa-solid fa-trash text-xs"></i> Clear All Records
-                </button>
-                <button class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-red-600 border border-red-300 bg-white hover:bg-red-100 transition-colors">
-                    <i class="fa-solid fa-rotate-left text-xs"></i> Reset to Defaults
-                </button>
             </div>
         </div>
 

@@ -79,4 +79,20 @@ Artisan::command('cloudinary:secure-ids {--dry-run : List what would change with
     $this->info(($this->option('dry-run') ? 'Would make private' : 'Made private') . ": {$done}, already private: {$skipped}, failed: {$failed}.");
 })->purpose('Make previously uploaded ID photos and payment receipts private on Cloudinary');
 
+Artisan::command('backup:run {--scheduled : Record the backup as a scheduled one}', function () {
+    $backup = app(\App\Services\BackupService::class)->run($this->option('scheduled') ? 'scheduled' : 'manual');
+
+    if (!$backup->isSuccessful()) {
+        $this->error("Backup failed: {$backup->error}");
+        return 1;
+    }
+
+    $this->info("Backup saved: {$backup->filename} ({$backup->tables} tables, {$backup->rows} records, {$backup->human_size}).");
+})->purpose('Back up the database to Cloudinary (and email a copy if enabled in Settings)');
+
 Schedule::command('residents:sync-seniors')->daily();
+
+// The admin sets the backup time in Settings. Checking every 15 minutes (instead of at the exact minute) lets a
+// backup missed while the app was asleep run as soon as it wakes.
+Schedule::command('backup:run --scheduled')->everyFifteenMinutes()->withoutOverlapping()
+    ->when(fn () => app(\App\Services\BackupService::class)->isScheduledBackupDue(now()));

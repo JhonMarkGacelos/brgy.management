@@ -700,7 +700,8 @@ $isStaff = Auth::user()->role === 'staff';
         {{-- Quick Actions --}}
         <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 space-y-2.5" id="add-member">
             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Quick Actions</p>
-            <a href="#"
+            {{-- Members are added on the household edit form --}}
+            <a href="{{ route($isStaff ? 'staff.residents.edit' : 'residents.edit', $isDemo ? 1 : $household->id) }}"
                class="w-full flex items-center gap-3 rounded-xl p-3 bg-brand-50 hover:bg-brand-100 transition-colors">
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white text-xs">
                     <i class="fa-solid fa-user-plus"></i>

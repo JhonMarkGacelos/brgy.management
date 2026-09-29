@@ -82,6 +82,45 @@ class CloudinaryService
         return $result['secure_url'];
     }
 
+    /** Upload a non-image file (database backups) as a private "raw" resource. */
+    public function uploadPrivateFile(string $path, string $filename, string $folder = 'Backups'): array
+    {
+        // Raw files keep the extension in their public ID, so the download is saved as e.g. backup.sql.gz.
+        $result = $this->cloudinary->uploadApi()->upload($path, [
+            'folder'        => $folder,
+            'public_id'     => $filename,
+            'resource_type' => 'raw',
+            'type'          => 'authenticated',
+            'overwrite'     => false,
+        ]);
+
+        return [
+            'url'       => $result['secure_url'],
+            'public_id' => $result['public_id'],
+        ];
+    }
+
+    /** A short-lived signed download link for a private raw file. */
+    public function privateFileUrl(string $publicId, int $ttl = self::PRIVATE_URL_TTL): string
+    {
+        // Raw public IDs already include the extension, so no separate format is passed.
+        return $this->cloudinary->uploadApi()->privateDownloadUrl($publicId, '', [
+            'resource_type' => 'raw',
+            'type'          => 'authenticated',
+            'expires_at'    => time() + $ttl,
+            'attachment'    => true,
+        ]);
+    }
+
+    public function deleteFile(string $publicId): void
+    {
+        $this->cloudinary->uploadApi()->destroy($publicId, [
+            'resource_type' => 'raw',
+            'type'          => 'authenticated',
+            'invalidate'    => true,
+        ]);
+    }
+
     public function delete(string $publicId): void
     {
         // The image may be private (current uploads) or public (older uploads); "not found" is not an error.

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Backup;
 use App\Models\Setting;
+use App\Services\BackupService;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -87,7 +89,22 @@ class SettingsController extends Controller
             ['label' => 'Last Updated',   'value' => \Carbon\Carbon::createFromTimestamp(filemtime(base_path('composer.lock')))->format('M d, Y')],
         ];
 
-        return view('settings.index', compact('psa', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName'));
+        $backupService  = app(BackupService::class);
+        $backups        = Backup::latest('id')->take(15)->get();
+        $lastBackup     = Backup::where('status', 'success')->latest('id')->first();
+        $nextBackupAt   = $backupService->nextRunAt();
+        $backupSettings = [
+            'backup_frequency'     => $backupService->frequency(),
+            'backup_time'          => Setting::get('backup_time', '02:00'),
+            'backup_day_of_week'   => (int) Setting::get('backup_day_of_week', 0),
+            'backup_day_of_month'  => (int) Setting::get('backup_day_of_month', 1),
+            'backup_keep'          => $backupService->keepCount(),
+            'backup_email_enabled' => (bool) Setting::get('backup_email_enabled', false),
+            'backup_email'         => Setting::get('backup_email') ?: ($captainGmail ?: Auth::user()->email),
+        ];
+
+        return view('settings.index', compact('psa', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName',
+            'backups', 'lastBackup', 'nextBackupAt', 'backupSettings'));
     }
 
     public function update(Request $request, CloudinaryService $cloudinary)
@@ -180,6 +197,26 @@ class SettingsController extends Controller
             $this->logSettingsChange('PSA poverty thresholds updated');
 
             Artisan::call('households:reclassify');
+        } elseif ($request->has('_backup')) {
+            $request->merge(['backup_email_enabled' => $request->boolean('backup_email_enabled')]);
+            $request->validate([
+                'backup_frequency'    => 'required|in:' . implode(',', BackupService::FREQUENCIES),
+                'backup_time'         => 'required|date_format:H:i',
+                'backup_day_of_week'  => 'required|integer|between:0,6',
+                'backup_day_of_month' => 'required|integer|between:1,28',
+                'backup_keep'         => 'required|integer|between:1,30',
+                'backup_email'        => 'nullable|required_if:backup_email_enabled,true|email|max:150',
+            ], [
+                'backup_email.required_if' => 'Enter the email address that should receive the backup copies.',
+            ]);
+            foreach (['backup_frequency', 'backup_time', 'backup_day_of_week', 'backup_day_of_month', 'backup_keep'] as $key) {
+                $this->setAndTrack($key, $request->input($key));
+            }
+            $this->setAndTrack('backup_email_enabled', $request->boolean('backup_email_enabled') ? '1' : '0');
+            $this->setAndTrack('backup_email', $request->input('backup_email') ?? '');
+            // Scheduled times before this moment don't count as "missed", so saving doesn't trigger an immediate backup.
+            Setting::set('backup_schedule_set_at', now()->toDateTimeString());
+            $this->logSettingsChange('Backup schedule updated');
         }
 
         return redirect()->route('settings.index')

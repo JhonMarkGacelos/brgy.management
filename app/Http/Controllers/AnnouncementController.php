@@ -120,7 +120,9 @@ class AnnouncementController extends Controller
     public function destroy(string $id)
     {
         Announcement::findOrFail($id)->delete();
-        return redirect()->route('announcements.index')->with('success', 'Announcement deleted.');
+
+        $route = Auth::user()->role === 'staff' ? 'staff.announcements.index' : 'announcements.index';
+        return redirect()->route($route)->with('success', 'Announcement deleted.');
     }
 
     private function rules(): array
