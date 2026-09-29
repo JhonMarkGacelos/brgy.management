@@ -366,7 +366,7 @@
 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
     @php
         $revenueCards = [
-            ['label'=>'Total Collected',  'value'=>'₱'.number_format($totalRevenue, 2),          'icon'=>'fa-sack-dollar',   'bg'=>'bg-green-50', 'color'=>'text-green-700'],
+            ['label'=>'Total Collected',  'value'=>'₱'.number_format($totalRevenue, 2),          'icon'=>'fa-peso-sign',   'bg'=>'bg-green-50', 'color'=>'text-green-700'],
             ['label'=>'Paid Requests',    'value'=>number_format($paidDocumentsCount),            'icon'=>'fa-file-invoice', 'bg'=>'bg-blue-50',  'color'=>'text-blue-600'],
             ['label'=>'Avg. per Request', 'value'=>'₱'.number_format($avgRevenuePerDocument, 2), 'icon'=>'fa-calculator',   'bg'=>'bg-amber-50', 'color'=>'text-amber-600'],
         ];

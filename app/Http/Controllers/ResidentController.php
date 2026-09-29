@@ -80,13 +80,15 @@ class ResidentController extends Controller
         $query = Household::with(['head', 'residents'])->withCount('residents');
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('purok', 'like', "%{$search}%")
-                  ->orWhere('street', 'like', "%{$search}%")
-                  ->orWhere('house_no', 'like', "%{$search}%")
-                  ->orWhereHas('head', fn($r) => $r->where('first_name', 'like', "%{$search}%")
-                                                    ->orWhere('last_name', 'like', "%{$search}%"));
-            });
+            // Every word must match the address or the head's name, so "Gacelos Purok 2" still finds the household.
+            foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+                $query->where(function ($q) use ($word) {
+                    $q->where('purok', 'like', "%{$word}%")
+                      ->orWhere('street', 'like', "%{$word}%")
+                      ->orWhere('house_no', 'like', "%{$word}%")
+                      ->orWhereHas('head', fn($r) => $r->searchName($word));
+                });
+            }
         }
 
         if ($purok = $request->purok) {
@@ -150,11 +152,7 @@ class ResidentController extends Controller
         $query = Resident::with('household');
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%");
-            });
+            $query->searchName($search);
         }
 
         if ($purok = $request->purok) {

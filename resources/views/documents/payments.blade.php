@@ -139,7 +139,7 @@
 {{-- Total summary --}}
 <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 mb-5 flex items-center gap-4 no-print">
     <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-green-700">
-        <i class="fa-solid fa-sack-dollar"></i>
+        <i class="fa-solid fa-peso-sign"></i>
     </div>
     <div>
         <p class="text-2xl font-bold text-gray-900 tracking-tight">₱{{ number_format($totalAmount, 2) }}</p>

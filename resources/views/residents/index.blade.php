@@ -74,70 +74,74 @@
 
 {{-- Filters --}}
 <form method="GET" action="{{ route($isStaff ? 'staff.residents.index' : 'residents.index') }}">
-<div class="flex flex-col sm:flex-row gap-3 mb-5">
-    <div class="relative flex-1">
-        <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 text-xs"></i>
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Search by household head name or address..."
-               class="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400
-                      focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+<div class="space-y-3 mb-5">
+    <div class="flex gap-2">
+        <div class="relative flex-1">
+            <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 text-xs"></i>
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Search by household head name or address..."
+                   class="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400
+                          focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+        </div>
+        <button type="submit" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+        @if(request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status'))
+        <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index') }}"
+           class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+            <i class="fa-solid fa-xmark text-xs"></i>
+        </a>
+        @endif
     </div>
-    <select name="purok" onchange="this.form.submit()"
-            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All Puroks</option>
-        @foreach($puroks as $p)
-        <option value="{{ $p }}" {{ request('purok') == $p ? 'selected' : '' }}>{{ $p }}</option>
-        @endforeach
-    </select>
-    <select name="sector" onchange="this.form.submit()"
-            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All Sectors</option>
-        @foreach(['4Ps','Senior Citizen','PWD','Solo Parent'] as $s)
-        <option value="{{ $s }}" {{ request('sector') == $s ? 'selected' : '' }}>{{ $s }}</option>
-        @endforeach
-    </select>
-    <select name="classification" onchange="this.form.submit()"
-            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All Welfare Scores</option>
-        @foreach(['Extremely Poor','Poor','Near Poor','Vulnerable','Non-Poor'] as $c)
-        <option value="{{ $c }}" {{ request('classification') == $c ? 'selected' : '' }}>{{ $c }}</option>
-        @endforeach
-    </select>
-    <select name="psa_status" onchange="this.form.submit()"
-            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All PSA Status</option>
-        <option value="below" {{ request('psa_status') === 'below' ? 'selected' : '' }}>Below PSA poverty line</option>
-        @foreach(\App\Services\ClassificationService::PSA_STATUSES as $ps)
-        <option value="{{ $ps }}" {{ request('psa_status') === $ps ? 'selected' : '' }}>{{ $ps }}</option>
-        @endforeach
-    </select>
-    <label class="inline-flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm cursor-pointer
-                  {{ request('review') ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-gray-200 bg-white text-gray-600' }}">
-        <input type="checkbox" name="review" value="1" onchange="this.form.submit()" class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
-               {{ request('review') ? 'checked' : '' }}>
-        Needs review
-    </label>
-    <select name="employment_status" onchange="this.form.submit()"
-            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All Employment</option>
-        @foreach(['Employed','Self-Employed','Unemployed','Student','Retired'] as $e)
-        <option value="{{ $e }}" {{ request('employment_status') == $e ? 'selected' : '' }}>{{ $e }}</option>
-        @endforeach
-    </select>
-    <button type="submit" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-        <i class="fa-solid fa-magnifying-glass text-xs"></i>
-    </button>
-    @if(request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status'))
-    <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index') }}"
-       class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
-        <i class="fa-solid fa-xmark text-xs"></i>
-    </a>
-    @endif
+    <div class="flex flex-wrap gap-2">
+        <select name="purok" onchange="this.form.submit()"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+            <option value="">All Puroks</option>
+            @foreach($puroks as $p)
+            <option value="{{ $p }}" {{ request('purok') == $p ? 'selected' : '' }}>{{ $p }}</option>
+            @endforeach
+        </select>
+        <select name="sector" onchange="this.form.submit()"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+            <option value="">All Sectors</option>
+            @foreach(['4Ps','Senior Citizen','PWD','Solo Parent'] as $s)
+            <option value="{{ $s }}" {{ request('sector') == $s ? 'selected' : '' }}>{{ $s }}</option>
+            @endforeach
+        </select>
+        <select name="classification" onchange="this.form.submit()"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+            <option value="">All Welfare Scores</option>
+            @foreach(['Extremely Poor','Poor','Near Poor','Vulnerable','Non-Poor'] as $c)
+            <option value="{{ $c }}" {{ request('classification') == $c ? 'selected' : '' }}>{{ $c }}</option>
+            @endforeach
+        </select>
+        <select name="psa_status" onchange="this.form.submit()"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+            <option value="">All PSA Status</option>
+            <option value="below" {{ request('psa_status') === 'below' ? 'selected' : '' }}>Below PSA poverty line</option>
+            @foreach(\App\Services\ClassificationService::PSA_STATUSES as $ps)
+            <option value="{{ $ps }}" {{ request('psa_status') === $ps ? 'selected' : '' }}>{{ $ps }}</option>
+            @endforeach
+        </select>
+        <label class="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2.5 text-sm cursor-pointer
+                      {{ request('review') ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-gray-200 bg-white text-gray-600' }}">
+            <input type="checkbox" name="review" value="1" onchange="this.form.submit()" class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
+                   {{ request('review') ? 'checked' : '' }}>
+            Needs review
+        </label>
+        <select name="employment_status" onchange="this.form.submit()"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+            <option value="">All Employment</option>
+            @foreach(['Employed','Self-Employed','Unemployed','Student','Retired'] as $e)
+            <option value="{{ $e }}" {{ request('employment_status') == $e ? 'selected' : '' }}>{{ $e }}</option>
+            @endforeach
+        </select>
+    </div>
 </div>
 </form>
 
@@ -146,7 +150,7 @@
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
-                <tr class="border-b border-gray-100 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                <tr class="border-b border-gray-100 text-left whitespace-nowrap text-xs font-semibold text-gray-400 uppercase tracking-wide"
                     style="background-color:#1a4731;">
                     <th class="px-5 py-3.5 text-green-100">Household Head</th>
                     <th class="px-5 py-3.5 text-green-100">Address</th>

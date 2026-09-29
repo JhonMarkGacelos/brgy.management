@@ -115,6 +115,18 @@ class Resident extends Model
                 ->orWhereDate('pregnant_due_date', '>=', now()->toDateString()));
     }
 
+    /** Every word must appear in the first, middle or last name, so "Jhon Gacelos" finds "Jhon Mark Gacelos". */
+    public function scopeSearchName(Builder $query, ?string $search): Builder
+    {
+        foreach (preg_split('/\s+/', trim((string) $search), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            $query->where(fn (Builder $q) => $q->where('first_name', 'like', "%{$word}%")
+                ->orWhere('middle_name', 'like', "%{$word}%")
+                ->orWhere('last_name', 'like', "%{$word}%"));
+        }
+
+        return $query;
+    }
+
     public function getIsSocialPensionCandidateAttribute(): bool
     {
         return $this->is_senior_citizen

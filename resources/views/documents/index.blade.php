@@ -12,7 +12,7 @@
     <div class="flex items-center gap-2">
         <a href="{{ route($isStaff ? 'staff.documents.payments' : 'documents.payments') }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
-            <i class="fa-solid fa-sack-dollar"></i> View Fee Collected
+            <i class="fa-solid fa-peso-sign"></i> View Fee Collected
         </a>
         <a href="{{ route($isStaff ? 'staff.documents.create' : 'documents.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
