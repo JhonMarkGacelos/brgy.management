@@ -112,16 +112,10 @@ if ($isEdit) {
                 <p class="text-sm font-semibold text-gray-800">Shared Address</p>
                 <span class="text-xs text-gray-400">(all families at this location)</span>
             </div>
-            <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">House No.</label>
                     <input type="text" name="house_no" value="{{ old('house_no', $household->house_no ?? '') }}" placeholder="e.g. 123"
-                           class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm placeholder-gray-400
-                                  focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Street / Sitio</label>
-                    <input type="text" name="street" value="{{ old('street', $household->street ?? '') }}" placeholder="e.g. Rizal St."
                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm placeholder-gray-400
                                   focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                 </div>

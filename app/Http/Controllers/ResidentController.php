@@ -285,7 +285,6 @@ class ResidentController extends Controller
 
                 $household = Household::create([
                     'house_no' => $request->house_no,
-                    'street'   => $request->street,
                     'purok'    => $request->purok,
                 ]);
 
@@ -465,9 +464,9 @@ class ResidentController extends Controller
             'families.0.members.*.pension_amount.required'          => 'Enter the monthly pension amount.',
         ]);
 
+        // Street is no longer on the form; leave any previously saved street untouched.
         $household->update([
             'house_no' => $request->house_no,
-            'street'   => $request->street,
             'purok'    => $request->purok,
         ]);
 
