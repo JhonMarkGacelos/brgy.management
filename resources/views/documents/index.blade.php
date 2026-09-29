@@ -49,11 +49,11 @@
 </div>
 
 {{-- Recent Documents --}}
-<form method="GET" action="{{ route($isStaff ? 'staff.documents.index' : 'documents.index') }}">
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
         <h3 class="font-semibold text-gray-800 flex-1">Document Requests</h3>
-        <div class="flex flex-wrap gap-2">
+        {{-- Only the filters live in this form: the per-row delete forms below can't be nested inside it. --}}
+        <form method="GET" action="{{ route($isStaff ? 'staff.documents.index' : 'documents.index') }}" class="flex flex-wrap gap-2">
             <div class="relative">
                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
                     <i class="fa-solid fa-search text-xs"></i>
@@ -90,7 +90,7 @@
                 <i class="fa-solid fa-xmark text-xs"></i>
             </a>
             @endif
-        </div>
+        </form>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -171,6 +171,5 @@
         {{ $documents->links() }}
     </div>
 </div>
-</form>
 
 @endsection
