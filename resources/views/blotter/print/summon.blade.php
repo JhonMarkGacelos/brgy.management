@@ -45,15 +45,15 @@
         .logo-wrap img { width: 70px; height: 70px; object-fit: contain; }
         .header-text { flex: 1; text-align: center; }
         .header-text .republic { font-size: 10.5pt; line-height: 1.4; margin-bottom: 4px; }
-        .header-text .brgy-name { font-size: 18pt; font-style: italic; font-weight: bold; }
+        .header-text .brgy-name { font-size: 14pt; font-style: italic; font-weight: bold; }
 
         .header-divider { border: none; border-top: 2px solid #111; margin: 4px 0 12px; }
 
         .office-title { text-align: center; font-size: 11pt; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
-        .doc-title { text-align: center; font-size: 20pt; font-weight: bold; letter-spacing: 3px; margin-bottom: 6px; }
-        .case-no { text-align: center; font-size: 11pt; margin-bottom: 12px; }
+        .doc-title { text-align: center; font-size: 16pt; font-weight: bold; letter-spacing: 3px; margin-bottom: 6px; }
+        .case-no { text-align: center; font-size: 11pt; margin-bottom: 8px; }
 
-        .body-text { font-size: 11.5pt; line-height: 1.5; text-align: justify; margin-bottom: 6px; }
+        .body-text { font-size: 11pt; line-height: 1.4; text-align: justify; margin-bottom: 5px; }
         .body-text .indent { display: inline-block; width: 40px; }
         .underline-field {
             display: inline-block;
@@ -63,7 +63,7 @@
             text-align: center;
         }
 
-        .details-table { width: 100%; margin: 10px 0; font-size: 11.5pt; border-collapse: collapse; }
+        .details-table { width: 100%; margin: 6px 0; font-size: 11pt; border-collapse: collapse; }
         .details-table td { padding: 2px 6px; vertical-align: top; }
         .details-table td:first-child { width: 160px; font-weight: bold; }
 
@@ -71,34 +71,28 @@
             border: 1px solid #999;
             border-radius: 4px;
             padding: 8px 10px;
-            font-size: 11pt;
-            line-height: 1.5;
-            margin: 8px 0 12px;
+            font-size: 10.5pt;
+            line-height: 1.4;
+            margin: 6px 0 8px;
             background: #fafafa;
         }
 
-        .sig-section { margin-top: 14px; display: flex; justify-content: flex-end; }
-        .sig-block { text-align: center; min-width: 220px; }
-        .sig-img-wrap {
-            height: 70px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .sig-img { width: 140px; height: auto; }
+        /* dompdf has no flexbox: an inline-block keeps the signature line only as wide as the signature/name. */
+        .sig-section { margin-top: 6px; text-align: right; }
+        .sig-block { display: inline-block; text-align: center; min-width: 220px; }
         .sig-name {
             font-weight: bold;
-            font-size: 12pt;
+            font-size: 11.5pt;
             letter-spacing: 1px;
             border-top: 1.5px solid #111;
             padding-top: 4px;
             margin-top: 6px;
         }
+        .sig-name.has-image { margin-top: 0; }
         .sig-title { font-size: 10.5pt; }
 
         .footer-note {
-            margin-top: 10px;
+            margin-top: 6px;
             font-size: 9.5pt;
             color: #444;
             font-style: italic;
@@ -110,6 +104,8 @@
 @php
     $captainSignature = \App\Models\Setting::get('captain_signature_url');
     $captainName      = \App\Models\Setting::get('captain_name', 'HON. PUNONG BARANGAY');
+    // Same size setting as the certificates, capped so each copy still fits on one letter page.
+    $captainSignatureHeight = min((int) \App\Models\Setting::get('captain_signature_height', 56), 250);
     $issuedAt = now();
 
     $copies = [
@@ -166,7 +162,7 @@
     <p class="body-text"><span class="indent"></span>{{ $copy['address'] }}</p>
     @endif
 
-    <p class="body-text" style="margin-top:14px;">
+    <p class="body-text" style="margin-top:8px;">
         <span class="indent"></span>{{ $copy['body'] }}
     </p>
 
@@ -210,11 +206,11 @@
     <div class="sig-section">
         <div class="sig-block">
             @if($captainSignature)
-            <div class="sig-img-wrap">
-                <img class="sig-img" src="{{ $captainSignature }}" alt="Signature">
+            <div style="margin-bottom:-{{ (int)($captainSignatureHeight * 0.6) }}px; text-align:center;">
+                <img src="{{ $captainSignature }}" style="height:{{ $captainSignatureHeight }}px; width:auto;" alt="Signature">
             </div>
             @endif
-            <div class="sig-name">{{ $captainName }}</div>
+            <div class="sig-name {{ $captainSignature ? 'has-image' : '' }}">{{ $captainName }}</div>
             <div class="sig-title">Barangay Captain / Lupon Chairman</div>
         </div>
     </div>

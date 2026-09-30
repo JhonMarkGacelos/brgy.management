@@ -211,7 +211,9 @@
                             {{ $household?->house_no ? $household->house_no.' '.$household->street : ($household->street ?? '') }}
                         </td>
                         <td class="px-5 py-4 text-gray-500 text-xs">{{ $r->contact_number ?? '—' }}</td>
-                        <td class="px-5 py-4 text-gray-500 text-xs">{{ $r->employment_status ?? '—' }}</td>
+                        <td class="px-5 py-4 text-gray-500 text-xs">
+                            {{ $r->employment_status ?? '—' }}@if($r->employment_status === 'Student' && $r->education) · {{ $r->education }}@endif
+                        </td>
                         <td class="px-5 py-4">
                             <div class="flex flex-wrap gap-1">
                                 @forelse($sectors as $sector)

@@ -130,4 +130,48 @@ class HouseholdClassificationSyncTest extends TestCase
         $this->assertEquals(10000, (float) $household->fresh()->per_capita_income);
         $this->assertNotSame('Extremely Poor', $household->fresh()->classification);
     }
+
+    public function test_sector_deductions_default_to_the_original_weights(): void
+    {
+        $household = $this->household(6000);
+        $before    = (float) $household->welfare_score;
+        $household->residents()->where('is_head', true)->update(['is_4ps' => true]);
+        ClassificationService::refresh($household);
+
+        $this->assertEqualsWithDelta($before - 8, (float) $household->fresh()->welfare_score, 0.01);
+    }
+
+    public function test_saving_sector_deductions_recalculates_scores(): void
+    {
+        $household = $this->household(6000);
+        $before    = (float) $household->welfare_score;
+        $household->residents()->where('is_head', true)->update(['is_4ps' => true]);
+        ClassificationService::refresh($household);
+
+        $this->actingAs($this->admin())->post(route('settings.update'), [
+            '_welfare_weights'           => '1',
+            'welfare_weight_pwd'         => 5,
+            'welfare_weight_senior'      => 3,
+            'welfare_weight_solo_parent' => 5,
+            'welfare_weight_fourps'      => 10,
+            'welfare_weight_indigent'    => 6,
+        ])->assertSessionDoesntHaveErrors();
+
+        $this->assertEquals(10, Setting::get('welfare_weight_fourps'));
+        $this->assertEqualsWithDelta($before - 10, (float) $household->fresh()->welfare_score, 0.01);
+    }
+
+    public function test_sector_deductions_must_be_between_0_and_50(): void
+    {
+        $this->actingAs($this->admin())->post(route('settings.update'), [
+            '_welfare_weights'           => '1',
+            'welfare_weight_pwd'         => -1,
+            'welfare_weight_senior'      => 3,
+            'welfare_weight_solo_parent' => 5,
+            'welfare_weight_fourps'      => 51,
+            'welfare_weight_indigent'    => 6,
+        ])->assertSessionHasErrors(['welfare_weight_pwd', 'welfare_weight_fourps']);
+
+        $this->assertNull(Setting::get('welfare_weight_fourps'));
+    }
 }

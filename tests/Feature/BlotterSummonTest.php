@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BlotterRecord;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\BlotterStatusUpdated;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,6 +62,18 @@ class BlotterSummonTest extends TestCase
         $response->assertHeader('content-type', 'application/pdf');
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    public function test_summon_signature_uses_settings_size_capped_to_one_page(): void
+    {
+        $record = $this->makeRecord(['hearing_date' => '2026-02-15', 'hearing_time' => '14:30']);
+        Setting::set('captain_signature_url', 'https://example.com/signature.png');
+
+        Setting::set('captain_signature_height', 155);
+        $this->assertStringContainsString('height:155px', view('blotter.print.summon', compact('record'))->render());
+
+        Setting::set('captain_signature_height', 400);
+        $this->assertStringContainsString('height:250px', view('blotter.print.summon', compact('record'))->render());
     }
 
     public function test_show_page_gates_print_summon_button_on_hearing_schedule(): void

@@ -112,7 +112,7 @@
                 </div>
                 <div>
                     <p class="text-sm font-semibold text-gray-800">Barangay Captain's Signature</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Displayed on all issued documents</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Displayed on all issued documents and blotter summons</p>
                 </div>
             </div>
             <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data"
@@ -364,6 +364,64 @@
                             onmouseover="this.style.backgroundColor='#2d6a4f'"
                             onmouseout="this.style.backgroundColor='#1a4731'">
                         <i class="fa-solid fa-floppy-disk text-xs"></i> Save Thresholds
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{-- Welfare Score Sector Deductions --}}
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-500 text-xs">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-800">Barangay Welfare Score — Sector Deductions</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Points subtracted from the income-based score. Barangay policy weights (not PSA/DSWD).</p>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('settings.update') }}">
+                @csrf
+                <input type="hidden" name="_welfare_weights" value="1">
+                <div class="p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                        @php
+                            $weightFields = [
+                                'pwd'         => ['label' => 'PWD',             'per' => 'per member'],
+                                'senior'      => ['label' => 'Senior Citizen',  'per' => 'per member'],
+                                'solo_parent' => ['label' => 'Solo Parent',     'per' => 'per member'],
+                                'fourps'      => ['label' => '4Ps Beneficiary', 'per' => 'once per household'],
+                                'indigent'    => ['label' => 'Indigent',        'per' => 'once per household'],
+                            ];
+                        @endphp
+                        @foreach($weightFields as $key => $field)
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                {{ $field['label'] }} <span class="normal-case font-normal text-gray-400">· {{ $field['per'] }}</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm font-semibold">−</span>
+                                <input type="number" name="welfare_weight_{{ $key }}"
+                                       value="{{ old('welfare_weight_'.$key, (int) $sectorWeights[$key]) }}"
+                                       min="0" max="50" step="1" required
+                                       class="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-16 py-2.5 text-sm text-gray-900
+                                              focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
+                                <span class="absolute inset-y-0 right-3.5 flex items-center text-gray-400 text-xs">points</span>
+                            </div>
+                            <p class="mt-1 text-[11px] text-gray-400">Default: −{{ \App\Services\ClassificationService::DEFAULT_SECTOR_WEIGHTS[$key] }}</p>
+                        </div>
+                        @endforeach
+                    </div>
+                    <div class="rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-xs text-purple-700 mb-4">
+                        <p class="font-semibold flex items-center gap-1.5 mb-1"><i class="fa-solid fa-circle-info"></i> How it works</p>
+                        <p>Each household starts with a 0–100 score from its per-person income, then these points are subtracted for each tagged sector. A <strong>lower score means higher priority</strong> for assistance. Saving recalculates every household's score. PSA Poverty Status is not affected.</p>
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                            style="background-color:#1a4731;"
+                            onmouseover="this.style.backgroundColor='#2d6a4f'"
+                            onmouseout="this.style.backgroundColor='#1a4731'">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Save Deductions
                     </button>
                 </div>
             </form>

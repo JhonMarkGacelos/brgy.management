@@ -64,6 +64,13 @@ class ResidentController extends Controller
             ? 'required|numeric|min:0' : 'nullable|numeric|min:0';
     }
 
+    private function studentLevelRule(array $person): string
+    {
+        $in = 'in:' . implode(',', Resident::STUDENT_LEVELS);
+
+        return ($person['employment_status'] ?? null) === 'Student' ? "required|$in" : "nullable|$in";
+    }
+
     private function isStaff(): bool
     {
         return Auth::user()->role === 'staff';
@@ -227,12 +234,14 @@ class ResidentController extends Controller
             $rules["families.$fi.head.fourps_id_document"]      = !empty($head['is_4ps']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
             $rules["families.$fi.head.senior_id_document"]      = $this->wantsSeniorId($head) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
             $rules["families.$fi.head.pension_amount"]          = $this->pensionAmountRule($head);
+            $rules["families.$fi.head.education"]               = $this->studentLevelRule($head);
 
             foreach ($familyData['members'] ?? [] as $mi => $member) {
                 $rules["families.$fi.members.$mi.pwd_id_document"]         = !empty($member['is_pwd']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
                 $rules["families.$fi.members.$mi.solo_parent_id_document"] = !empty($member['is_solo_parent']) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
                 $rules["families.$fi.members.$mi.senior_id_document"]      = $this->wantsSeniorId($member) ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
                 $rules["families.$fi.members.$mi.pension_amount"]          = $this->pensionAmountRule($member);
+                $rules["families.$fi.members.$mi.education"]               = $this->studentLevelRule($member);
             }
         }
 
@@ -253,6 +262,8 @@ class ResidentController extends Controller
             'families.*.members.*.senior_id_document.required'      => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
             'families.*.head.pension_amount.required'               => 'Enter the monthly pension amount.',
             'families.*.members.*.pension_amount.required'          => 'Enter the monthly pension amount.',
+            'families.*.head.education.required'                    => 'Select the student level for the head of family.',
+            'families.*.members.*.education.required'               => 'Select the student level for this member.',
         ]);
 
         // All families are saved together: a failed upload or insert must not leave an empty household behind.
@@ -302,6 +313,7 @@ class ResidentController extends Controller
                     'contact_number'       => $head['contact_number'] ?? null,
                     'email'                => $head['email'] ?? null,
                     'employment_status'    => $head['employment_status'] ?? null,
+                    'education'            => Resident::studentLevel($head['employment_status'] ?? null, $head['education'] ?? null),
                     'monthly_income'       => $head['monthly_income'] ?? null,
                     'is_4ps'               => !empty($head['is_4ps']),
                     'is_senior_citizen'    => !empty($head['is_senior_citizen']),
@@ -353,6 +365,7 @@ class ResidentController extends Controller
                         'relationship_to_head' => $member['relationship'] ?? null,
                         'is_head'              => false,
                         'employment_status'    => $member['employment_status'] ?? null,
+                        'education'            => Resident::studentLevel($member['employment_status'] ?? null, $member['education'] ?? null),
                         'monthly_income'       => $member['monthly_income'] ?? null,
                         'email'                => $member['email'] ?? null,
                         'is_4ps'               => !empty($member['is_4ps']),
@@ -434,6 +447,7 @@ class ResidentController extends Controller
         $rules['families.0.head.senior_id_document'] = ($this->wantsSeniorId($headIn) && empty($currentHead?->senior_id_url))
             ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
         $rules['families.0.head.pension_amount'] = $this->pensionAmountRule($headIn);
+        $rules['families.0.head.education']      = $this->studentLevelRule($headIn);
 
         foreach ($membersIn as $mi => $member) {
             $rules["families.0.members.$mi.pwd_id_document"] = (!empty($member['is_pwd']) && empty($currentMember($member)?->pwd_id_url))
@@ -443,6 +457,7 @@ class ResidentController extends Controller
             $rules["families.0.members.$mi.senior_id_document"] = ($this->wantsSeniorId($member) && empty($currentMember($member)?->senior_id_url))
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE;
             $rules["families.0.members.$mi.pension_amount"] = $this->pensionAmountRule($member);
+            $rules["families.0.members.$mi.education"]      = $this->studentLevelRule($member);
         }
 
         $request->validate($rules, [
@@ -462,6 +477,8 @@ class ResidentController extends Controller
             'families.0.members.*.senior_id_document.required'      => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
             'families.0.head.pension_amount.required'               => 'Enter the monthly pension amount.',
             'families.0.members.*.pension_amount.required'          => 'Enter the monthly pension amount.',
+            'families.0.head.education.required'                    => 'Select the student level for the head of family.',
+            'families.0.members.*.education.required'               => 'Select the student level for this member.',
         ]);
 
         // Street is no longer on the form; leave any previously saved street untouched.
@@ -521,6 +538,7 @@ class ResidentController extends Controller
                 'contact_number'       => $headData['contact_number'] ?? null,
                 'email'                => $headData['email'] ?? null,
                 'employment_status'    => $headData['employment_status'] ?? null,
+                'education'            => Resident::studentLevel($headData['employment_status'] ?? null, $headData['education'] ?? null),
                 'monthly_income'       => $headData['monthly_income'] ?? null,
                 'is_4ps'               => !empty($headData['is_4ps']),
                 'is_senior_citizen'    => !empty($headData['is_senior_citizen']),
@@ -586,6 +604,7 @@ class ResidentController extends Controller
                     'relationship_to_head' => $member['relationship'] ?? null,
                     'is_head'              => false,
                     'employment_status'    => $member['employment_status'] ?? null,
+                    'education'            => Resident::studentLevel($member['employment_status'] ?? null, $member['education'] ?? null),
                     'monthly_income'       => $member['monthly_income'] ?? null,
                     'email'                => $member['email'] ?? null,
                     'is_4ps'               => !empty($member['is_4ps']),
@@ -651,6 +670,7 @@ class ResidentController extends Controller
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
             'pension' => 'nullable|in:none,social,other',
             'pension_amount' => $this->pensionAmountRule($request->only('pension', 'date_of_birth')),
+            'education'      => $this->studentLevelRule($request->only('employment_status')),
             'senior_id_document' => ($this->wantsSeniorId($request->only('pension', 'date_of_birth')) && !$member->senior_id_url)
                 ? self::ID_DOC_REQUIRED_RULE : self::ID_DOC_RULE,
         ], [
@@ -659,6 +679,7 @@ class ResidentController extends Controller
             'fourps_id_document.required'      => 'A 4Ps ID photo is required for the head of family when tagged as 4Ps.',
             'senior_id_document.required'      => 'A Senior Citizen (OSCA) ID photo is required for DSWD Social Pension beneficiaries.',
             'pension_amount.required'          => 'Enter the monthly pension amount.',
+            'education.required'               => 'Select the student level.',
         ]);
 
         $pwd = $this->resolveIdDocument(
@@ -702,6 +723,7 @@ class ResidentController extends Controller
             'contact_number'       => $request->contact_number,
             'email'                => $request->email,
             'employment_status'    => $request->employment_status,
+            'education'            => Resident::studentLevel($request->employment_status, $request->education),
             'monthly_income'       => $request->monthly_income,
             'is_4ps'               => $request->boolean('is_4ps'),
             'is_senior_citizen'    => $request->boolean('is_senior_citizen'),

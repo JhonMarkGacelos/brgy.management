@@ -282,6 +282,7 @@ $isStaff = Auth::user()->role === 'staff';
                                         'relationship' => $m->relationship_to_head,
                                         'contact_number'    => $m->contact_number,
                                         'employment_status' => $m->employment_status,
+                                        'education'         => $m->education,
                                         'monthly_income'    => $m->monthly_income,
                                         'date_of_birth'     => $m->date_of_birth?->format('Y-m-d'),
                                         'is_head'           => $m->is_head,
@@ -622,21 +623,11 @@ $isStaff = Auth::user()->role === 'staff';
                         <div>
                             <p class="font-semibold text-gray-700 mb-1">Step 3 — Situation Modifiers</p>
                             <div class="space-y-1 bg-white border border-gray-100 rounded-lg px-2.5 py-2">
+                                @foreach($classification['modifiers'] as $mod)
                                 <div class="flex justify-between text-[11px]">
-                                    <span class="text-gray-500">PWD member</span><span class="text-gray-500">−5 each</span>
+                                    <span class="text-gray-500">{{ $mod['label'] }}</span><span class="text-gray-500">−{{ abs($mod['per_unit']) }}{{ $mod['each'] ? ' each' : '' }}</span>
                                 </div>
-                                <div class="flex justify-between text-[11px]">
-                                    <span class="text-gray-500">Senior Citizen</span><span class="text-gray-500">−3 each</span>
-                                </div>
-                                <div class="flex justify-between text-[11px]">
-                                    <span class="text-gray-500">Solo Parent</span><span class="text-gray-500">−5 each</span>
-                                </div>
-                                <div class="flex justify-between text-[11px]">
-                                    <span class="text-gray-500">4Ps Beneficiary</span><span class="text-gray-500">−8</span>
-                                </div>
-                                <div class="flex justify-between text-[11px]">
-                                    <span class="text-gray-500">Indigent Household</span><span class="text-gray-500">−6</span>
-                                </div>
+                                @endforeach
                             </div>
                             <p class="text-[11px] text-gray-500 mt-1.5">
                                 Total modifier applied: <span class="font-bold {{ $classification['total_modifier'] < 0 ? 'text-red-600' : 'text-gray-700' }}">{{ $classification['total_modifier'] }}</span>
@@ -805,11 +796,21 @@ $isStaff = Auth::user()->role === 'staff';
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 mb-1.5">Employment Status</label>
-                    <select name="employment_status" id="em_employment"
+                    <select name="employment_status" id="em_employment" onchange="toggleStudentLevelModal()"
                             class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
                         <option value="">Select</option>
                         <option>Employed</option><option>Unemployed</option>
-                        <option>Self-employed</option><option>Student</option><option>Retired</option>
+                        <option>Self-Employed</option><option>Student</option><option>Retired</option>
+                    </select>
+                </div>
+                <div id="em_education_wrap" class="hidden">
+                    <label class="block text-xs font-semibold text-gray-500 mb-1.5">Student Level <span class="text-red-500">*</span></label>
+                    <select name="education" id="em_education"
+                            class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                        <option value="">Select</option>
+                        @foreach(\App\Models\Resident::STUDENT_LEVELS as $level)
+                        <option>{{ $level }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
@@ -1058,6 +1059,8 @@ function openEditMember(data) {
     document.getElementById('em_contact').value        = data.contact_number || '';
     document.getElementById('em_email').value          = data.email || '';
     document.getElementById('em_employment').value     = data.employment_status || '';
+    document.getElementById('em_education').value      = data.education || '';
+    toggleStudentLevelModal();
     document.getElementById('em_monthly_income').value = data.monthly_income != null ? data.monthly_income : '';
 
     // Show 4Ps only for head of household
@@ -1102,6 +1105,12 @@ function toggleSeniorPensionModal() {
     document.getElementById('em_pension_amount_wrap').classList.toggle('hidden', !hasPension);
     document.getElementById('em_pension_amount').required = hasPension;
     toggleIdUploadModal('senior', isSenior && pension === 'social');
+}
+
+function toggleStudentLevelModal() {
+    const isStudent = document.getElementById('em_employment').value === 'Student';
+    document.getElementById('em_education_wrap').classList.toggle('hidden', !isStudent);
+    document.getElementById('em_education').disabled = !isStudent;
 }
 
 function togglePregnantDueDateModal(show) {

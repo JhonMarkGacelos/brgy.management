@@ -45,6 +45,7 @@ class SettingsController extends Controller
     public function index()
     {
         $psa              = \App\Services\ClassificationService::psaThresholds();
+        $sectorWeights    = \App\Services\ClassificationService::sectorWeights();
         $captainName             = Setting::get('captain_name', 'HON. PUNONG BARANGAY');
         $captainGmail            = Setting::get('captain_gmail', '');
         $captainSignature        = Setting::get('captain_signature_url');
@@ -103,7 +104,7 @@ class SettingsController extends Controller
             'backup_email'         => Setting::get('backup_email') ?: ($captainGmail ?: Auth::user()->email),
         ];
 
-        return view('settings.index', compact('psa', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName',
+        return view('settings.index', compact('psa', 'sectorWeights', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName',
             'backups', 'lastBackup', 'nextBackupAt', 'backupSettings'));
     }
 
@@ -182,6 +183,18 @@ class SettingsController extends Controller
             $this->logSettingsChange('Poverty thresholds updated');
 
             // Stored classifications feed the dashboard and analytics, so bring them in line with the new thresholds.
+            Artisan::call('households:reclassify');
+        } elseif ($request->has('_welfare_weights')) {
+            $keys = array_map(fn ($k) => "welfare_weight_$k", array_keys(\App\Services\ClassificationService::DEFAULT_SECTOR_WEIGHTS));
+            $request->validate(array_fill_keys($keys, 'required|integer|min:0|max:50'), [
+                'welfare_weight_*.min' => 'Deductions must be between 0 and 50 points.',
+                'welfare_weight_*.max' => 'Deductions must be between 0 and 50 points.',
+            ]);
+            foreach ($keys as $key) {
+                $this->setAndTrack($key, (int) $request->input($key));
+            }
+            $this->logSettingsChange('Welfare score sector deductions updated');
+
             Artisan::call('households:reclassify');
         } elseif ($request->has('_psa')) {
             $request->validate([

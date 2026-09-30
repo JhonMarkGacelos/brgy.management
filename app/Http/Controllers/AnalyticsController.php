@@ -198,11 +198,26 @@ class AnalyticsController extends Controller
         }
 
         // Employment status (sector-filtered)
-        $employmentStatus = (clone $resBase)->selectRaw('employment_status, COUNT(*) as count')
+        // Students are split by level (Elementary → College); older records without one show as "Level not set".
+        $employmentStatus = [];
+        $studentLevels    = [];
+        $employmentRows   = (clone $resBase)->selectRaw('employment_status, education, COUNT(*) as count')
             ->whereNotNull('employment_status')
-            ->groupBy('employment_status')
-            ->pluck('count', 'employment_status')
-            ->toArray();
+            ->groupBy('employment_status', 'education')
+            ->get();
+        foreach ($employmentRows as $row) {
+            if ($row->employment_status === 'Student') {
+                $level = in_array($row->education, Resident::STUDENT_LEVELS, true) ? $row->education : 'Level not set';
+                $studentLevels[$level] = ($studentLevels[$level] ?? 0) + (int) $row->count;
+            } else {
+                $employmentStatus[$row->employment_status] = ($employmentStatus[$row->employment_status] ?? 0) + (int) $row->count;
+            }
+        }
+        foreach ([...Resident::STUDENT_LEVELS, 'Level not set'] as $level) {
+            if (isset($studentLevels[$level])) {
+                $employmentStatus["Student – $level"] = $studentLevels[$level];
+            }
+        }
         if ($missing = (clone $resBase)->whereNull('employment_status')->count()) {
             $employmentStatus['Not recorded'] = $missing;
         }

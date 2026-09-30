@@ -136,6 +136,14 @@ class Resident extends Model
                 || ($this->is_indigent && $this->household && $this->household->psa_status === null));
     }
 
+    public const STUDENT_LEVELS = ['Elementary', 'High School', 'Senior High School', 'College'];
+
+    /** Student level is only kept while the employment status is Student; anything else clears it. */
+    public static function studentLevel(?string $employmentStatus, ?string $level): ?string
+    {
+        return $employmentStatus === 'Student' && $level !== '' ? $level : null;
+    }
+
     public const PENSION_OPTIONS = ['none', 'social', 'other'];
 
     /** Map the form's single Pension choice (none / social / other) and amount to the pension columns. */

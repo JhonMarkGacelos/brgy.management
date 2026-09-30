@@ -59,6 +59,24 @@ class ClassificationService
     public const DEFAULT_PSA_FOOD    = 1664.00;
     public const DEFAULT_PSA_SOURCE  = 'PSA RSSO VIII, 2023 Full Year Poverty Statistics — Samar (poverty ₱12,100 / food ₱8,320 per month for a family of five)';
 
+    /**
+     * Welfare Score sector deductions (points, stored positive). These are barangay policy weights, not a PSA/DSWD
+     * formula; PWD, Senior and Solo Parent apply per member, 4Ps and Indigent once per household.
+     */
+    public const DEFAULT_SECTOR_WEIGHTS = ['pwd' => 5, 'senior' => 3, 'solo_parent' => 5, 'fourps' => 8, 'indigent' => 6];
+
+    /** Sector deductions from Settings, falling back to the defaults above. */
+    public static function sectorWeights(): array
+    {
+        $weights = [];
+        foreach (self::DEFAULT_SECTOR_WEIGHTS as $key => $default) {
+            $value = Setting::get("welfare_weight_$key");
+            $weights[$key] = $value !== null && $value !== '' ? (float) $value : (float) $default;
+        }
+
+        return $weights;
+    }
+
     /** PSA thresholds (monthly, per capita) from Settings, falling back to the Samar defaults above. */
     public static function psaThresholds(): array
     {
@@ -179,13 +197,18 @@ class ClassificationService
         $fourPs      = $residents->where('is_4ps', true)->count() > 0 ? 1 : 0;
         $indigent    = $residents->where('is_indigent', true)->count() > 0 ? 1 : 0;
 
+        $w = self::sectorWeights();
         $modifiers = [
-            ['label' => 'PWD Members',         'count' => $pwdCount,    'per_unit' => -5,  'total' => $pwdCount    * -5],
-            ['label' => 'Senior Citizens',      'count' => $seniorCount, 'per_unit' => -3,  'total' => $seniorCount * -3],
-            ['label' => 'Solo Parents',         'count' => $soloParent,  'per_unit' => -5,  'total' => $soloParent  * -5],
-            ['label' => '4Ps Beneficiary',      'count' => $fourPs,      'per_unit' => -8,  'total' => $fourPs      * -8],
-            ['label' => 'Indigent Household',   'count' => $indigent,    'per_unit' => -6,  'total' => $indigent    * -6],
+            ['label' => 'PWD Members',        'count' => $pwdCount,    'per_unit' => -$w['pwd'],         'each' => true],
+            ['label' => 'Senior Citizens',    'count' => $seniorCount, 'per_unit' => -$w['senior'],      'each' => true],
+            ['label' => 'Solo Parents',       'count' => $soloParent,  'per_unit' => -$w['solo_parent'], 'each' => true],
+            ['label' => '4Ps Beneficiary',    'count' => $fourPs,      'per_unit' => -$w['fourps'],      'each' => false],
+            ['label' => 'Indigent Household', 'count' => $indigent,    'per_unit' => -$w['indigent'],    'each' => false],
         ];
+        foreach ($modifiers as &$mod) {
+            $mod['total'] = $mod['count'] * $mod['per_unit'];
+        }
+        unset($mod);
 
         $totalModifier = (float) array_sum(array_column($modifiers, 'total'));
         $finalScore    = max(0.0, min(100.0, round($base + $totalModifier, 2)));

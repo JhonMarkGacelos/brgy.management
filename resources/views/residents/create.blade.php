@@ -26,6 +26,7 @@ if ($isEdit) {
             'civil_status'      => $head?->civil_status ?? '',
             'contact_number'    => $head?->contact_number ?? '',
             'employment_status' => $head?->employment_status ?? '',
+            'education'         => $head?->education ?? '',
             'monthly_income'    => $head?->monthly_income ?? '',
             'sectors' => [
                 '4ps'            => (bool)($head?->is_4ps),
@@ -59,6 +60,7 @@ if ($isEdit) {
             'relationship'      => $m->relationship_to_head ?? '',
             'civil_status'      => $m->civil_status ?? '',
             'employment_status' => $m->employment_status ?? '',
+            'education'         => $m->education ?? '',
             'monthly_income'    => $m->monthly_income ?? '',
             'email'             => $m->email ?? '',
             'sectors' => [
@@ -264,6 +266,18 @@ if ($isEdit) {
                                                            focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 <option value="">Select</option>
                                                 <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Retired</option>
+                                            </select>
+                                        </div>
+                                        <div x-show="family.head.employment_status === 'Student'">
+                                            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Student Level <span class="text-red-500">*</span></label>
+                                            <select :name="'families['+fi+'][head][education]'" x-model="family.head.education"
+                                                    :disabled="family.head.employment_status !== 'Student'"
+                                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900
+                                                           focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                                <option value="">Select</option>
+                                                @foreach(\App\Models\Resident::STUDENT_LEVELS as $level)
+                                                <option>{{ $level }}</option>
+                                                @endforeach
                                             </select>
                                         </div>
                                         <div>
@@ -586,6 +600,17 @@ if ($isEdit) {
                                                         <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Retired</option>
                                                     </select>
                                                 </div>
+                                                <div x-show="member.employment_status === 'Student'">
+                                                    <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Student Level <span class="text-red-500">*</span></label>
+                                                    <select :name="'families['+fi+'][members]['+mi+'][education]'" x-model="member.education"
+                                                            :disabled="member.employment_status !== 'Student'"
+                                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
+                                                        <option value="">Select</option>
+                                                        @foreach(\App\Models\Resident::STUDENT_LEVELS as $level)
+                                                        <option>{{ $level }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
                                                 <div>
                                                     <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Monthly Income (₱)</label>
                                                     <input type="number" :name="'families['+fi+'][members]['+mi+'][monthly_income]'" x-model="member.monthly_income"
@@ -855,8 +880,8 @@ if ($isEdit) {
 function householdForm(initData) {
     const emptySectors = () => ({ '4ps':false, 'senior_citizen':false, 'pwd':false, 'solo_parent':false, 'voter':false, 'indigent':false, 'pregnant':false });
     const emptyIdDocs  = () => ({ existing_pwd_id_url:'', existing_pwd_id_public_id:'', existing_solo_parent_id_url:'', existing_solo_parent_id_public_id:'', existing_senior_id_url:'', existing_senior_id_public_id:'' });
-    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', monthly_income:'', pregnant_due_date:'', pension:'none', pension_amount:'', sectors: emptySectors(), ...emptyIdDocs(), existing_fourps_id_url:'', existing_fourps_id_public_id:'' });
-    const emptyMember  = () => ({ id:null, first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', relationship:'', employment_status:'', monthly_income:'', email:'', pregnant_due_date:'', pension:'none', pension_amount:'', sectors: emptySectors(), ...emptyIdDocs() });
+    const emptyHead    = () => ({ first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', contact_number:'', email:'', employment_status:'', education:'', monthly_income:'', pregnant_due_date:'', pension:'none', pension_amount:'', sectors: emptySectors(), ...emptyIdDocs(), existing_fourps_id_url:'', existing_fourps_id_public_id:'' });
+    const emptyMember  = () => ({ id:null, first_name:'', middle_name:'', last_name:'', date_of_birth:'', age:'', gender:'', civil_status:'', relationship:'', employment_status:'', education:'', monthly_income:'', email:'', pregnant_due_date:'', pension:'none', pension_amount:'', sectors: emptySectors(), ...emptyIdDocs() });
     const COLORS = ['#1a4731','#1d4ed8','#7c3aed','#b45309','#be185d'];
     const BGS    = ['#f0faf4','#eff6ff','#f5f3ff','#fffbeb','#fdf2f8'];
 

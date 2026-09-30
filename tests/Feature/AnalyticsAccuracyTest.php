@@ -168,6 +168,23 @@ class AnalyticsAccuracyTest extends TestCase
         $this->assertSame(['Employed' => 1, 'Not recorded' => 1], $r->viewData('employmentStatus'));
     }
 
+    public function test_employment_breakdown_splits_students_by_level(): void
+    {
+        $h = Household::create(['purok' => 'Purok 1']);
+        $this->resident($h, ['is_head' => true, 'relationship_to_head' => 'Head', 'employment_status' => 'Employed']);
+        $this->resident($h, ['employment_status' => 'Student', 'education' => 'College']);
+        $this->resident($h, ['employment_status' => 'Student', 'education' => 'College']);
+        $this->resident($h, ['employment_status' => 'Student', 'education' => 'Elementary']);
+        $this->resident($h, ['employment_status' => 'Student']);
+
+        $this->assertSame([
+            'Employed'                => 1,
+            'Student – Elementary'    => 1,
+            'Student – College'       => 2,
+            'Student – Level not set' => 1,
+        ], $this->analytics()->viewData('employmentStatus'));
+    }
+
     public function test_free_documents_are_not_paid_requests(): void
     {
         foreach ([['Barangay Clearance', 50], ['Barangay Clearance', 50], ['Certificate of Indigency', 0]] as $i => [$type, $fee]) {
