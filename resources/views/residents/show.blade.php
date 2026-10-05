@@ -31,10 +31,7 @@ $isStaff = Auth::user()->role === 'staff';
         'Pregnant'   => 'bg-rose-50 text-rose-600 ring-1 ring-rose-100',
     ];
     $avatarColors = ['bg-brand-100 text-brand-700','bg-blue-100 text-blue-700','bg-orange-100 text-orange-700','bg-purple-100 text-purple-700','bg-pink-100 text-pink-700','bg-teal-100 text-teal-700'];
-    $hasMemberIncome = !$isDemo && \App\Services\ClassificationService::isAssessed($household);
-    $classification  = $hasMemberIncome
-        ? \App\Services\ClassificationService::classify($household)
-        : null;
+    $povertyLine  = \App\Services\ClassificationService::psaThresholds()['poverty'];
 @endphp
 
 {{-- Page Header --}}
@@ -134,13 +131,12 @@ $isStaff = Auth::user()->role === 'staff';
                         </div>
                         @endif
                         @if($head->monthly_income !== null)
-                        @php $pcPoverty = (float) \App\Models\Setting::get('per_capita_poor', 1992); @endphp
                         <div>
                             <p class="text-[11px] text-gray-400">Monthly Income</p>
-                            <p class="text-xs font-semibold {{ $head->monthly_income <= $pcPoverty ? 'text-red-600' : 'text-gray-700' }}">
+                            <p class="text-xs font-semibold {{ $head->monthly_income <= $povertyLine ? 'text-red-600' : 'text-gray-700' }}">
                                 ₱{{ number_format($head->monthly_income, 2) }}
                             </p>
-                            @if($head->monthly_income <= $pcPoverty)
+                            @if($head->monthly_income <= $povertyLine)
                             <p class="text-[10px] text-red-500 font-medium mt-0.5">Below poverty line</p>
                             @endif
                         </div>
@@ -172,7 +168,6 @@ $isStaff = Auth::user()->role === 'staff';
                             <th class="px-5 py-3">Age / Gender</th>
                             <th class="px-5 py-3">Monthly Income</th>
                             <th class="px-5 py-3">Sectors</th>
-                            <th class="px-5 py-3">Status</th>
                             <th class="px-5 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -186,7 +181,6 @@ $isStaff = Auth::user()->role === 'staff';
                             $mGender   = $isDemo ? $m['gender']    : $m->gender;
                             $mRelation = $isDemo ? $m['relation']  : ($m->relationship_to_head ?? 'Head');
                             $mSectors  = $isDemo ? $m['sectors']   : $m->sectors;
-                            $mStatus   = $isDemo ? $m['status']    : $m->status;
                             $mIsHead   = $isDemo ? $m['is_head']   : $m->is_head;
                             $mBg       = $avatarColors[$i % count($avatarColors)];
                         @endphp
@@ -214,11 +208,10 @@ $isStaff = Auth::user()->role === 'staff';
                             </td>
                             <td class="px-5 py-3.5 text-xs">
                                 @if(!$isDemo && $m->monthly_income !== null)
-                                    @php $pcPoverty = (float) \App\Models\Setting::get('per_capita_poor', 1992); @endphp
-                                    <span class="font-semibold {{ $m->monthly_income <= $pcPoverty ? 'text-red-600' : 'text-gray-700' }}">
+                                    <span class="font-semibold {{ $m->monthly_income <= $povertyLine ? 'text-red-600' : 'text-gray-700' }}">
                                         ₱{{ number_format($m->monthly_income, 2) }}
                                     </span>
-                                    @if($m->monthly_income <= $pcPoverty)
+                                    @if($m->monthly_income <= $povertyLine)
                                     <span class="block text-[10px] text-red-500 font-medium">Below poverty line</span>
                                     @endif
                                 @elseif($isDemo || $m->pension_amount === null)
@@ -259,13 +252,6 @@ $isStaff = Auth::user()->role === 'staff';
                                         </span>
                                     @endif
                                 </div>
-                            </td>
-                            <td class="px-5 py-3.5">
-                                <span class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium
-                                    {{ $mStatus === 'Active' ? 'bg-green-50 text-green-700 ring-1 ring-green-100' : 'bg-gray-50 text-gray-400 ring-1 ring-gray-100' }}">
-                                    <span class="h-1.5 w-1.5 rounded-full {{ $mStatus === 'Active' ? 'bg-green-500' : 'bg-gray-400' }}"></span>
-                                    {{ $mStatus }}
-                                </span>
                             </td>
                             <td class="px-5 py-3.5 text-right">
                                 @if(!$isDemo)
@@ -397,32 +383,21 @@ $isStaff = Auth::user()->role === 'staff';
             </div>
         </div>
 
-        {{-- Household welfare: PSA Poverty Status (default, PSA standard) / Barangay Welfare Score (barangay-defined) --}}
+        {{-- Poverty Status (PSA): the household's only classification --}}
         @if(!$isDemo)
         @php $psa = \App\Services\ClassificationService::psa($household); @endphp
-        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden" x-data="{ view: 'psa' }">
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
             <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs"
-                     :class="view === 'psa' ? 'bg-sky-50 text-sky-600' : 'bg-orange-50 text-orange-500'">
-                    <i class="fa-solid" :class="view === 'psa' ? 'fa-landmark' : 'fa-scale-balanced'"></i>
+                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 text-xs">
+                    <i class="fa-solid fa-landmark"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-800" x-text="view === 'psa' ? 'PSA Poverty Status' : 'Barangay Welfare Score'">PSA Poverty Status</p>
-                    <p class="text-[11px] text-gray-400" x-show="view === 'psa'">Per capita income vs. PSA thresholds &middot; income only</p>
-                    <p class="text-[11px] text-gray-400" x-show="view === 'score'" x-cloak>Barangay's own scoring for assistance priority &middot; not PSA</p>
-                </div>
-                <div class="ml-auto flex shrink-0 rounded-lg bg-gray-100 p-0.5 text-[11px] font-semibold" role="tablist">
-                    <button type="button" role="tab" @click="view = 'psa'" :aria-selected="view === 'psa'"
-                            class="rounded-md px-2.5 py-1 transition-colors"
-                            :class="view === 'psa' ? 'bg-white text-sky-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'">PSA Status</button>
-                    <button type="button" role="tab" @click="view = 'score'" :aria-selected="view === 'score'"
-                            class="rounded-md px-2.5 py-1 transition-colors"
-                            :class="view === 'score' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">Welfare Score</button>
+                    <p class="text-sm font-semibold text-gray-800">Poverty Status</p>
+                    <p class="text-[11px] text-gray-400">Per capita income vs. PSA thresholds &middot; income only</p>
                 </div>
             </div>
 
-            {{-- PSA Poverty Status --}}
-            <div class="p-5 space-y-4" x-show="view === 'psa'">
+            <div class="p-5 space-y-4">
                 @if(!$psa['configured'])
                 <div class="rounded-xl bg-amber-50 border border-dashed border-amber-200 p-4 text-center text-xs text-amber-800">
                     <i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg mb-2 block"></i>
@@ -437,11 +412,15 @@ $isStaff = Auth::user()->role === 'staff';
                 <div class="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400">
                     <i class="fa-solid fa-circle-info text-gray-300 text-lg mb-2 block"></i>
                     Not assessed &mdash; no income or pension recorded for any member.
+                    <a href="{{ route($isStaff ? 'staff.residents.edit' : 'residents.edit', $household->id) }}"
+                       class="mt-2 block font-semibold text-green-700 hover:underline">
+                        Add income →
+                    </a>
                 </div>
                 @else
                 @php $psaStyle = \App\Services\ClassificationService::PSA_STYLES[$psa['status']]; @endphp
                 <div class="rounded-xl p-4 text-center {{ $psaStyle }}">
-                    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-60 mb-1">PSA Status</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-widest opacity-60 mb-1">Poverty Status</p>
                     <p class="text-xl font-bold">{{ $psa['status'] }}</p>
                     <p class="text-xs opacity-70 mt-0.5">
                         {{ in_array($psa['status'], \App\Services\ClassificationService::PSA_POOR, true) ? 'Below the PSA poverty line' : 'Not poor' }}
@@ -476,6 +455,11 @@ $isStaff = Auth::user()->role === 'staff';
                 </div>
 
                 <div class="text-[11px] text-gray-500 space-y-1">
+                    <p class="flex justify-between"><span>Total monthly income</span><span class="font-semibold text-gray-700">₱{{ number_format($psa['total_income'], 2) }}</span></p>
+                    @if($psa['pension_income'] > 0)
+                    <p class="flex justify-between pl-3 text-teal-700"><span>incl. pension</span><span>₱{{ number_format($psa['pension_income'], 2) }}</span></p>
+                    @endif
+                    <p class="flex justify-between"><span>Household members</span><span class="font-semibold text-gray-700">{{ $psa['member_count'] }}</span></p>
                     <p class="flex justify-between"><span>Per capita income</span><span class="font-semibold text-gray-800">₱{{ number_format($psa['per_capita'], 2) }}</span></p>
                     @if($psa['food'])
                     <p class="flex justify-between"><span>Food threshold</span><span>₱{{ number_format($psa['food'], 2) }}</span></p>
@@ -486,204 +470,6 @@ $isStaff = Auth::user()->role === 'staff';
                     </p>
                 </div>
                 @endif
-            </div>
-
-            {{-- Barangay Welfare Score --}}
-            <div class="p-5 space-y-4" x-show="view === 'score'" x-cloak>
-
-                @if($classification)
-                {{-- Classification Badge --}}
-                <div class="rounded-xl border-2 p-4 text-center {{ $classification['bg'] }}">
-                    <p class="text-[10px] font-semibold uppercase tracking-widest {{ $classification['color'] }} opacity-60 mb-1">Family Status</p>
-                    <p class="text-xl font-bold {{ $classification['color'] }}">{{ $classification['classification'] }}</p>
-                    <p class="text-xs {{ $classification['color'] }} opacity-70 mt-0.5">Score: {{ $classification['final_score'] }} / 100</p>
-                </div>
-
-                {{-- Totals --}}
-                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-gray-500">Total Member Income</span>
-                        <span class="text-xs font-bold text-gray-800">₱{{ number_format($classification['total_income'], 2) }}</span>
-                    </div>
-                    @if($classification['pension_income'] > 0)
-                    <div class="flex items-center justify-between -mt-1">
-                        <span class="text-[11px] text-gray-400">incl. pension</span>
-                        <span class="text-[11px] font-semibold text-teal-700">₱{{ number_format($classification['pension_income'], 2) }}</span>
-                    </div>
-                    @endif
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-gray-500">Members</span>
-                        <span class="text-xs font-semibold text-gray-700">{{ $classification['member_count'] }}</span>
-                    </div>
-                    <div class="flex items-center justify-between border-t border-gray-200 pt-2">
-                        <span class="text-xs font-semibold text-gray-600">Per Capita Income</span>
-                        <span class="text-sm font-bold text-gray-900">₱{{ number_format($classification['per_capita'], 2) }}</span>
-                    </div>
-                </div>
-
-                {{-- Step 6: Modifiers --}}
-                @php $hasModifiers = collect($classification['modifiers'])->where('count', '>', 0)->isNotEmpty(); @endphp
-                @if($hasModifiers)
-                <div>
-                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Situation Modifiers</p>
-                    <div class="space-y-1.5">
-                        @foreach($classification['modifiers'] as $mod)
-                        @if($mod['count'] > 0)
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-600">{{ $mod['label'] }} (×{{ $mod['count'] }})</span>
-                            <span class="text-xs font-semibold text-red-500">{{ $mod['total'] }}</span>
-                        </div>
-                        @endif
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-
-                {{-- Step 7: Score Breakdown --}}
-                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-1.5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-gray-500">Base Score</span>
-                        <span class="text-xs font-semibold text-gray-700">{{ $classification['base_score'] }}</span>
-                    </div>
-                    @if($classification['total_modifier'] < 0)
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-gray-500">Modifiers</span>
-                        <span class="text-xs font-semibold text-red-500">{{ $classification['total_modifier'] }}</span>
-                    </div>
-                    @endif
-                    <div class="flex items-center justify-between border-t border-gray-200 pt-1.5">
-                        <span class="text-xs font-semibold text-gray-600">Final Score</span>
-                        <span class="text-sm font-bold {{ $classification['color'] }}">{{ $classification['final_score'] }}</span>
-                    </div>
-                </div>
-
-                {{-- Formula Used (collapsible) --}}
-                <div x-data="{ open: false }">
-                    <button @click="open = !open"
-                            class="flex w-full items-center justify-between rounded-xl border border-dashed border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
-                        <span class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-function text-gray-400"></i>
-                            How it's calculated
-                        </span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200"
-                           :class="{ 'rotate-180': open }"></i>
-                    </button>
-
-                    <div x-show="open" x-transition class="mt-2 rounded-xl border border-gray-100 bg-gray-50 p-3.5 space-y-3.5 text-xs text-gray-600">
-
-                        {{-- Step 1: Per Capita --}}
-                        <div>
-                            <p class="font-semibold text-gray-700 mb-1">Step 1 — Per Capita Income</p>
-                            <p class="font-mono text-[11px] text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
-                                Per Capita = (Monthly Income + Pension) ÷ Members<br>
-                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ₱{{ number_format($classification['total_income'], 2) }} ÷ {{ $classification['member_count'] }}<br>
-                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="font-bold text-gray-800">₱{{ number_format($classification['per_capita'], 2) }}</span>
-                            </p>
-                        </div>
-
-                        {{-- Step 2: Base Score bands --}}
-                        <div>
-                            <p class="font-semibold text-gray-700 mb-1">Step 2 — Base Score (0–100)</p>
-                            <p class="text-[11px] text-gray-400 mb-1.5">Per capita is mapped linearly across 5 income bands:</p>
-                            @php
-                                $t = $classification['thresholds'];
-                                $bands = [
-                                    ['range' => '≤ ₱'.number_format($t['extremely_poor']),                                                   'score' => '0–20'],
-                                    ['range' => '₱'.number_format($t['extremely_poor']).' – ₱'.number_format($t['poor']),                    'score' => '20–40'],
-                                    ['range' => '₱'.number_format($t['poor']).' – ₱'.number_format($t['near_poor']),                         'score' => '40–60'],
-                                    ['range' => '₱'.number_format($t['near_poor']).' – ₱'.number_format($t['vulnerable']),                   'score' => '60–80'],
-                                    ['range' => '> ₱'.number_format($t['vulnerable']),                                                        'score' => '80–100'],
-                                ];
-                                $activeBand = match(true) {
-                                    $classification['per_capita'] <= $t['extremely_poor'] => 0,
-                                    $classification['per_capita'] <= $t['poor']           => 1,
-                                    $classification['per_capita'] <= $t['near_poor']      => 2,
-                                    $classification['per_capita'] <= $t['vulnerable']     => 3,
-                                    default                                               => 4,
-                                };
-                            @endphp
-                            <div class="space-y-1">
-                                @foreach($bands as $bi => $band)
-                                <div class="flex items-center justify-between rounded-lg px-2.5 py-1.5
-                                    {{ $bi === $activeBand ? 'bg-brand-50 border border-brand-100 font-semibold' : 'bg-white border border-gray-100' }}">
-                                    <span class="{{ $bi === $activeBand ? 'text-brand-700' : 'text-gray-500' }} text-[11px]">
-                                        @if($bi === $activeBand)<i class="fa-solid fa-arrow-right text-brand-500 mr-1 text-[10px]"></i>@endif
-                                        {{ $band['range'] }}
-                                    </span>
-                                    <span class="{{ $bi === $activeBand ? 'text-brand-700' : 'text-gray-400' }} text-[11px]">{{ $band['score'] }}</span>
-                                </div>
-                                @endforeach
-                            </div>
-                            <p class="text-[11px] text-gray-500 mt-1.5">
-                                Computed Base Score: <span class="font-bold text-gray-700">{{ $classification['base_score'] }}</span>
-                            </p>
-                        </div>
-
-                        {{-- Step 3: Modifiers --}}
-                        <div>
-                            <p class="font-semibold text-gray-700 mb-1">Step 3 — Situation Modifiers</p>
-                            <div class="space-y-1 bg-white border border-gray-100 rounded-lg px-2.5 py-2">
-                                @foreach($classification['modifiers'] as $mod)
-                                <div class="flex justify-between text-[11px]">
-                                    <span class="text-gray-500">{{ $mod['label'] }}</span><span class="text-gray-500">−{{ abs($mod['per_unit']) }}{{ $mod['each'] ? ' each' : '' }}</span>
-                                </div>
-                                @endforeach
-                            </div>
-                            <p class="text-[11px] text-gray-500 mt-1.5">
-                                Total modifier applied: <span class="font-bold {{ $classification['total_modifier'] < 0 ? 'text-red-600' : 'text-gray-700' }}">{{ $classification['total_modifier'] }}</span>
-                            </p>
-                        </div>
-
-                        {{-- Step 4: Final Score --}}
-                        <div>
-                            <p class="font-semibold text-gray-700 mb-1">Step 4 — Final Score</p>
-                            <p class="font-mono text-[11px] text-gray-500 bg-white border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
-                                Final = Base Score + Modifiers<br>
-                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= {{ $classification['base_score'] }} + ({{ $classification['total_modifier'] }})<br>
-                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="font-bold text-gray-800">{{ $classification['final_score'] }} / 100</span>
-                            </p>
-                        </div>
-
-                        {{-- Step 5: Classification tiers --}}
-                        <div>
-                            <p class="font-semibold text-gray-700 mb-1">Step 5 — Classification Tiers</p>
-                            @php
-                                $tiers = [
-                                    ['label'=>'Extremely Poor','range'=>'0–20',  'active'=> $classification['final_score'] <= 20],
-                                    ['label'=>'Poor',          'range'=>'21–40', 'active'=> $classification['final_score'] > 20 && $classification['final_score'] <= 40],
-                                    ['label'=>'Near Poor',     'range'=>'41–60', 'active'=> $classification['final_score'] > 40 && $classification['final_score'] <= 60],
-                                    ['label'=>'Vulnerable',    'range'=>'61–80', 'active'=> $classification['final_score'] > 60 && $classification['final_score'] <= 80],
-                                    ['label'=>'Non-Poor',      'range'=>'81–100','active'=> $classification['final_score'] > 80],
-                                ];
-                            @endphp
-                            <div class="space-y-1">
-                                @foreach($tiers as $tier)
-                                <div class="flex items-center justify-between rounded-lg px-2.5 py-1.5
-                                    {{ $tier['active'] ? 'bg-brand-50 border border-brand-100' : 'bg-white border border-gray-100' }}">
-                                    <span class="text-[11px] {{ $tier['active'] ? 'font-semibold text-brand-700' : 'text-gray-500' }}">
-                                        @if($tier['active'])<i class="fa-solid fa-arrow-right text-brand-500 mr-1 text-[10px]"></i>@endif
-                                        {{ $tier['label'] }}
-                                    </span>
-                                    <span class="text-[11px] {{ $tier['active'] ? 'font-semibold text-brand-600' : 'text-gray-400' }}">Score {{ $tier['range'] }}</span>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                @else
-                <div class="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-4 text-center">
-                    <i class="fa-solid fa-circle-info text-gray-300 text-lg mb-2"></i>
-                    <p class="text-xs text-gray-400">No income sources recorded yet.</p>
-                    <a href="{{ route($isStaff ? 'staff.residents.edit' : 'residents.edit', $household->id) }}"
-                       class="mt-2 inline-block text-xs font-semibold text-green-700 hover:underline">
-                        Add income sources →
-                    </a>
-                </div>
-                @endif
-
             </div>
         </div>
         @endif

@@ -39,8 +39,6 @@ class StatisticsAccuracyTest extends TestCase
     {
         $household = $this->household([null, null]);
 
-        $this->assertNull($household->classification);
-        $this->assertNull($household->welfare_score);
         $this->assertNull($household->per_capita_income);
         $this->assertNull($household->psa_status);
     }
@@ -49,7 +47,6 @@ class StatisticsAccuracyTest extends TestCase
     {
         $household = $this->household([0, 0]);
 
-        $this->assertSame('Extremely Poor', $household->classification);
         $this->assertEquals(0, (float) $household->per_capita_income);
         $this->assertSame('Food Poor', $household->psa_status);
     }

@@ -290,4 +290,17 @@ class SystemBugFixesTest extends TestCase
         $this->assertSame('Employed', $member->fresh()->employment_status);
         $this->assertSame($member->id, $doc->fresh()->resident_id);
     }
+
+    public function test_household_list_can_be_sorted_alphabetically_by_head_surname(): void
+    {
+        foreach (['Zamora', 'Abad', 'Mendoza'] as $surname) {
+            $this->resident(['last_name' => $surname]);
+        }
+
+        $this->actingAs($this->admin)->get(route('residents.index', ['sort' => 'name_asc']))
+            ->assertOk()->assertSeeInOrder(['Abad', 'Mendoza', 'Zamora']);
+
+        $this->actingAs($this->admin)->get(route('residents.index', ['sort' => 'name_desc']))
+            ->assertOk()->assertSeeInOrder(['Zamora', 'Mendoza', 'Abad']);
+    }
 }

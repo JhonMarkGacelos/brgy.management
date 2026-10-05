@@ -11,10 +11,11 @@ class ClassificationService
      * PSA Poverty Status: per capita income against the PSA poverty threshold (and food threshold, if set), with the
      * classes above the poverty line following the PIDS income classes (multiples of the poverty line;
      * Albert, Santos & Vizmanos, 2018 — 12–20x and 20x+ merged into High Income).
-     * Kept separate from the Barangay Welfare Score below, which is the barangay's own scoring.
+     * This is the system's only household classification; sector tags (PWD, 4Ps, …) never change it.
      */
     public const PSA_STATUSES = ['Food Poor', 'Poor', 'Low Income', 'Lower Middle', 'Middle', 'Upper Middle', 'High Income'];
     public const PSA_POOR     = ['Food Poor', 'Poor'];
+    public const PSA_MIDDLE_UP = ['Middle', 'Upper Middle', 'High Income'];
 
     /** Lower bound of each class above the poverty line, as a multiple of the poverty line. */
     private const PIDS_MULTIPLES = ['Low Income' => 1, 'Lower Middle' => 2, 'Middle' => 4, 'Upper Middle' => 7, 'High Income' => 12];
@@ -29,24 +30,23 @@ class ClassificationService
         'High Income'  => 'bg-sky-50 text-sky-700 ring-1 ring-sky-200',
     ];
 
-    /** Recompute and persist a household's classification, welfare score, PSA status and per-capita income. */
+    /**
+     * Recompute and persist a household's per-capita income and Poverty Status.
+     * The retired Barangay Welfare Score columns (classification, welfare_score) are left as they were.
+     */
     public static function refresh(Household $household): void
     {
-        $household->load(['residents', 'incomeSources']);
-        $result = self::classify($household);
+        $household->load('residents');
+        $psa = self::psa($household);
 
-        // Households with no income entered for anyone aren't assessed: storing ₱0 / "Extremely Poor"
+        // Households with no income entered for anyone aren't assessed: storing ₱0 / "Food Poor"
         // for them would inflate poverty counts and pull averages down.
-        $household->update($result['assessed'] ? [
-            'classification'   => $result['classification'],
-            'welfare_score'    => $result['final_score'],
-            'per_capita_income'=> $result['per_capita'],
-            'psa_status'       => $result['psa']['status'],
+        $household->update($psa['assessed'] ? [
+            'per_capita_income' => $psa['per_capita'],
+            'psa_status'        => $psa['status'],
         ] : [
-            'classification'   => null,
-            'welfare_score'    => null,
-            'per_capita_income'=> null,
-            'psa_status'       => null,
+            'per_capita_income' => null,
+            'psa_status'        => null,
         ]);
     }
 
@@ -58,24 +58,6 @@ class ClassificationService
     public const DEFAULT_PSA_POVERTY = 2420.00;
     public const DEFAULT_PSA_FOOD    = 1664.00;
     public const DEFAULT_PSA_SOURCE  = 'PSA RSSO VIII, 2023 Full Year Poverty Statistics — Samar (poverty ₱12,100 / food ₱8,320 per month for a family of five)';
-
-    /**
-     * Welfare Score sector deductions (points, stored positive). These are barangay policy weights, not a PSA/DSWD
-     * formula; PWD, Senior and Solo Parent apply per member, 4Ps and Indigent once per household.
-     */
-    public const DEFAULT_SECTOR_WEIGHTS = ['pwd' => 5, 'senior' => 3, 'solo_parent' => 5, 'fourps' => 8, 'indigent' => 6];
-
-    /** Sector deductions from Settings, falling back to the defaults above. */
-    public static function sectorWeights(): array
-    {
-        $weights = [];
-        foreach (self::DEFAULT_SECTOR_WEIGHTS as $key => $default) {
-            $value = Setting::get("welfare_weight_$key");
-            $weights[$key] = $value !== null && $value !== '' ? (float) $value : (float) $default;
-        }
-
-        return $weights;
-    }
 
     /** PSA thresholds (monthly, per capita) from Settings, falling back to the Samar defaults above. */
     public static function psaThresholds(): array
@@ -131,112 +113,32 @@ class ClassificationService
     }
 
     /** PSA Poverty Status for a household; 'status' is null when not configured or not assessed. */
-    public static function psa(Household $household, ?float $perCapita = null): array
+    public static function psa(Household $household): array
     {
         $residents  = $household->residents;
         $t          = self::psaThresholds();
         $configured = $t['poverty'] > 0 && ($t['food'] === null || ($t['food'] > 0 && $t['food'] < $t['poverty']));
         $assessed   = self::isAssessed($household);
 
-        if ($perCapita === null) {
-            $total     = (float) $residents->sum('monthly_income') + (float) $residents->sum('pension_amount');
-            $perCapita = round($total / max(1, $residents->count()), 2);
-        }
-
-        return [
-            'configured' => $configured,
-            'assessed'   => $assessed,
-            'per_capita' => $perCapita,
-            'food'       => $t['food'],
-            'poverty'    => $t['poverty'],
-            'source'     => $t['source'],
-            'status'     => $configured && $assessed ? self::psaStatusFor($perCapita, $t['food'], $t['poverty']) : null,
-            'multiple'   => $configured && $t['poverty'] > 0 ? round($perCapita / $t['poverty'], 2) : null,
-            'bands'      => $configured ? self::psaBands($t['food'], $t['poverty']) : [],
-        ];
-    }
-
-    public static function classify(Household $household): array
-    {
-        $residents    = $household->residents;
-        $memberCount  = max(1, $residents->count());
-
         // Pension (DSWD Social Pension, SSS/GSIS…) is entered separately from Monthly Income and counts as income.
+        $memberCount   = max(1, $residents->count());
         $pensionIncome = (float) $residents->sum('pension_amount');
         $totalIncome   = (float) $residents->sum('monthly_income') + $pensionIncome;
-
-        $perCapita    = round($totalIncome / $memberCount, 2);
-
-        // --- Thresholds from settings ---
-        // PSA 2021 Region VIII (Eastern Visayas / Samar) per capita monthly thresholds:
-        // Food poverty line ≈ ₱1,383 | Total poverty line ≈ ₱1,992
-        $t = [
-            'extremely_poor' => (float) Setting::get('per_capita_extremely_poor', 1383),
-            'poor'           => (float) Setting::get('per_capita_poor',            1992),
-            'near_poor'      => (float) Setting::get('per_capita_near_poor',       3500),
-            'vulnerable'     => (float) Setting::get('per_capita_vulnerable',      6000),
-        ];
-
-        // --- Base score (0–100) mapped linearly across 5 bands ---
-        if ($perCapita <= $t['extremely_poor']) {
-            $base = $t['extremely_poor'] > 0 ? ($perCapita / $t['extremely_poor']) * 20 : 0;
-        } elseif ($perCapita <= $t['poor']) {
-            $base = 20 + (($perCapita - $t['extremely_poor']) / ($t['poor'] - $t['extremely_poor'])) * 20;
-        } elseif ($perCapita <= $t['near_poor']) {
-            $base = 40 + (($perCapita - $t['poor']) / ($t['near_poor'] - $t['poor'])) * 20;
-        } elseif ($perCapita <= $t['vulnerable']) {
-            $base = 60 + (($perCapita - $t['near_poor']) / ($t['vulnerable'] - $t['near_poor'])) * 20;
-        } else {
-            $base = 80 + min(20, (($perCapita - $t['vulnerable']) / $t['vulnerable']) * 20);
-        }
-
-        // --- Situation modifiers (each deducts from score) ---
-        $pwdCount    = $residents->where('is_pwd', true)->count();
-        $seniorCount = $residents->where('is_senior_citizen', true)->count();
-        $soloParent  = $residents->where('is_solo_parent', true)->count();
-        $fourPs      = $residents->where('is_4ps', true)->count() > 0 ? 1 : 0;
-        $indigent    = $residents->where('is_indigent', true)->count() > 0 ? 1 : 0;
-
-        $w = self::sectorWeights();
-        $modifiers = [
-            ['label' => 'PWD Members',        'count' => $pwdCount,    'per_unit' => -$w['pwd'],         'each' => true],
-            ['label' => 'Senior Citizens',    'count' => $seniorCount, 'per_unit' => -$w['senior'],      'each' => true],
-            ['label' => 'Solo Parents',       'count' => $soloParent,  'per_unit' => -$w['solo_parent'], 'each' => true],
-            ['label' => '4Ps Beneficiary',    'count' => $fourPs,      'per_unit' => -$w['fourps'],      'each' => false],
-            ['label' => 'Indigent Household', 'count' => $indigent,    'per_unit' => -$w['indigent'],    'each' => false],
-        ];
-        foreach ($modifiers as &$mod) {
-            $mod['total'] = $mod['count'] * $mod['per_unit'];
-        }
-        unset($mod);
-
-        $totalModifier = (float) array_sum(array_column($modifiers, 'total'));
-        $finalScore    = max(0.0, min(100.0, round($base + $totalModifier, 2)));
-
-        // --- Classification ---
-        [$label, $color, $bg] = match(true) {
-            $finalScore <= 20 => ['Extremely Poor', 'text-red-700',    'bg-red-50    border-red-200'],
-            $finalScore <= 40 => ['Poor',           'text-orange-700', 'bg-orange-50 border-orange-200'],
-            $finalScore <= 60 => ['Near Poor',      'text-yellow-700', 'bg-yellow-50 border-yellow-200'],
-            $finalScore <= 80 => ['Vulnerable',     'text-blue-700',   'bg-blue-50   border-blue-200'],
-            default           => ['Non-Poor',       'text-green-700',  'bg-green-50  border-green-200'],
-        };
+        $perCapita     = round($totalIncome / $memberCount, 2);
 
         return [
-            'assessed'      => self::isAssessed($household),
-            'total_income'  => $totalIncome,
-            'pension_income'=> $pensionIncome,
-            'member_count'  => $memberCount,
-            'per_capita'    => $perCapita,
-            'thresholds'    => $t,
-            'base_score'    => round($base, 2),
-            'modifiers'     => $modifiers,
-            'total_modifier'=> $totalModifier,
-            'final_score'   => $finalScore,
-            'classification'=> $label,
-            'color'         => $color,
-            'bg'            => $bg,
-            'psa'           => self::psa($household, $perCapita),
+            'configured'     => $configured,
+            'assessed'       => $assessed,
+            'total_income'   => $totalIncome,
+            'pension_income' => $pensionIncome,
+            'member_count'   => $memberCount,
+            'per_capita'     => $perCapita,
+            'food'           => $t['food'],
+            'poverty'        => $t['poverty'],
+            'source'         => $t['source'],
+            'status'         => $configured && $assessed ? self::psaStatusFor($perCapita, $t['food'], $t['poverty']) : null,
+            'multiple'       => $configured && $t['poverty'] > 0 ? round($perCapita / $t['poverty'], 2) : null,
+            'bands'          => $configured ? self::psaBands($t['food'], $t['poverty']) : [],
         ];
     }
 }

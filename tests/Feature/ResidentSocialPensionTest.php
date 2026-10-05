@@ -96,7 +96,7 @@ class ResidentSocialPensionTest extends TestCase
         $this->resident($household, 40, ['is_head' => true, 'relationship_to_head' => 'Head', 'monthly_income' => 5000]);
         $this->resident($household, 70, ['has_other_pension' => true, 'pension_amount' => 3000]);
 
-        $result = ClassificationService::classify($household->fresh());
+        $result = ClassificationService::psa($household->fresh());
 
         $this->assertEquals(8000, $result['total_income']);
         $this->assertEquals(3000, $result['pension_income']);
@@ -181,17 +181,18 @@ class ResidentSocialPensionTest extends TestCase
             ->assertOk()->assertSee('Bustamante')->assertDontSee('Alvarado')->assertDontSee('Castellano');
     }
 
-    public function test_social_pension_does_not_change_welfare_score(): void
+    public function test_social_pension_flag_alone_does_not_change_poverty_status(): void
     {
         $household = $this->household();
-        $senior = $this->resident($household, 70, ['is_head' => true, 'relationship_to_head' => 'Head']);
+        $senior = $this->resident($household, 70, ['is_head' => true, 'relationship_to_head' => 'Head', 'monthly_income' => 3000]);
         ClassificationService::refresh($household);
-        $before = (float) $household->fresh()->welfare_score;
+        $before = $household->fresh()->psa_status;
 
         $senior->update(['is_social_pensioner' => true]);
         ClassificationService::refresh($household);
 
-        $this->assertEquals($before, (float) $household->fresh()->welfare_score);
+        $this->assertNotNull($before);
+        $this->assertSame($before, $household->fresh()->psa_status);
     }
 
     public function test_show_and_edit_pages_render_pension_and_senior_id(): void

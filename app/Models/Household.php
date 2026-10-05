@@ -23,11 +23,12 @@ class Household extends Model
 
     public function getActivitylogOptions(): LogOptions
     {
-        // welfare_score / per_capita_income are excluded: they're auto-recomputed
-        // derived numbers that shift on nearly every related edit, so logging them
-        // would be noise rather than a meaningful change.
+        // per_capita_income is excluded: it's an auto-recomputed number that shifts on
+        // nearly every related edit, so logging it would be noise. psa_status is logged
+        // because a change of Poverty Status is meaningful. classification / welfare_score
+        // belong to the retired Welfare Score and are no longer written.
         return LogOptions::defaults()
-            ->logOnly(['house_no', 'street', 'purok', 'classification'])
+            ->logOnly(['house_no', 'street', 'purok', 'psa_status'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('household');

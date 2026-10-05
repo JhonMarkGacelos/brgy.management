@@ -101,14 +101,14 @@ class PsaPovertyStatusTest extends TestCase
         ])->assertSessionHasErrors('psa_food_threshold');
     }
 
-    public function test_sector_tags_do_not_change_psa_status_but_do_change_barangay_score(): void
+    public function test_sector_tags_do_not_change_poverty_status(): void
     {
         $this->configure();
         $plain  = $this->household(3000);
         $tagged = $this->household(3000, ['is_4ps' => true, 'is_indigent' => true, 'is_pwd' => true]);
 
+        $this->assertNotNull($plain->psa_status);
         $this->assertSame($plain->psa_status, $tagged->psa_status);
-        $this->assertLessThan((float) $plain->welfare_score, (float) $tagged->welfare_score);
     }
 
     public function test_settings_validates_and_reclassifies(): void
@@ -153,11 +153,12 @@ class PsaPovertyStatusTest extends TestCase
         $admin = $this->admin();
         $household = $this->household(2000);
 
-        // Defaults: PSA view is shown first, with the Welfare Score available from the header switch.
+        // Defaults: Poverty Status is the only classification shown.
         $this->actingAs($admin)->get(route('residents.show', $household->id))
             ->assertOk()
-            ->assertSeeInOrder(['PSA Status', 'Welfare Score'])
-            ->assertSee("view: 'psa'", false)
+            ->assertSee('Poverty Status')
+            ->assertDontSee('PSA Status')
+            ->assertDontSee('Welfare Score')
             ->assertSee('Samar (poverty ₱12,100 / food ₱8,320 per month for a family of five)', false)
             ->assertDontSee('national', false);
         $this->actingAs($admin)->get(route('settings.index'))
@@ -167,12 +168,32 @@ class PsaPovertyStatusTest extends TestCase
         ClassificationService::refresh($household);
 
         $this->actingAs($admin)->get(route('residents.show', $household->id))
-            ->assertOk()->assertSee('PSA Poverty Status')->assertSee('Below the PSA poverty line')->assertSee('Test source');
+            ->assertOk()->assertSee('Poverty Status')->assertSee('Below the PSA poverty line')->assertSee('Test source');
         $this->actingAs($admin)->get(route('analytics.index'))
             ->assertOk()->assertSee('Households below the PSA poverty line');
         $this->actingAs($admin)->get(route('admin.dashboard'))
-            ->assertOk()->assertSee('PSA Poverty Status');
+            ->assertOk()->assertSee('Poverty Status');
         $this->actingAs($admin)->get(route('settings.index'))
-            ->assertOk()->assertSee('PSA Poverty Thresholds')->assertSee('Barangay Welfare Score Thresholds');
+            ->assertOk()->assertSee('PSA Poverty Thresholds')->assertDontSee('Welfare Score Thresholds');
+    }
+
+    public function test_dashboard_poverty_card_is_green_below_half_and_red_from_half(): void
+    {
+        $this->configure(); // poverty line ₱2,500 per capita
+        $admin = $this->admin();
+        $this->household(2000);  // poor
+        $this->household(5000);
+        $this->household(5000);
+
+        // 1 of 3 = 33.3% → green
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()
+            ->assertSee('text-2xl font-bold tracking-tight text-green-700', false)
+            ->assertDontSee('text-2xl font-bold tracking-tight text-red-600', false);
+
+        // 2 of 4 = 50% → red
+        $this->household(1000);
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()
+            ->assertSee('text-2xl font-bold tracking-tight text-red-600', false)
+            ->assertDontSee('text-2xl font-bold tracking-tight text-green-700', false);
     }
 }

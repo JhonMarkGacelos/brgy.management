@@ -47,27 +47,28 @@
     @endforeach
 </div>
 
-{{-- Welfare Classification Cards --}}
+{{-- Poverty Status Cards (PSA) --}}
 @php
-    $tiers = [
-        ['label'=>'Extremely Poor','key'=>'Extremely Poor','dot'=>'bg-red-500',   'bg'=>'bg-red-50',    'border'=>'border-red-200',   'color'=>'text-red-700'],
-        ['label'=>'Poor',          'key'=>'Poor',          'dot'=>'bg-orange-500','bg'=>'bg-orange-50', 'border'=>'border-orange-200','color'=>'text-orange-700'],
-        ['label'=>'Near Poor',     'key'=>'Near Poor',     'dot'=>'bg-yellow-500','bg'=>'bg-yellow-50', 'border'=>'border-yellow-200','color'=>'text-yellow-700'],
-        ['label'=>'Vulnerable',    'key'=>'Vulnerable',    'dot'=>'bg-blue-500',  'bg'=>'bg-blue-50',   'border'=>'border-blue-200',  'color'=>'text-blue-700'],
-        ['label'=>'Non-Poor',      'key'=>'Non-Poor',      'dot'=>'bg-green-500', 'bg'=>'bg-green-50',  'border'=>'border-green-200', 'color'=>'text-green-700'],
+    $psaCards = [
+        ['label' => 'Food Poor',       'key' => 'Food Poor',    'count' => $psaCounts['Food Poor'] ?? 0,    'dot' => 'bg-red-500'],
+        ['label' => 'Poor',            'key' => 'Poor',         'count' => $psaCounts['Poor'] ?? 0,         'dot' => 'bg-orange-500'],
+        ['label' => 'Low Income',      'key' => 'Low Income',   'count' => $psaCounts['Low Income'] ?? 0,   'dot' => 'bg-yellow-500'],
+        ['label' => 'Lower Middle',    'key' => 'Lower Middle', 'count' => $psaCounts['Lower Middle'] ?? 0, 'dot' => 'bg-lime-500'],
+        ['label' => 'Middle & above',  'key' => 'middle_up',
+         'count' => collect(\App\Services\ClassificationService::PSA_MIDDLE_UP)->sum(fn ($st) => $psaCounts[$st] ?? 0), 'dot' => 'bg-green-500'],
     ];
 @endphp
 <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
-    @foreach($tiers as $t)
-    @php $count = $classificationCounts[$t['key']] ?? 0; @endphp
-    <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index', array_merge(request()->query(), ['classification' => $t['key']])) }}"
-       class="rounded-2xl border-2 p-4 shadow-sm transition-all hover:shadow-md {{ request('classification') === $t['key'] ? $t['bg'].' '.$t['border'] : 'bg-white border-gray-100' }}">
+    @foreach($psaCards as $c)
+    @php $active = request('psa_status') === $c['key']; @endphp
+    <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index', array_merge(request()->except('page'), ['psa_status' => $c['key']])) }}"
+       class="rounded-2xl border-2 p-4 shadow-sm transition-all hover:shadow-md {{ $active ? 'bg-sky-50 border-sky-200' : 'bg-white border-gray-100' }}">
         <div class="flex items-center gap-2 mb-2">
-            <span class="h-2.5 w-2.5 rounded-full {{ $t['dot'] }} shrink-0"></span>
-            <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide truncate">{{ $t['label'] }}</p>
+            <span class="h-2.5 w-2.5 rounded-full {{ $c['dot'] }} shrink-0"></span>
+            <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide truncate">{{ $c['label'] }}</p>
         </div>
-        <p class="text-2xl font-bold {{ request('classification') === $t['key'] ? $t['color'] : 'text-gray-900' }}">{{ number_format($count) }}</p>
-        <p class="text-[11px] text-gray-400 mt-0.5">{{ $count == 1 ? 'family' : 'families' }}</p>
+        <p class="text-2xl font-bold {{ $active ? 'text-sky-700' : 'text-gray-900' }}">{{ number_format($c['count']) }}</p>
+        <p class="text-[11px] text-gray-400 mt-0.5">{{ $c['count'] == 1 ? 'family' : 'families' }}</p>
     </a>
     @endforeach
 </div>
@@ -86,7 +87,7 @@
         <button type="submit" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
             <i class="fa-solid fa-magnifying-glass text-xs"></i>
         </button>
-        @if(request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status'))
+        @if(request('search') || request('purok') || request('sector') || request('psa_status') || request('review') || request('employment_status') || request('sort'))
         <a href="{{ route($isStaff ? 'staff.residents.index' : 'residents.index') }}"
            class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
             <i class="fa-solid fa-xmark text-xs"></i>
@@ -110,19 +111,12 @@
             <option value="{{ $s }}" {{ request('sector') == $s ? 'selected' : '' }}>{{ $s }}</option>
             @endforeach
         </select>
-        <select name="classification" onchange="this.form.submit()"
-                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-            <option value="">All Welfare Scores</option>
-            @foreach(['Extremely Poor','Poor','Near Poor','Vulnerable','Non-Poor'] as $c)
-            <option value="{{ $c }}" {{ request('classification') == $c ? 'selected' : '' }}>{{ $c }}</option>
-            @endforeach
-        </select>
         <select name="psa_status" onchange="this.form.submit()"
                 class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
                        focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-            <option value="">All PSA Status</option>
+            <option value="">All Poverty Status</option>
             <option value="below" {{ request('psa_status') === 'below' ? 'selected' : '' }}>Below PSA poverty line</option>
+            <option value="middle_up" {{ request('psa_status') === 'middle_up' ? 'selected' : '' }}>Middle &amp; above</option>
             @foreach(\App\Services\ClassificationService::PSA_STATUSES as $ps)
             <option value="{{ $ps }}" {{ request('psa_status') === $ps ? 'selected' : '' }}>{{ $ps }}</option>
             @endforeach
@@ -141,6 +135,13 @@
             <option value="{{ $e }}" {{ request('employment_status') == $e ? 'selected' : '' }}>{{ $e }}</option>
             @endforeach
         </select>
+        <select name="sort" onchange="this.form.submit()"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
+                       focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
+            <option value="">Newest first</option>
+            <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>Name A–Z</option>
+            <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Name Z–A</option>
+        </select>
     </div>
 </div>
 </form>
@@ -156,8 +157,7 @@
                     <th class="px-5 py-3.5 text-green-100">Address</th>
                     <th class="px-5 py-3.5 text-green-100">Purok</th>
                     <th class="px-5 py-3.5 text-green-100">Members</th>
-                    <th class="px-5 py-3.5 text-green-100">Welfare Score</th>
-                    <th class="px-5 py-3.5 text-green-100">PSA Status</th>
+                    <th class="px-5 py-3.5 text-green-100">Poverty Status</th>
                     <th class="px-5 py-3.5 text-green-100">Sectors</th>
                     <th class="px-5 py-3.5 text-green-100 text-right">Actions</th>
                 </tr>
@@ -200,30 +200,6 @@
                             </div>
                         </td>
                         <td class="px-5 py-4">
-                            @php
-                                $cls = $h->classification;
-                                $clsStyle = match($cls) {
-                                    'Extremely Poor' => 'bg-red-50 text-red-700 ring-1 ring-red-200',
-                                    'Poor'           => 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
-                                    'Near Poor'      => 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200',
-                                    'Vulnerable'     => 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
-                                    'Non-Poor'       => 'bg-green-50 text-green-700 ring-1 ring-green-200',
-                                    default          => null,
-                                };
-                            @endphp
-                            @if($cls && $clsStyle)
-                                <span class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold {{ $clsStyle }}">
-                                    <span class="h-1.5 w-1.5 rounded-full {{ match($cls) {
-                                        'Extremely Poor'=>'bg-red-500','Poor'=>'bg-orange-500',
-                                        'Near Poor'=>'bg-yellow-500','Vulnerable'=>'bg-blue-500',
-                                        default=>'bg-green-500'} }}"></span>
-                                    {{ $cls }}
-                                </span>
-                            @else
-                                <span class="text-xs text-gray-300">—</span>
-                            @endif
-                        </td>
-                        <td class="px-5 py-4">
                             @if($h->psa_status)
                                 <span class="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold {{ \App\Services\ClassificationService::PSA_STYLES[$h->psa_status] ?? '' }}">{{ $h->psa_status }}</span>
                             @else
@@ -259,13 +235,13 @@
                     @endforeach
                 @else
                     <tr>
-                        <td colspan="8" class="px-5 py-12 text-center">
+                        <td colspan="7" class="px-5 py-12 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                                    <i class="fa-solid fa-{{ request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status') ? 'magnifying-glass' : 'house' }} text-lg"></i>
+                                    <i class="fa-solid fa-{{ request('search') || request('purok') || request('sector') || request('psa_status') || request('review') || request('employment_status') ? 'magnifying-glass' : 'house' }} text-lg"></i>
                                 </div>
                                 <div>
-                                    @if(request('search') || request('purok') || request('sector') || request('classification') || request('psa_status') || request('review') || request('employment_status'))
+                                    @if(request('search') || request('purok') || request('sector') || request('psa_status') || request('review') || request('employment_status'))
                                     <p class="text-sm font-semibold text-gray-900">No households found</p>
                                     <p class="text-xs text-gray-400 mt-1">No results match your search or filter. Try different keywords.</p>
                                     @else
@@ -273,7 +249,7 @@
                                     <p class="text-xs text-gray-400 mt-1">Start by registering your first household</p>
                                     @endif
                                 </div>
-                                @if(!request('search') && !request('purok') && !request('sector') && !request('classification') && !request('employment_status'))
+                                @if(!request('search') && !request('purok') && !request('sector') && !request('employment_status'))
                                 <a href="{{ route($isStaff ? 'staff.residents.create' : 'residents.create') }}"
                                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors"
                                    style="background-color:#1a4731;">

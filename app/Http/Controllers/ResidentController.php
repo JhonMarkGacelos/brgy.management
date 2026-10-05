@@ -118,39 +118,50 @@ class ResidentController extends Controller
             }
         }
 
-        if ($classification = $request->classification) {
-            $query->where('classification', $classification);
-        }
-
         if ($request->boolean('review')) {
             $query->needsReview();
         }
 
         if ($psaStatus = $request->psa_status) {
-            $psaStatus === 'below'
-                ? $query->whereIn('psa_status', ClassificationService::PSA_POOR)
-                : $query->where('psa_status', $psaStatus);
+            match ($psaStatus) {
+                'below'     => $query->whereIn('psa_status', ClassificationService::PSA_POOR),
+                'middle_up' => $query->whereIn('psa_status', ClassificationService::PSA_MIDDLE_UP),
+                default     => $query->where('psa_status', $psaStatus),
+            };
         }
 
         if ($employmentStatus = $request->employment_status) {
             $query->whereHas('residents', fn($r) => $r->where('employment_status', $employmentStatus));
         }
 
-        $households      = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
+        if (in_array($request->sort, ['name_asc', 'name_desc'], true)) {
+            // Alphabetical by the head's surname, then first name.
+            $direction = $request->sort === 'name_asc' ? 'asc' : 'desc';
+            $headName  = fn($col) => Resident::select($col)
+                ->whereColumn('residents.household_id', 'households.id')
+                ->where('is_head', true)
+                ->limit(1);
+            $query->orderBy($headName('last_name'), $direction)
+                  ->orderBy($headName('first_name'), $direction);
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $households      = $query->paginate(10)->withQueryString();
         $totalResidents  = Resident::count();
         $totalHouseholds = Household::count();
         $seniorCitizens  = Resident::where('is_senior_citizen', true)->count();
         $pwdMembers      = Resident::where('is_pwd', true)->count();
         $puroks          = Household::distinct()->orderBy('purok')->pluck('purok');
 
-        $classificationCounts = Household::whereNotNull('classification')
-            ->selectRaw('classification, count(*) as total')
-            ->groupBy('classification')
-            ->pluck('total', 'classification');
+        $psaCounts = Household::whereNotNull('psa_status')
+            ->selectRaw('psa_status, count(*) as total')
+            ->groupBy('psa_status')
+            ->pluck('total', 'psa_status');
 
         return view('residents.index', compact(
             'households', 'totalResidents', 'totalHouseholds',
-            'seniorCitizens', 'pwdMembers', 'puroks', 'classificationCounts'
+            'seniorCitizens', 'pwdMembers', 'puroks', 'psaCounts'
         ));
     }
 
@@ -168,10 +179,6 @@ class ResidentController extends Controller
 
         if ($gender = $request->gender) {
             $query->where('gender', $gender);
-        }
-
-        if ($status = $request->status) {
-            $query->where('status', $status);
         }
 
         if ($employmentStatus = $request->employment_status) {

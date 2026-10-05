@@ -82,7 +82,7 @@ class ResidentSeniorCitizenTest extends TestCase
         $this->assertFalse($turnsTomorrow->is_senior_citizen);
     }
 
-    public function test_sync_command_fixes_stale_flags_and_refreshes_score(): void
+    public function test_sync_command_fixes_stale_flags_and_refreshes_household(): void
     {
         $household = Household::create(['purok' => 'Purok 1']);
         $turnedSixty = $household->residents()->create(array_merge($this->headFields(), [
@@ -94,12 +94,12 @@ class ResidentSeniorCitizenTest extends TestCase
             'relationship_to_head' => 'Daughter', 'is_head' => false,
         ]));
         ClassificationService::refresh($household);
-        $scoreBefore = (float) $household->fresh()->welfare_score;
+        $before = $household->fresh()->only('per_capita_income', 'psa_status');
 
         // Simulate records saved before the birthday / before this rule existed.
         DB::table('residents')->where('id', $turnedSixty->id)->update(['is_senior_citizen' => false, 'age' => 59]);
         DB::table('residents')->where('id', $wronglyFlagged->id)->update(['is_senior_citizen' => true]);
-        DB::table('households')->where('id', $household->id)->update(['welfare_score' => 0]);
+        DB::table('households')->where('id', $household->id)->update(['per_capita_income' => 1, 'psa_status' => 'High Income']);
 
         $this->artisan('residents:sync-seniors')
             ->expectsOutput('Updated 2 resident(s) across 1 household(s).')
@@ -108,7 +108,7 @@ class ResidentSeniorCitizenTest extends TestCase
         $this->assertTrue($turnedSixty->fresh()->is_senior_citizen);
         $this->assertSame(60, $turnedSixty->fresh()->age);
         $this->assertFalse($wronglyFlagged->fresh()->is_senior_citizen);
-        $this->assertEquals($scoreBefore, (float) $household->fresh()->welfare_score);
+        $this->assertEquals($before, $household->fresh()->only('per_capita_income', 'psa_status'));
     }
 
     public function test_sync_command_is_a_no_op_when_everything_is_correct(): void

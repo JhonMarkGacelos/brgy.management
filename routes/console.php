@@ -27,7 +27,7 @@ Artisan::command('residents:sync-seniors', function () {
     Household::whereIn('id', $householdIds)->get()->each(fn ($h) => ClassificationService::refresh($h));
 
     $this->info("Updated {$stale->count()} resident(s) across {$householdIds->count()} household(s).");
-})->purpose('Sync Senior Citizen status (60+) from date of birth and refresh household classifications');
+})->purpose('Sync Senior Citizen status (60+) from date of birth and refresh household Poverty Status');
 
 Artisan::command('households:reclassify', function () {
     $count = 0;
@@ -39,7 +39,7 @@ Artisan::command('households:reclassify', function () {
     });
 
     $this->info("Reclassified {$count} household(s).");
-})->purpose('Recompute per capita income, welfare score and classification for every household');
+})->purpose('Recompute per capita income and Poverty Status (PSA) for every household');
 
 Artisan::command('cloudinary:secure-ids {--dry-run : List what would change without touching Cloudinary}', function () {
     // Make ID photos and payment receipts uploaded before the privacy change private on Cloudinary.

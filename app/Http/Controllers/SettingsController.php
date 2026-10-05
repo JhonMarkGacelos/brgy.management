@@ -45,7 +45,6 @@ class SettingsController extends Controller
     public function index()
     {
         $psa              = \App\Services\ClassificationService::psaThresholds();
-        $sectorWeights    = \App\Services\ClassificationService::sectorWeights();
         $captainName             = Setting::get('captain_name', 'HON. PUNONG BARANGAY');
         $captainGmail            = Setting::get('captain_gmail', '');
         $captainSignature        = Setting::get('captain_signature_url');
@@ -104,7 +103,7 @@ class SettingsController extends Controller
             'backup_email'         => Setting::get('backup_email') ?: ($captainGmail ?: Auth::user()->email),
         ];
 
-        return view('settings.index', compact('psa', 'sectorWeights', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName',
+        return view('settings.index', compact('psa', 'captainName', 'captainGmail', 'captainSignature', 'captainSignatureHeight', 'brgyInfo', 'docFees', 'systemInfo', 'gcashQrUrl', 'gcashNumber', 'gcashAccountName',
             'backups', 'lastBackup', 'nextBackupAt', 'backupSettings'));
     }
 
@@ -163,39 +162,6 @@ class SettingsController extends Controller
                 $this->setAndTrack($key, $request->$key);
             }
             $this->logSettingsChange('Document fees updated');
-        } elseif ($request->has('_thresholds')) {
-            // The welfare score maps per capita linearly between thresholds, so they must strictly increase
-            // (equal or reversed values would divide by zero in ClassificationService).
-            $order = 'Thresholds must increase: Extremely Poor < Poor < Near Poor < Vulnerable.';
-            $request->validate([
-                'per_capita_extremely_poor' => 'required|numeric|gt:0',
-                'per_capita_poor'           => 'required|numeric|gt:per_capita_extremely_poor',
-                'per_capita_near_poor'      => 'required|numeric|gt:per_capita_poor',
-                'per_capita_vulnerable'     => 'required|numeric|gt:per_capita_near_poor',
-            ], [
-                'per_capita_poor.gt'       => $order,
-                'per_capita_near_poor.gt'  => $order,
-                'per_capita_vulnerable.gt' => $order,
-            ]);
-            foreach (['per_capita_extremely_poor','per_capita_poor','per_capita_near_poor','per_capita_vulnerable'] as $key) {
-                $this->setAndTrack($key, $request->$key);
-            }
-            $this->logSettingsChange('Poverty thresholds updated');
-
-            // Stored classifications feed the dashboard and analytics, so bring them in line with the new thresholds.
-            Artisan::call('households:reclassify');
-        } elseif ($request->has('_welfare_weights')) {
-            $keys = array_map(fn ($k) => "welfare_weight_$k", array_keys(\App\Services\ClassificationService::DEFAULT_SECTOR_WEIGHTS));
-            $request->validate(array_fill_keys($keys, 'required|integer|min:0|max:50'), [
-                'welfare_weight_*.min' => 'Deductions must be between 0 and 50 points.',
-                'welfare_weight_*.max' => 'Deductions must be between 0 and 50 points.',
-            ]);
-            foreach ($keys as $key) {
-                $this->setAndTrack($key, (int) $request->input($key));
-            }
-            $this->logSettingsChange('Welfare score sector deductions updated');
-
-            Artisan::call('households:reclassify');
         } elseif ($request->has('_psa')) {
             $request->validate([
                 'psa_poverty_threshold' => 'required|numeric|gt:0',

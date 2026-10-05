@@ -246,24 +246,12 @@ class AnalyticsController extends Controller
             ->pluck('count', 'households.purok')
             ->toArray();
 
-        // Welfare classification — filtered by month when a month filter is active
-        $welfareBase = clone $householdBase;
-        $tierOrder = ['Extremely Poor', 'Poor', 'Near Poor', 'Vulnerable', 'Non-Poor'];
-        $rawCounts = (clone $welfareBase)->whereNotNull('classification')
-            ->selectRaw('classification, count(*) as total')
-            ->groupBy('classification')
-            ->pluck('total', 'classification')
-            ->toArray();
-        $classificationCounts = [];
-        foreach ($tierOrder as $tier) {
-            $classificationCounts[$tier] = $rawCounts[$tier] ?? 0;
-        }
-        $householdsClassified = array_sum($classificationCounts);
-        $avgPerCapita         = (clone $welfareBase)->whereNotNull('per_capita_income')->avg('per_capita_income') ?? 0;
-        $belowPovertyLine     = ($classificationCounts['Extremely Poor'] ?? 0) + ($classificationCounts['Poor'] ?? 0);
+        // Poverty Status (PSA) — filtered by month when a month filter is active
+        $povertyBase  = clone $householdBase;
+        $avgPerCapita = (clone $povertyBase)->whereNotNull('per_capita_income')->avg('per_capita_income') ?? 0;
 
-        // PSA Poverty Status (income-only, PSA thresholds + PIDS classes) — separate from the barangay score above
-        $psaRaw = (clone $welfareBase)->whereNotNull('psa_status')
+        // Income-only, PSA thresholds + PIDS classes above the poverty line
+        $psaRaw = (clone $povertyBase)->whereNotNull('psa_status')
             ->selectRaw('psa_status, count(*) as total')
             ->groupBy('psa_status')
             ->pluck('total', 'psa_status')
@@ -281,8 +269,8 @@ class AnalyticsController extends Controller
         $psaBelowLine = ($psaCounts['Food Poor'] ?? 0) + ($psaCounts['Poor'] ?? 0);
 
         // PSA reports incidence two ways: among families (households here) and among population (people in them).
-        $psaPeopleAssessed = (int) (clone $welfareBase)->whereNotNull('psa_status')->withCount('residents')->get()->sum('residents_count');
-        $psaPeopleBelow    = (int) (clone $welfareBase)->whereIn('psa_status', \App\Services\ClassificationService::PSA_POOR)
+        $psaPeopleAssessed = (int) (clone $povertyBase)->whereNotNull('psa_status')->withCount('residents')->get()->sum('residents_count');
+        $psaPeopleBelow    = (int) (clone $povertyBase)->whereIn('psa_status', \App\Services\ClassificationService::PSA_POOR)
             ->withCount('residents')->get()->sum('residents_count');
         $psaFamilyIncidence     = $psaAssessed > 0 ? round($psaBelowLine / $psaAssessed * 100, 1) : 0;
         $psaPopulationIncidence = $psaPeopleAssessed > 0 ? round($psaPeopleBelow / $psaPeopleAssessed * 100, 1) : 0;
@@ -303,7 +291,7 @@ class AnalyticsController extends Controller
             'totalRevenue', 'paidDocumentsCount', 'avgRevenuePerDocument', 'revenueByType',
             'ageGroups', 'civilStatus', 'employmentStatus',
             'monthlyCases', 'monthlyDocuments', 'monthlyRevenue', 'monthLabels', 'documentTypes', 'populationByPurok',
-            'classificationCounts', 'householdsClassified', 'avgPerCapita', 'belowPovertyLine',
+            'avgPerCapita',
             'psaCounts', 'psaAssessed', 'psaBelowLine', 'psaThresholds',
             'psaPeopleAssessed', 'psaPeopleBelow', 'psaFamilyIncidence', 'psaPopulationIncidence',
             'filterMonth', 'filterSector', 'availableMonths', 'asOf', 'newResidents', 'newHouseholds'

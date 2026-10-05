@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Household;
-use App\Models\Setting;
 use App\Models\User;
 use App\Services\ClassificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +18,7 @@ class HouseholdClassificationSyncTest extends TestCase
         return User::factory()->create(['role' => 'admin']);
     }
 
-    /** Head earning $headIncome plus a zero-income member; stored classification refreshed. */
+    /** Head earning $headIncome plus a zero-income member; stored Poverty Status refreshed. */
     private function household(float $headIncome): Household
     {
         $household = Household::create(['purok' => 'Purok 1']);
@@ -38,18 +37,7 @@ class HouseholdClassificationSyncTest extends TestCase
         return $household->fresh();
     }
 
-    private function thresholds(array $values = []): array
-    {
-        return array_merge([
-            '_thresholds'               => '1',
-            'per_capita_extremely_poor' => 1500,
-            'per_capita_poor'           => 2500,
-            'per_capita_near_poor'      => 3500,
-            'per_capita_vulnerable'     => 5000,
-        ], $values);
-    }
-
-    public function test_edit_member_modal_updates_stored_classification(): void
+    public function test_edit_member_modal_updates_stored_poverty_status(): void
     {
         $household = $this->household(20000);
         $this->assertEquals(10000, (float) $household->per_capita_income);
@@ -63,11 +51,7 @@ class HouseholdClassificationSyncTest extends TestCase
 
         $household->refresh();
         $this->assertEquals(500, (float) $household->per_capita_income);
-        $this->assertSame(
-            ClassificationService::classify($household->load('residents'))['classification'],
-            $household->classification
-        );
-        $this->assertSame('Extremely Poor', $household->classification);
+        $this->assertSame('Food Poor', $household->psa_status);
     }
 
     public function test_removing_a_member_updates_stored_per_capita(): void
@@ -83,95 +67,43 @@ class HouseholdClassificationSyncTest extends TestCase
         $this->assertEquals(6000, (float) $household->fresh()->per_capita_income);
     }
 
-    public function test_non_increasing_thresholds_are_rejected(): void
-    {
-        $this->actingAs($this->admin())->post(route('settings.update'), $this->thresholds())
-            ->assertSessionDoesntHaveErrors();
-
-        $this->actingAs($this->admin())
-            ->post(route('settings.update'), $this->thresholds(['per_capita_poor' => 1500]))
-            ->assertSessionHasErrors('per_capita_poor');
-
-        $this->actingAs($this->admin())
-            ->post(route('settings.update'), $this->thresholds(['per_capita_extremely_poor' => 0]))
-            ->assertSessionHasErrors('per_capita_extremely_poor');
-
-        $this->assertEquals(2500, (float) Setting::get('per_capita_poor'));
-    }
-
-    public function test_saving_thresholds_reclassifies_existing_households(): void
-    {
-        $this->actingAs($this->admin())->post(route('settings.update'), $this->thresholds());
-        $household = $this->household(6000); // per capita 3,000 → between Poor and Near Poor
-        $before = $household->classification;
-
-        // Raise every threshold well above 3,000 per capita → household becomes Extremely Poor.
-        $this->actingAs($this->admin())->post(route('settings.update'), $this->thresholds([
-            'per_capita_extremely_poor' => 10000,
-            'per_capita_poor'           => 20000,
-            'per_capita_near_poor'      => 30000,
-            'per_capita_vulnerable'     => 40000,
-        ]))->assertSessionDoesntHaveErrors();
-
-        $this->assertNotSame($before, $household->fresh()->classification);
-        $this->assertSame('Extremely Poor', $household->fresh()->classification);
-    }
-
     public function test_reclassify_command_fixes_stale_values(): void
     {
         $household = $this->household(20000);
         DB::table('households')->where('id', $household->id)
-            ->update(['per_capita_income' => 1, 'classification' => 'Extremely Poor', 'welfare_score' => 0]);
+            ->update(['per_capita_income' => 1, 'psa_status' => 'Food Poor']);
 
         $this->artisan('households:reclassify')
             ->expectsOutput('Reclassified 1 household(s).')
             ->assertSuccessful();
 
         $this->assertEquals(10000, (float) $household->fresh()->per_capita_income);
-        $this->assertNotSame('Extremely Poor', $household->fresh()->classification);
+        $this->assertSame('Middle', $household->fresh()->psa_status);
     }
 
-    public function test_sector_deductions_default_to_the_original_weights(): void
+    public function test_welfare_score_is_no_longer_shown_anywhere(): void
     {
+        $admin     = $this->admin();
         $household = $this->household(6000);
-        $before    = (float) $household->welfare_score;
-        $household->residents()->where('is_head', true)->update(['is_4ps' => true]);
-        ClassificationService::refresh($household);
 
-        $this->assertEqualsWithDelta($before - 8, (float) $household->fresh()->welfare_score, 0.01);
+        $this->actingAs($admin)->get(route('settings.index'))
+            ->assertOk()->assertDontSee('Welfare Score')->assertDontSee('name="per_capita_poor"', false);
+        $this->actingAs($admin)->get(route('residents.show', $household->id))
+            ->assertOk()->assertDontSee('Welfare Score')->assertSee('Poverty Status');
+        $this->actingAs($admin)->get(route('residents.index'))
+            ->assertOk()->assertDontSee('Welfare Score')->assertSee('Middle &amp; above', false);
+        $this->actingAs($admin)->get(route('analytics.index'))
+            ->assertOk()->assertDontSee('Welfare Score')->assertSee('Average per capita income');
     }
 
-    public function test_saving_sector_deductions_recalculates_scores(): void
+    public function test_middle_and_above_card_filters_households(): void
     {
-        $household = $this->household(6000);
-        $before    = (float) $household->welfare_score;
-        $household->residents()->where('is_head', true)->update(['is_4ps' => true]);
-        ClassificationService::refresh($household);
+        $middle = $this->household(20000);  // ₱10,000 per capita → Middle
+        $poor   = $this->household(4000);   // ₱2,000 per capita → Poor
+        $middle->residents()->where('is_head', true)->update(['last_name' => 'Middleton']);
+        $poor->residents()->where('is_head', true)->update(['last_name' => 'Poorman']);
 
-        $this->actingAs($this->admin())->post(route('settings.update'), [
-            '_welfare_weights'           => '1',
-            'welfare_weight_pwd'         => 5,
-            'welfare_weight_senior'      => 3,
-            'welfare_weight_solo_parent' => 5,
-            'welfare_weight_fourps'      => 10,
-            'welfare_weight_indigent'    => 6,
-        ])->assertSessionDoesntHaveErrors();
-
-        $this->assertEquals(10, Setting::get('welfare_weight_fourps'));
-        $this->assertEqualsWithDelta($before - 10, (float) $household->fresh()->welfare_score, 0.01);
-    }
-
-    public function test_sector_deductions_must_be_between_0_and_50(): void
-    {
-        $this->actingAs($this->admin())->post(route('settings.update'), [
-            '_welfare_weights'           => '1',
-            'welfare_weight_pwd'         => -1,
-            'welfare_weight_senior'      => 3,
-            'welfare_weight_solo_parent' => 5,
-            'welfare_weight_fourps'      => 51,
-            'welfare_weight_indigent'    => 6,
-        ])->assertSessionHasErrors(['welfare_weight_pwd', 'welfare_weight_fourps']);
-
-        $this->assertNull(Setting::get('welfare_weight_fourps'));
+        $this->actingAs($this->admin())->get(route('residents.index', ['psa_status' => 'middle_up']))
+            ->assertOk()->assertSee('Middleton')->assertDontSee('Poorman');
     }
 }

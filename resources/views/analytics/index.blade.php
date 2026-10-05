@@ -70,7 +70,7 @@
 
     /* ── Hide all ApexCharts, show print fallbacks ── */
     #blotterChart, #docPieChart, #purokChart,
-    #monthlyDocsChart, #monthlyRevenueChart, #welfareChart,
+    #monthlyDocsChart, #monthlyRevenueChart,
     #civilStatusChart, #employmentChart { display: none !important; }
     .print-only  { display: table !important; }
     .print-block { display: block !important; }
@@ -434,74 +434,15 @@
     </div>
 </div>
 
-{{-- ── WELFARE CLASSIFICATION ── --}}
-<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-    Barangay Welfare Score <span class="normal-case font-normal">— barangay's own scoring, not PSA</span>
-</p>
-
-{{-- Summary cards --}}
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-    @php
-        $welfareSummary = [
-            ['label'=>'Families Assessed',   'value'=> number_format($householdsClassified), 'icon'=>'fa-clipboard-check', 'bg'=>'bg-gray-50',   'color'=>'text-gray-600'],
-            ['label'=>'Avg. Per Capita / mo', 'value'=>'₱'.number_format($avgPerCapita, 0),  'icon'=>'fa-peso-sign',       'bg'=>'bg-green-50',  'color'=>'text-green-700'],
-            ['label'=>'Poor tiers (score)',   'value'=> number_format($belowPovertyLine),     'icon'=>'fa-circle-exclamation','bg'=>'bg-red-50',  'color'=>'text-red-600'],
-            ['label'=>'Non-Poor / Vulnerable','value'=> number_format(($classificationCounts['Non-Poor'] ?? 0) + ($classificationCounts['Vulnerable'] ?? 0)), 'icon'=>'fa-circle-check', 'bg'=>'bg-teal-50', 'color'=>'text-teal-600'],
-        ];
-    @endphp
-    @foreach($welfareSummary as $s)
-    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl {{ $s['bg'] }} {{ $s['color'] }} text-sm mb-3">
-            <i class="fa-solid {{ $s['icon'] }}"></i>
-        </div>
-        <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $s['value'] }}</p>
-        <p class="text-xs text-gray-400 mt-0.5 leading-tight">{{ $s['label'] }}</p>
-    </div>
-    @endforeach
-</div>
-
-{{-- Tier distribution --}}
-<div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-500 text-xs">
-            <i class="fa-solid fa-scale-balanced"></i>
-        </div>
-        <p class="text-sm font-semibold text-gray-800">Welfare Score Distribution</p>
-        @if($householdsClassified < $totalHouseholds)
-        <span class="ml-auto text-[11px] text-gray-400">{{ $totalHouseholds - $householdsClassified }} household(s) not yet assessed</span>
-        @endif
-    </div>
-    <div id="welfareChart" class="px-5 py-4"></div>
-    {{-- Print fallback --}}
-    @php $welfareTotal = array_sum($classificationCounts) ?: 1; @endphp
-    <table class="print-only w-full text-xs px-5 pb-3" style="display:none;">
-        <thead><tr class="border-b border-gray-200">
-            <th class="text-left py-1 text-gray-500">Classification</th>
-            <th class="text-right py-1 text-gray-500">Households</th>
-            <th class="text-right py-1 text-gray-500">%</th>
-        </tr></thead>
-        <tbody>
-            @foreach($classificationCounts as $tier => $cnt)
-            <tr class="border-b border-gray-100">
-                <td class="py-1 text-gray-700">{{ $tier }}</td>
-                <td class="py-1 text-right font-semibold text-gray-900">{{ $cnt }}</td>
-                <td class="py-1 text-right text-gray-500">{{ round($cnt / $welfareTotal * 100, 1) }}%</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-</div>
-
-
 {{-- ── PSA POVERTY STATUS ── --}}
 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-    PSA Poverty Status <span class="normal-case font-normal">— per capita income vs. PSA thresholds</span>
+    Poverty Status <span class="normal-case font-normal">— per capita income vs. PSA thresholds</span>
 </p>
 <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
     @if(!$psaThresholds['poverty'])
     <div class="p-5 text-center text-xs text-amber-700">
         <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-        PSA thresholds haven't been set yet. Enter them in Settings to see PSA Poverty Status.
+        PSA thresholds haven't been set yet. Enter them in Settings to see Poverty Status.
     </div>
     @else
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 border-b border-gray-100">
@@ -522,6 +463,10 @@
             </div>
         </div>
         <div class="text-xs text-gray-500 space-y-0.5">
+            <p>Average per capita income: <span class="font-semibold text-gray-700">₱{{ number_format($avgPerCapita, 2) }}</span> / month</p>
+            @if($totalHouseholds > $psaAssessed)
+            <p class="text-gray-400">{{ number_format($totalHouseholds - $psaAssessed) }} household(s) not yet assessed (no income entered)</p>
+            @endif
             @if($psaThresholds['food'])
             <p>Food threshold: <span class="font-semibold text-gray-700">₱{{ number_format($psaThresholds['food'], 2) }}</span></p>
             @endif
@@ -676,8 +621,6 @@ $docTypesValuesJson      = json_encode(array_values($documentTypes));
 $docTypesLabelsJson      = json_encode(array_keys($documentTypes));
 $purokValuesJson         = json_encode(array_values($populationByPurok));
 $purokLabelsJson         = json_encode(array_keys($populationByPurok));
-$welfareLabelsJson       = json_encode(array_keys($classificationCounts));
-$welfareValuesJson       = json_encode(array_values($classificationCounts));
 $civilLabelsJson         = json_encode(array_keys($civilStatus));
 $civilValuesJson         = json_encode(array_values($civilStatus));
 $empLabelsJson           = json_encode(array_keys($employmentStatus));
@@ -727,20 +670,6 @@ new ApexCharts(document.getElementById('purokChart'), {
     dataLabels: { enabled: false },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
 }).render();
-
-// Welfare Classification Donut
-if (document.getElementById('welfareChart')) {
-new ApexCharts(document.getElementById('welfareChart'), {
-    chart: { type: 'donut', height: 220 },
-    series: {!! $welfareValuesJson !!},
-    labels: {!! $welfareLabelsJson !!},
-    colors: ['#ef4444','#f97316','#eab308','#60a5fa','#22c55e'],
-    legend: { position: 'bottom', fontSize: '10px', labels: { colors: '#6b7280' } },
-    dataLabels: { style: { fontSize: '10px' } },
-    plotOptions: { pie: { donut: { size: '60%' } } },
-    stroke: { width: 0 },
-}).render();
-}
 
 // Civil Status — Donut
 if (document.getElementById('civilStatusChart')) {

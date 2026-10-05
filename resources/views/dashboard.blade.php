@@ -211,12 +211,15 @@ $statusBreakdown   = $statusBreakdown   ?? [];
         </div>
 
         <div class="mt-5 pt-5 border-t border-gray-100">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">PSA Poverty Status</p>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Poverty Status <span class="normal-case font-normal">(PSA)</span></p>
             @if($psaSummary['configured'])
-            <a href="{{ route('residents.index', ['psa_status' => 'below']) }}" class="flex items-center justify-between rounded-xl bg-red-50 px-4 py-3 hover:bg-red-100 transition-colors">
+            {{-- Red once half or more of the assessed families are below the poverty line, green otherwise. --}}
+            @php $povertyHigh = $psaSummary['incidence'] >= 50; @endphp
+            <a href="{{ route('residents.index', ['psa_status' => 'below']) }}"
+               class="flex items-center justify-between rounded-xl px-4 py-3 transition-colors {{ $povertyHigh ? 'bg-red-50 hover:bg-red-100' : 'bg-green-50 hover:bg-green-100' }}">
                 <div>
-                    <p class="text-2xl font-bold text-red-600 tracking-tight">{{ number_format($psaSummary['below']) }}</p>
-                    <p class="text-[11px] text-red-500">Households below the PSA poverty line</p>
+                    <p class="text-2xl font-bold tracking-tight {{ $povertyHigh ? 'text-red-600' : 'text-green-700' }}">{{ number_format($psaSummary['below']) }}</p>
+                    <p class="text-[11px] {{ $povertyHigh ? 'text-red-500' : 'text-green-600' }}">Households below the PSA poverty line</p>
                 </div>
                 <div class="text-right">
                     <p class="text-sm font-semibold text-gray-700">{{ $psaSummary['incidence'] }}%</p>

@@ -50,7 +50,7 @@
 @section('content')
 @php
     $isStaff = Auth::user()->role === 'staff';
-    $hasFilters = request('search') || request('sector') || request('purok') || request('gender') || request('status') || request('employment_status');
+    $hasFilters = request('search') || request('sector') || request('purok') || request('gender') || request('employment_status');
     $sectorOptions = ['4Ps','Senior Citizen','Social Pension','Social Pension Candidates','PWD','Solo Parent','Voter','Indigent','Pregnant'];
     $employmentOptions = ['Employed','Self-Employed','Unemployed','Student','Retired'];
     $sectorColors = [
@@ -77,7 +77,6 @@
         @if(request('sector')) &nbsp;·&nbsp; Sector: {{ request('sector') }} @endif
         @if(request('purok')) &nbsp;·&nbsp; Purok: {{ request('purok') }} @endif
         @if(request('gender')) &nbsp;·&nbsp; Gender: {{ request('gender') }} @endif
-        @if(request('status')) &nbsp;·&nbsp; Status: {{ request('status') }} @endif
         @if(request('employment_status')) &nbsp;·&nbsp; Employment: {{ request('employment_status') }} @endif
     </p>
     @endif
@@ -136,14 +135,6 @@
         <option value="{{ $g }}" {{ request('gender') == $g ? 'selected' : '' }}>{{ $g }}</option>
         @endforeach
     </select>
-    <select name="status" onchange="this.form.submit()"
-            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
-                   focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
-        <option value="">All Statuses</option>
-        @foreach(['Active','Inactive'] as $st)
-        <option value="{{ $st }}" {{ request('status') == $st ? 'selected' : '' }}>{{ $st }}</option>
-        @endforeach
-    </select>
     <select name="employment_status" onchange="this.form.submit()"
             class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
                    focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
@@ -180,7 +171,6 @@
                     <th class="px-5 py-3.5 text-green-100">Contact</th>
                     <th class="px-5 py-3.5 text-green-100">Employment</th>
                     <th class="px-5 py-3.5 text-green-100">Sectors</th>
-                    <th class="px-5 py-3.5 text-green-100">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -223,16 +213,11 @@
                                 @endforelse
                             </div>
                         </td>
-                        <td class="px-5 py-4">
-                            <span class="inline-flex items-center rounded-lg px-2 py-0.5 text-[11px] font-semibold {{ $r->status === 'Active' ? 'bg-green-50 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200' }}">
-                                {{ $r->status }}
-                            </span>
-                        </td>
                     </tr>
                     @endforeach
                 @else
                     <tr>
-                        <td colspan="10" class="px-5 py-12 text-center">
+                        <td colspan="9" class="px-5 py-12 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
                                     <i class="fa-solid fa-{{ $hasFilters ? 'magnifying-glass' : 'users' }} text-lg"></i>
