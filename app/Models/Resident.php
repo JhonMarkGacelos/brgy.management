@@ -136,7 +136,7 @@ class Resident extends Model
                 || ($this->is_indigent && $this->household && $this->household->psa_status === null));
     }
 
-    public const STUDENT_LEVELS = ['Daycare', 'Kindergarten', 'Elementary', 'Junior High School', 'Senior High School', 'College', 'Out of School Youth'];
+    public const STUDENT_LEVELS = ['Daycare', 'Kindergarten', 'Elementary', 'Junior High', 'Senior High', 'College', 'Out of School Youth'];
 
     /** Student level is only kept while the employment status is Student; anything else clears it. */
     public static function studentLevel(?string $employmentStatus, ?string $level): ?string
