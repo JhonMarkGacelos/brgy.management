@@ -198,7 +198,7 @@ class AnalyticsController extends Controller
         }
 
         // Employment status (sector-filtered)
-        // Students are split by level (Nursery → College); older records without one show as "Level not set".
+        // Students are split by level (Daycare → College); older records without one show as "Level not set".
         $employmentStatus = [];
         $studentLevels    = [];
         $employmentRows   = (clone $resBase)->selectRaw('employment_status, education, COUNT(*) as count')
