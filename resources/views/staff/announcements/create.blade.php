@@ -52,7 +52,7 @@
                             $categories = [
                                 ['value' => 'Health',        'icon' => 'fa-heart-pulse',          'color' => 'bg-red-50 text-red-500 border-red-200'],
                                 ['value' => 'Peace & Order', 'icon' => 'fa-shield-halved',        'color' => 'bg-blue-50 text-blue-500 border-blue-200'],
-                                ['value' => 'Events',        'icon' => 'fa-calendar-star',        'color' => 'bg-purple-50 text-purple-500 border-purple-200'],
+                                ['value' => 'Events',        'icon' => 'fa-calendar-check',        'color' => 'bg-purple-50 text-purple-500 border-purple-200'],
                                 ['value' => 'Emergency',     'icon' => 'fa-triangle-exclamation', 'color' => 'bg-orange-50 text-orange-500 border-orange-200'],
                                 ['value' => 'General',       'icon' => 'fa-circle-info',          'color' => 'bg-gray-100 text-gray-500 border-gray-200'],
                             ];
