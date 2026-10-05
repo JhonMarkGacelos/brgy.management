@@ -61,7 +61,7 @@ class AnnouncementPublished extends Notification implements ShouldQueue
             ->line('**' . $this->announcement->title . '**')
             ->line($this->announcement->content)
             ->line('---')
-            ->line('*Category: ' . $this->announcement->category . ' · Posted: ' . $this->announcement->created_at->format('F j, Y') . '*')
+            ->line('*Category: ' . $this->announcement->category . ' · Posted: ' . ($this->announcement->published_at ?? $this->announcement->created_at)->format('F j, Y') . '*')
             ->salutation('Barangay Caranas — Motiong, Samar');
     }
 }

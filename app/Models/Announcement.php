@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Notifications\AnnouncementPublished;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
@@ -38,7 +41,11 @@ class Announcement extends Model
     protected $casts = [
         'published_at' => 'date',
         'expires_at'   => 'date',
+        'emailed_at'   => 'datetime',
     ];
+
+    /** Announcements dated for a later day are emailed from this hour (Manila time) on their publish date. */
+    public const EMAIL_HOUR = 7;
 
     public function postedBy(): BelongsTo
     {
@@ -92,5 +99,43 @@ class Announcement extends Model
             '4Ps'             => $query->whereHas('household.residents', fn ($h) => $h->where('is_head', true)->where('is_4ps', true)),
             default           => $query,
         };
+    }
+
+    /**
+     * Email the audience once the announcement is live (published, publish date reached, not expired).
+     * emailed_at is claimed before sending so a save and the scheduler can never both send it.
+     */
+    public function emailAudienceIfDue(): bool
+    {
+        $claimed = static::live()->whereKey($this->id)->whereNull('emailed_at')->update(['emailed_at' => now()]);
+        if (!$claimed) {
+            return false;
+        }
+
+        $emails = $this->audienceResidents()
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->pluck('email')
+            ->unique()
+            ->values();
+
+        // Residents with a portal login get mail + a bell notification; others get mail only
+        $portalUsers = User::where('role', 'resident')
+            ->whereIn('email', $emails)
+            ->get()
+            ->keyBy('email');
+
+        foreach ($emails as $email) {
+            // A mail/queue failure for one resident must not stop the rest or fail the save.
+            try {
+                ($portalUsers->get($email) ?? Notification::route('mail', $email))->notify(new AnnouncementPublished($this));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send notification: ' . AnnouncementPublished::class, [
+                    'announcement_id' => $this->id, 'email' => $email, 'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return true;
     }
 }

@@ -4,30 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use App\Models\Resident;
-use App\Models\User;
-use App\Notifications\AnnouncementPublished;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 class AnnouncementController extends Controller
 {
-    /**
-     * Send a notification without letting a mail/SMTP failure bubble up and
-     * fail the controller action after the related DB write already succeeded.
-     */
-    private function safeNotify(object $notifiable, object $notification, array $context = []): void
-    {
-        try {
-            $notifiable->notify($notification);
-        } catch (\Throwable $e) {
-            Log::error('Failed to send notification: ' . get_class($notification), array_merge($context, [
-                'error' => $e->getMessage(),
-            ]));
-        }
-    }
-
     public function index(Request $request)
     {
         $filterCategory = $request->category;
@@ -69,10 +50,8 @@ class AnnouncementController extends Controller
             'posted_by'    => Auth::id(),
         ]);
 
-        // Email all residents with an email address when published
-        if ($status === 'Published') {
-            $this->notifyResidents($announcement);
-        }
+        // Email the audience now if it's live; a later publish date is emailed by announcements:send-scheduled
+        $announcement->emailAudienceIfDue();
 
         $route = Auth::user()->role === 'staff' ? 'staff.announcements.index' : 'announcements.index';
         return redirect()->to(route($route))->with('success', 'Announcement posted successfully.');
@@ -95,8 +74,7 @@ class AnnouncementController extends Controller
         $announcement = Announcement::findOrFail($id);
         $request->validate($this->rules());
 
-        $wasPublished = $announcement->status === 'Published';
-        $newStatus    = $request->status ?? $announcement->status;
+        $newStatus = $request->status ?? $announcement->status;
 
         $announcement->update([
             'title'        => $request->title,
@@ -108,10 +86,8 @@ class AnnouncementController extends Controller
             'expires_at'   => $request->expires_at ?? $announcement->expires_at,
         ]);
 
-        // Email residents only when status first changes to Published (not on re-saves)
-        if (!$wasPublished && $newStatus === 'Published') {
-            $this->notifyResidents($announcement);
-        }
+        // Emails once, the first time the announcement is live (re-saves never resend)
+        $announcement->emailAudienceIfDue();
 
         $route = Auth::user()->role === 'staff' ? 'staff.announcements.index' : 'announcements.index';
         return redirect()->to(route($route))->with('success', 'Announcement updated.');
@@ -136,27 +112,5 @@ class AnnouncementController extends Controller
             'published_at' => 'nullable|date',
             'expires_at'   => 'nullable|date',
         ];
-    }
-
-    private function notifyResidents(Announcement $announcement): void
-    {
-        // Only the announcement's audience (e.g. a Senior Citizens notice goes to seniors, not everyone).
-        $emails = $announcement->audienceResidents()
-            ->whereNotNull('email')
-            ->where('email', '!=', '')
-            ->pluck('email')
-            ->unique()
-            ->values();
-
-        // Residents with a portal login get mail + a bell notification; others get mail only
-        $portalUsers = User::where('role', 'resident')
-            ->whereIn('email', $emails)
-            ->get()
-            ->keyBy('email');
-
-        foreach ($emails as $email) {
-            $notifiable = $portalUsers->get($email) ?? Notification::route('mail', $email);
-            $this->safeNotify($notifiable, new AnnouncementPublished($announcement), ['announcement_id' => $announcement->id, 'email' => $email]);
-        }
     }
 }

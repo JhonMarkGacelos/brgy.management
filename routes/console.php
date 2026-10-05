@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Announcement;
 use App\Models\Household;
 use App\Models\Resident;
 use App\Services\ClassificationService;
@@ -90,7 +91,18 @@ Artisan::command('backup:run {--scheduled : Record the backup as a scheduled one
     $this->info("Backup saved: {$backup->filename} ({$backup->tables} tables, {$backup->rows} records, {$backup->human_size}).");
 })->purpose('Back up the database to Cloudinary (and email a copy if enabled in Settings)');
 
+Artisan::command('announcements:send-scheduled', function () {
+    $sent = Announcement::live()->whereNull('emailed_at')->get()->filter->emailAudienceIfDue()->count();
+
+    $this->info("Emailed {$sent} announcement(s).");
+})->purpose('Email announcements whose publish date has arrived');
+
 Schedule::command('residents:sync-seniors')->daily();
+
+// Announcements dated for a later day are emailed from 7 AM on that day. Checking every 15 minutes (like backups)
+// sends any that came due while the app was asleep as soon as it wakes.
+Schedule::command('announcements:send-scheduled')->everyFifteenMinutes()->withoutOverlapping()
+    ->when(fn () => now()->hour >= Announcement::EMAIL_HOUR);
 
 // The admin sets the backup time in Settings. Checking every 15 minutes (instead of at the exact minute) lets a
 // backup missed while the app was asleep run as soon as it wakes.

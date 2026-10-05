@@ -9,6 +9,8 @@ use App\Models\Household;
 use App\Models\Resident;
 use App\Models\User;
 use App\Notifications\AnnouncementPublished;
+use Carbon\Carbon;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -227,6 +229,54 @@ class SystemBugFixesTest extends TestCase
         ])->assertSessionDoesntHaveErrors();
 
         Notification::assertSentOnDemand(AnnouncementPublished::class, fn ($n, $channels, $notifiable) => $notifiable->routes['mail'] === 'lola@example.com');
+        Notification::assertSentOnDemandTimes(AnnouncementPublished::class, 1);
+    }
+
+    public function test_future_dated_announcement_is_emailed_once_on_its_publish_date(): void
+    {
+        Notification::fake();
+        $this->travelTo(Carbon::parse('2026-10-05 09:00', 'Asia/Manila'));
+        $this->resident(['email' => 'juan@example.com']);
+
+        $this->actingAs($this->admin)->post(route('announcements.store'), [
+            'title' => 'Town Fiesta', 'content' => 'x', 'category' => 'Events', 'published_at' => '2026-10-12',
+        ])->assertSessionDoesntHaveErrors();
+        $this->artisan('announcements:send-scheduled')->expectsOutput('Emailed 0 announcement(s).');
+        Notification::assertNothingSent();
+
+        $this->travelTo(Carbon::parse('2026-10-12 07:00', 'Asia/Manila'));
+        $this->artisan('announcements:send-scheduled')->expectsOutput('Emailed 1 announcement(s).');
+        $this->artisan('announcements:send-scheduled')->expectsOutput('Emailed 0 announcement(s).');
+
+        // Editing it after it went out doesn't email again
+        $a = Announcement::firstWhere('title', 'Town Fiesta');
+        $this->actingAs($this->admin)->put(route('announcements.update', $a->id), ['title' => 'Town Fiesta!', 'content' => 'x', 'category' => 'Events'])
+            ->assertSessionDoesntHaveErrors();
+
+        Notification::assertSentOnDemandTimes(AnnouncementPublished::class, 1);
+    }
+
+    public function test_scheduled_announcement_emails_wait_until_7am(): void
+    {
+        $event = collect(app(Schedule::class)->events())
+            ->first(fn ($e) => str_contains($e->command, 'announcements:send-scheduled'));
+
+        $this->travelTo(Carbon::parse('2026-10-12 06:45', 'Asia/Manila'));
+        $this->assertFalse($event->filtersPass($this->app));
+        $this->travelTo(Carbon::parse('2026-10-12 07:00', 'Asia/Manila'));
+        $this->assertTrue($event->filtersPass($this->app));
+    }
+
+    public function test_publishing_a_draft_emails_once(): void
+    {
+        Notification::fake();
+        $this->resident(['email' => 'juan@example.com']);
+        $a = Announcement::create(['title' => 'A', 'content' => 'x', 'category' => 'General', 'audience' => 'All Residents', 'status' => 'Draft', 'posted_by' => $this->admin->id]);
+        $payload = ['title' => 'A', 'content' => 'x', 'category' => 'General', 'status' => 'Published'];
+
+        $this->actingAs($this->admin)->put(route('announcements.update', $a->id), $payload);
+        $this->actingAs($this->admin)->put(route('announcements.update', $a->id), $payload);
+
         Notification::assertSentOnDemandTimes(AnnouncementPublished::class, 1);
     }
 
