@@ -180,7 +180,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Current Status</label>
                     <span class="px-2 py-1 rounded-full text-xs font-medium {{ $record->status === 'Open' ? 'bg-red-100 text-red-700' : ($record->status === 'Under Mediation' ? 'bg-yellow-100 text-yellow-700' : ($record->status === 'Settled' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700')) }}">
-                        {{ $record->status }}
+                        {{ $record->status_label }}
                     </span>
                 </div>
                 @if($record->resolved_at)

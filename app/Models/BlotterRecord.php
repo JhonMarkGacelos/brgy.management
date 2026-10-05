@@ -17,6 +17,14 @@ class BlotterRecord extends Model
     public const STATUS_RESOLVED = ['Settled', 'Referred'];
     public const STATUSES        = ['Open', 'Pending Official', 'Under Mediation', 'Settled', 'Referred', 'Returned w/ Remarks'];
 
+    /** Display names for stored statuses. "Open" is still what the DB stores; the UI calls it "Pending". */
+    public const STATUS_LABELS   = ['Open' => 'Pending'];
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUS_LABELS[$this->status] ?? $this->status;
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

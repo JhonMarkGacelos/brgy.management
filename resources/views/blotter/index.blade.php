@@ -19,7 +19,7 @@
 @php
     $blotterStats = [
         ['label'=>'Filed This Month', 'value'=>$stats['this_month'], 'sub'=>'This month',        'icon'=>'fa-shield-halved',       'bg'=>'bg-red-50',    'color'=>'text-red-600',    'ring'=>'ring-red-100'],
-        ['label'=>'Open Cases',       'value'=>$stats['open'],  'sub'=>'Needs action',      'icon'=>'fa-circle-dot',          'bg'=>'bg-orange-50', 'color'=>'text-orange-600', 'ring'=>'ring-orange-100'],
+        ['label'=>'Pending Cases',    'value'=>$stats['open'],  'sub'=>'Needs action',      'icon'=>'fa-circle-dot',          'bg'=>'bg-orange-50', 'color'=>'text-orange-600', 'ring'=>'ring-orange-100'],
         ['label'=>'Under Mediation',  'value'=>$stats['mediation'],  'sub'=>'In progress',       'icon'=>'fa-handshake',           'bg'=>'bg-yellow-50', 'color'=>'text-yellow-600', 'ring'=>'ring-yellow-100'],
         ['label'=>'Settled',          'value'=>$stats['settled'],  'sub'=>'This month',        'icon'=>'fa-circle-check',        'bg'=>'bg-green-50',  'color'=>'text-green-600',  'ring'=>'ring-green-100'],
         ['label'=>'Referred to Court','value'=>$stats['referred'],  'sub'=>'Escalated cases',   'icon'=>'fa-arrow-right-from-bracket','bg'=>'bg-blue-50','color'=>'text-blue-600',  'ring'=>'ring-blue-100'],
@@ -55,8 +55,8 @@
         <select name="status" onchange="this.form.submit()"
                 class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-600">
             <option value="">All Statuses</option>
-            @foreach(['Pending','Open','Under Mediation','Settled','Referred','Resolved'] as $s)
-            <option value="{{ $s }}" {{ request('status') == $s ? 'selected' : '' }}>{{ $s }}</option>
+            @foreach(['Open' => 'Pending', 'Under Mediation' => 'Under Mediation', 'Settled' => 'Settled', 'Referred' => 'Referred'] as $value => $label)
+            <option value="{{ $value }}" {{ request('status') == $value ? 'selected' : '' }}>{{ $label }}</option>
             @endforeach
         </select>
         <button type="submit" class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
@@ -97,7 +97,7 @@
                     <td class="px-4 py-3 text-gray-600">{{ $record->incident_type }}@if($record->incident_type === 'Others' && $record->incident_type_other) — {{ $record->incident_type_other }}@endif</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $record->status === 'Open' ? 'bg-red-100 text-red-700' : ($record->status === 'Under Mediation' ? 'bg-yellow-100 text-yellow-700' : ($record->status === 'Settled' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700')) }}">
-                            {{ $record->status }}
+                            {{ $record->status_label }}
                         </span>
                     </td>
                     <td class="px-4 py-3">

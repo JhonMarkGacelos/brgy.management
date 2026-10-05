@@ -274,12 +274,12 @@
                 <select name="status"
                         class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900
                                focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:bg-white focus:outline-none transition-all">
-                    <option value="Open" {{ (old('status', isset($record) ? $record->status : 'Open')) === 'Open' ? 'selected' : '' }}>Open</option>
+                    <option value="Open" {{ (old('status', isset($record) ? $record->status : 'Open')) === 'Open' ? 'selected' : '' }}>Pending</option>
                     <option value="Under Mediation" {{ (old('status', isset($record) ? $record->status : '')) === 'Under Mediation' ? 'selected' : '' }}>Under Mediation</option>
                     <option value="Settled" {{ (old('status', isset($record) ? $record->status : '')) === 'Settled' ? 'selected' : '' }}>Settled</option>
                     <option value="Referred" {{ (old('status', isset($record) ? $record->status : '')) === 'Referred' ? 'selected' : '' }}>Referred to Higher Authority</option>
                 </select>
-                <p class="text-[11px] text-gray-400 mt-2">New cases are typically filed as <strong>Open</strong>.</p>
+                <p class="text-[11px] text-gray-400 mt-2">New cases are typically filed as <strong>Pending</strong>.</p>
 
                 <div class="mt-4 pt-4 border-t border-gray-100">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
