@@ -265,7 +265,7 @@ if ($isEdit) {
                                                     class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900
                                                            focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                 <option value="">Select</option>
-                                                <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Out of School Youth</option><option>Retired</option>
+                                                <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Retired</option>
                                             </select>
                                         </div>
                                         <div x-show="family.head.employment_status === 'Student'">
@@ -597,7 +597,7 @@ if ($isEdit) {
                                                     <select :name="'families['+fi+'][members]['+mi+'][employment_status]'" x-model="member.employment_status"
                                                             class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none transition-all">
                                                         <option value="">Select</option>
-                                                        <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Out of School Youth</option><option>Retired</option>
+                                                        <option>Employed</option><option>Self-Employed</option><option>Unemployed</option><option>Student</option><option>Retired</option>
                                                     </select>
                                                 </div>
                                                 <div x-show="member.employment_status === 'Student'">

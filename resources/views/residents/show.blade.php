@@ -586,7 +586,7 @@ $isStaff = Auth::user()->role === 'staff';
                             class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
                         <option value="">Select</option>
                         <option>Employed</option><option>Unemployed</option>
-                        <option>Self-Employed</option><option>Student</option><option>Out of School Youth</option><option>Retired</option>
+                        <option>Self-Employed</option><option>Student</option><option>Retired</option>
                     </select>
                 </div>
                 <div id="em_education_wrap" class="hidden">
