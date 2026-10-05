@@ -131,7 +131,7 @@
                 class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600
                        focus:border-green-600 focus:ring-2 focus:ring-green-600/20 focus:outline-none">
             <option value="">All Employment</option>
-            @foreach(['Employed','Self-Employed','Unemployed','Student','Retired'] as $e)
+            @foreach(['Employed','Self-Employed','Unemployed','Student','Out of School Youth','Retired'] as $e)
             <option value="{{ $e }}" {{ request('employment_status') == $e ? 'selected' : '' }}>{{ $e }}</option>
             @endforeach
         </select>

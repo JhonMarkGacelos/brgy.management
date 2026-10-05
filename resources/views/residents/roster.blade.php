@@ -52,7 +52,7 @@
     $isStaff = Auth::user()->role === 'staff';
     $hasFilters = request('search') || request('sector') || request('purok') || request('gender') || request('employment_status');
     $sectorOptions = ['4Ps','Senior Citizen','Social Pension','Social Pension Candidates','PWD','Solo Parent','Voter','Indigent','Pregnant'];
-    $employmentOptions = ['Employed','Self-Employed','Unemployed','Student','Retired'];
+    $employmentOptions = ['Employed','Self-Employed','Unemployed','Student','Out of School Youth','Retired'];
     $sectorColors = [
         '4Ps'        => 'bg-blue-50 text-blue-600 ring-1 ring-blue-100',
         'Senior'     => 'bg-orange-50 text-orange-600 ring-1 ring-orange-100',
